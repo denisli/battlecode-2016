@@ -29,8 +29,13 @@ public class GuardPlayer {
         while (true) {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
-            try {
+        	try {
                 int fate = rand.nextInt(1000);
+
+                if (fate % 5 == 3) {
+                    // Send a normal signal
+                    rc.broadcastSignal(80);
+                }
 
                 boolean shouldAttack = false;
 
@@ -38,7 +43,6 @@ public class GuardPlayer {
                 if (myAttackRange > 0) {
                     RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(myAttackRange, enemyTeam);
                     RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
-                    //sort arrays to attack enemy with least health?
                     if (enemiesWithinRange.length > 0) {
                         shouldAttack = true;
                         // Check if weapon is ready
@@ -50,6 +54,24 @@ public class GuardPlayer {
                         // Check if weapon is ready
                         if (rc.isWeaponReady()) {
                             rc.attackLocation(zombiesWithinRange[rand.nextInt(zombiesWithinRange.length)].location);
+                        }
+                    }
+                }
+
+                if (!shouldAttack) {
+                    if (rc.isCoreReady()) {
+                        if (fate < 600) {
+                            // Choose a random direction to try to move in
+                            Direction dirToMove = RobotPlayer.directions[fate % 8];
+                            // Check the rubble in that direction
+                            if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                                // Too much rubble, so I should clear it
+                                rc.clearRubble(dirToMove);
+                                // Check if I can move in this direction
+                            } else if (rc.canMove(dirToMove)) {
+                                // Move
+                                rc.move(dirToMove);
+                            }
                         }
                     }
                 }
