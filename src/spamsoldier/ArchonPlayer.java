@@ -56,7 +56,8 @@ public class ArchonPlayer {
 	                int fate = rand.nextInt(1000);
 	                // Check if this ARCHON's core is ready
 	                if (rc.isCoreReady()) {
-	                	rc.broadcastSignal(64); // try to always send signals to nearby units
+	                	RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(35, myTeam);
+	                	rc.broadcastMessageSignal(friendlyWithinRange.length, 0, 63);; // try to always send signals to nearby units
 	                	if (fate < 800) {
 	                		// always build soldier
 	                        RobotType typeToBuild = RobotType.SOLDIER;
