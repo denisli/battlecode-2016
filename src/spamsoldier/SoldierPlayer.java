@@ -1,5 +1,6 @@
 package spamsoldier;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import battlecode.common.*;
@@ -20,7 +21,7 @@ public class SoldierPlayer {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-
+		int turns = 0;
         while (true) {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
@@ -50,22 +51,57 @@ public class SoldierPlayer {
 
                 if (!shouldAttack) {
                     if (rc.isCoreReady()) {
-
-                        // Choose a random direction to try to move in
-                        Direction dirToMove = RobotPlayer.directions[fate % 8];
-                        // Check the rubble in that direction
-                        if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-                            // Too much rubble, so I should clear it
-                            rc.clearRubble(dirToMove);
-                            // Check if I can move in this direction
-                        } else if (rc.canMove(dirToMove)) {
-                            // Move
-                            rc.move(dirToMove);
-                        }
+                    	// get all the allied robots within range
+                    	RobotInfo[] alliesWithinRange = rc.senseNearbyRobots(-1, myTeam);
+                    	
+                    	// if there are no allies within range, then move randomly
+                    	if (alliesWithinRange.length == 0) {
+                    		// Choose a random direction to try to move in
+                            Direction dirToMove = RobotPlayer.directions[fate % 8];
+                            // Check the rubble in that direction
+                            if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                                // Too much rubble, so I should clear it
+                                rc.clearRubble(dirToMove);
+                                // Check if I can move in this direction
+                            } else if (rc.canMove(dirToMove)) {
+                                // Move
+                                rc.move(dirToMove);
+                            }
+                    	} else {
+                    		// dummy archon
+                        	RobotInfo nearestArchon = new RobotInfo(-100, myTeam, RobotType.ARCHON, new MapLocation(1000, 1000), -100, -100, -100, -100, -100, -100, -100);
+                        	// get the nearest archon to this soldier
+                        	for (RobotInfo x : alliesWithinRange) {
+                        		if (x.type == RobotType.ARCHON && x.location.distanceSquaredTo(rc.getLocation()) < nearestArchon.location.distanceSquaredTo(rc.getLocation())) {
+                        			nearestArchon = x;
+                        		}
+                        	}
+                        	// if we actually have an archon within range, move towards that archon if possible
+                            if (nearestArchon.ID != -100 && turns < 30) {
+                            	Direction directionToArchon = rc.getLocation().directionTo(nearestArchon.location);
+                            	if (rc.senseRubble(rc.getLocation().add(directionToArchon)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                            		rc.clearRubble(directionToArchon);
+                            	} else if (rc.canMove(directionToArchon)) {
+                            		rc.move(directionToArchon);
+                            	}
+                            } else { // we have non-archon units nearby and turns is up, move randomly for now
+                            	Direction dirToMove = RobotPlayer.directions[fate % 8];
+                                // Check the rubble in that direction
+                                if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                                    // Too much rubble, so I should clear it
+                                    rc.clearRubble(dirToMove);
+                                    // Check if I can move in this direction
+                                } else if (rc.canMove(dirToMove)) {
+                                    // Move
+                                    rc.move(dirToMove);
+                                }
+                            }
+                    	}
+                    	
                     
                     }
                 }
-
+                turns++;
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println(e.getMessage());

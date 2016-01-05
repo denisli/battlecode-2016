@@ -29,10 +29,8 @@ public class ArchonPlayer {
                 int fate = rand.nextInt(1000);
                 // Check if this ARCHON's core is ready
                 if (rc.isCoreReady()) {
-                    if (fate < 0) {
-
-                    } else {
-                        // Choose a random unit to build
+                	if (fate < 500) {
+                		// always build soldier
                         RobotType typeToBuild = RobotType.SOLDIER;
                         // Check for sufficient parts
                         if (rc.hasBuildRequirements(typeToBuild)) {
@@ -49,7 +47,21 @@ public class ArchonPlayer {
                                 }
                             }
                         }
-                    }
+                	} else {
+                		// Choose a random direction to try to move in
+                        Direction dirToMove = RobotPlayer.directions[fate % 8];
+                        // Check the rubble in that direction
+                        if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                            // Too much rubble, so I should clear it
+                            rc.clearRubble(dirToMove);
+                            // Check if I can move in this direction
+                        } else if (rc.canMove(dirToMove)) {
+                            // Move
+                            rc.move(dirToMove);
+                        }
+                	}
+                	
+                
                 }
 
                 Clock.yield();
