@@ -25,6 +25,9 @@ public class ArchonPlayer {
         while (true) {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
+        	
+        	//heal a nearby friendly robot
+        	
             try {
                 int fate = rand.nextInt(1000);
                 // Check if this ARCHON's core is ready

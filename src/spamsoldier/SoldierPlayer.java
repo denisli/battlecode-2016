@@ -30,21 +30,59 @@ public class SoldierPlayer {
 
                 boolean shouldAttack = false;
 
-                // If this robot type can attack, check for enemies within range and attack one
+             // If this robot type can attack, check for enemies within range and attack one
                 if (myAttackRange > 0) {
                     RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(myAttackRange, enemyTeam);
                     RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
+                    
                     if (enemiesWithinRange.length > 0) {
-                        shouldAttack = true;
+                    
                         // Check if weapon is ready
                         if (rc.isWeaponReady()) {
-                            rc.attackLocation(enemiesWithinRange[rand.nextInt(enemiesWithinRange.length)].location);
+                        	
+                        	shouldAttack = true;
+                            RobotInfo toAttack = enemiesWithinRange[0];
+                            for (RobotInfo r: enemiesWithinRange) {
+                            	if (r.type == RobotType.ARCHON) {
+                            		//it sees archon
+                            		if (toAttack.type == RobotType.ARCHON) {
+                            			if (r.health < toAttack.health) {
+                                			toAttack = r;
+                            			}
+                            		}
+                            		else {
+                            			toAttack = r;
+                            		}
+                            		//could check if it looked through all the archons- specs say there would be 6 max
+                            	}
+                            	else {
+                            		//no archons in sight
+                        			if (toAttack.type != RobotType.ARCHON) {
+                        				//cur is not archon and sees no archons in list
+                        				if (r.health < toAttack.health) {
+                        					//attacks least health
+                        					toAttack = r;
+                        				}
+                        			}
+                            	}
+                            }
+                        	
+                            rc.attackLocation(toAttack.location);
                         }
                     } else if (zombiesWithinRange.length > 0) {
-                        shouldAttack = true;
-                        // Check if weapon is ready
+                        
                         if (rc.isWeaponReady()) {
-                            rc.attackLocation(zombiesWithinRange[rand.nextInt(zombiesWithinRange.length)].location);
+                        	
+                        	shouldAttack = true;
+                            RobotInfo toAttack = zombiesWithinRange[0];
+                            for (RobotInfo r : zombiesWithinRange) {
+                            	if (r.health < toAttack.health) {
+                            		//attack zombie with least health
+                            		toAttack = r;
+                            	}
+                            }
+                        	
+                            rc.attackLocation(toAttack.location);
                         }
                     }
                 }
