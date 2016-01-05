@@ -21,8 +21,9 @@ public class SoldierPlayer {
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-		int turns = 0;
-        while (true) {
+		// keep the previous valid signal recieved
+		Signal oldSignal = null;
+		while (true) {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
             try {
@@ -95,7 +96,9 @@ public class SoldierPlayer {
                     			currentSig = rc.readSignal();
                     		}
                     	}
-                    	
+                    	if (currentSig == null) {
+                    		currentSig = oldSignal;
+                    	}
                     	// if we have a signal
                     	if (currentSig != null) {
                     		Direction dirToMove = RobotPlayer.directions[fate % 8];
@@ -121,6 +124,7 @@ public class SoldierPlayer {
                                 // Move
                                 rc.move(dirToMove);
                             }
+                    		oldSignal = currentSig; //update the old signal
                     	} else { // if no signal, move randomly
                     		// Choose a random direction to try to move in
                             Direction dirToMove = RobotPlayer.directions[fate % 8];
@@ -138,7 +142,6 @@ public class SoldierPlayer {
                     
                     }
                 }
-                turns++;
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
