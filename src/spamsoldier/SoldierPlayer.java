@@ -36,11 +36,9 @@ public class SoldierPlayer {
                     RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
                     
                     if (enemiesWithinRange.length > 0) {
-                    
+                    	shouldAttack = true;
                         // Check if weapon is ready
                         if (rc.isWeaponReady()) {
-                        	
-                        	shouldAttack = true;
                             RobotInfo toAttack = enemiesWithinRange[0];
                             for (RobotInfo r: enemiesWithinRange) {
                             	if (r.type == RobotType.ARCHON) {
@@ -70,10 +68,8 @@ public class SoldierPlayer {
                             rc.attackLocation(toAttack.location);
                         }
                     } else if (zombiesWithinRange.length > 0) {
-                        
+                    	shouldAttack = true;
                         if (rc.isWeaponReady()) {
-                        	
-                        	shouldAttack = true;
                             RobotInfo toAttack = zombiesWithinRange[0];
                             for (RobotInfo r : zombiesWithinRange) {
                             	if (r.health < toAttack.health) {
