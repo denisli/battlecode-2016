@@ -106,7 +106,7 @@ public class SoldierPlayer {
                     				foundDirection = true;
                     			}
                     			
-                        		if (rc.getLocation().add(dirToMove).distanceSquaredTo(currentSig.getLocation()) > currentSig.getMessage()[0]) {
+                        		if (rc.getLocation().add(dirToMove).distanceSquaredTo(currentSig.getLocation()) > currentSig.getMessage()[0]* 0.7) {
                         			dirToMove = dirToMove.rotateLeft();
                         			count++;
                         		} else {
