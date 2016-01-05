@@ -19,6 +19,9 @@ public class ArchonPlayer {
         Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
 		boolean sendSignal = false;
+        RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
+
+		
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
         } catch (Exception e) {
@@ -38,71 +41,82 @@ public class ArchonPlayer {
             		escape = Movement.moveAwayFromEnemy(rc);
             	}
             	if (!escape) {
-	            	boolean toheal = false;
-	            	//repair a nearby friendly robot
-	                if (rc.isWeaponReady()) {
-	                    RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(24, myTeam);
-	                    if (numFriendly != friendlyWithinRange.length) {
-	                    	 numFriendly = friendlyWithinRange.length;
-	                    	 sendSignal = true;
-	                    }
-	                   
-	                    if (friendlyWithinRange.length > 0) {
-	                    	RobotInfo toRepair = friendlyWithinRange[0];
-	                    	for (RobotInfo r : friendlyWithinRange ) {
-	                    		if ((r.health < toRepair.health) && (r.type != RobotType.ARCHON)) {
-	                    			toRepair = r;
-	                    		}
-	                    	}
-	                    	if ((toRepair.maxHealth-toRepair.health > 1) && (toRepair.type != RobotType.ARCHON)) {
-	                    		toheal = true;
-	                    		rc.repair(toRepair.location);
-	                    	}
-	                    }
-	                }
-	                if (toheal == false) {
-		                int fate = rand.nextInt(1000);
-		                // Check if this ARCHON's core is ready
-		                if (rc.isCoreReady()) {
-		                	RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(35, myTeam);
-		                	if (numFriendly != friendlyWithinRange.length) {
+            		if (adjNeutralRobots.length > 0){
+            			//if there is a neutral robot adjacent, activate it or wait until there's no core delay
+            			if (rc.isCoreReady()) {
+            				rc.activate(adjNeutralRobots[0].location);
+            			}            			
+            		}
+            		else if (Movement.getToParts(rc)) {
+            			//blank because getToParts does moving
+            		}
+            		else {
+		            	boolean toheal = false;
+		            	//repair a nearby friendly robot
+		                if (rc.isWeaponReady()) {
+		                    RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(24, myTeam);
+		                    if (numFriendly != friendlyWithinRange.length) {
 		                    	 numFriendly = friendlyWithinRange.length;
 		                    	 sendSignal = true;
 		                    }
-		                	if (fate < 800) {
-		                		// always build soldier
-		                        RobotType typeToBuild = RobotType.SOLDIER;
-		                        // Check for sufficient parts
-		                        if (rc.hasBuildRequirements(typeToBuild)) {
-		                            // Choose a random direction to try to build in
-		                            Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
-		                            for (int i = 0; i < 8; i++) {
-		                                // If possible, build in this direction
-		                                if (rc.canBuild(dirToBuild, typeToBuild)) {
-		                                    rc.build(dirToBuild, typeToBuild);
-		                                    break;
-		                                } else {
-		                                    // Rotate the direction to try
-		                                    dirToBuild = dirToBuild.rotateLeft();
-		                                }
-		                            }
-		                        }
-		                	} else {
-		                		sendSignal = true;
-		                		// Choose a random direction to try to move in
-		                        Direction dirToMove = RobotPlayer.directions[fate % 8];
-		                        // Check the rubble in that direction
-		                        if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-		                            // Too much rubble, so I should clear it
-		                            rc.clearRubble(dirToMove);
-		                            // Check if I can move in this direction
-		                        } else if (rc.canMove(dirToMove)) {
-		                            // Move
-		                            rc.move(dirToMove);
-		                        }
-		                	}
+		                   
+		                    if (friendlyWithinRange.length > 0) {
+		                    	RobotInfo toRepair = friendlyWithinRange[0];
+		                    	for (RobotInfo r : friendlyWithinRange ) {
+		                    		if ((r.health < toRepair.health) && (r.type != RobotType.ARCHON)) {
+		                    			toRepair = r;
+		                    		}
+		                    	}
+		                    	if ((toRepair.maxHealth-toRepair.health > 1) && (toRepair.type != RobotType.ARCHON)) {
+		                    		toheal = true;
+		                    		rc.repair(toRepair.location);
+		                    	}
+		                    }
 		                }
-	                }
+		                if (toheal == false) {
+			                int fate = rand.nextInt(1000);
+			                // Check if this ARCHON's core is ready
+			                if (rc.isCoreReady()) {
+			                	RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(35, myTeam);
+			                	if (numFriendly != friendlyWithinRange.length) {
+			                    	 numFriendly = friendlyWithinRange.length;
+			                    	 sendSignal = true;
+			                    }
+			                	if (fate < 800) {
+			                		// always build soldier
+			                        RobotType typeToBuild = RobotType.SOLDIER;
+			                        // Check for sufficient parts
+			                        if (rc.hasBuildRequirements(typeToBuild)) {
+			                            // Choose a random direction to try to build in
+			                            Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+			                            for (int i = 0; i < 8; i++) {
+			                                // If possible, build in this direction
+			                                if (rc.canBuild(dirToBuild, typeToBuild)) {
+			                                    rc.build(dirToBuild, typeToBuild);
+			                                    break;
+			                                } else {
+			                                    // Rotate the direction to try
+			                                    dirToBuild = dirToBuild.rotateLeft();
+			                                }
+			                            }
+			                        }
+			                	} else {
+			                		sendSignal = true;
+			                		// Choose a random direction to try to move in
+			                        Direction dirToMove = RobotPlayer.directions[fate % 8];
+			                        // Check the rubble in that direction
+			                        if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+			                            // Too much rubble, so I should clear it
+			                            rc.clearRubble(dirToMove);
+			                            // Check if I can move in this direction
+			                        } else if (rc.canMove(dirToMove)) {
+			                            // Move
+			                            rc.move(dirToMove);
+			                        }
+			                	}
+			                }
+		                }
+            		}
                 }
                 if (sendSignal) {
                 	rc.broadcastMessageSignal(numFriendly, 0, 63);; // try to send signals to nearby units
