@@ -17,7 +17,8 @@ public class ArchonPlayer {
 		Random rand = new Random(rc.getID());
         Team myTeam = rc.getTeam();
         Team enemyTeam = myTeam.opponent();
-		
+		int numFriendly = 0;
+		boolean sendSignal = false;
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
         } catch (Exception e) {
@@ -38,6 +39,11 @@ public class ArchonPlayer {
             	//repair a nearby friendly robot
                 if (rc.isWeaponReady()) {
                     RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(24, myTeam);
+                    if (numFriendly != friendlyWithinRange.length) {
+                    	 numFriendly = friendlyWithinRange.length;
+                    	 sendSignal = true;
+                    }
+                   
                     if (friendlyWithinRange.length > 0) {
                     	RobotInfo toRepair = friendlyWithinRange[0];
                     	for (RobotInfo r : friendlyWithinRange ) {
@@ -57,7 +63,10 @@ public class ArchonPlayer {
 	                // Check if this ARCHON's core is ready
 	                if (rc.isCoreReady()) {
 	                	RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(35, myTeam);
-	                	rc.broadcastMessageSignal(friendlyWithinRange.length, 0, 63);; // try to always send signals to nearby units
+	                	if (numFriendly != friendlyWithinRange.length) {
+	                    	 numFriendly = friendlyWithinRange.length;
+	                    	 sendSignal = true;
+	                    }
 	                	if (fate < 800) {
 	                		// always build soldier
 	                        RobotType typeToBuild = RobotType.SOLDIER;
@@ -77,6 +86,7 @@ public class ArchonPlayer {
 	                            }
 	                        }
 	                	} else {
+	                		sendSignal = true;
 	                		// Choose a random direction to try to move in
 	                        Direction dirToMove = RobotPlayer.directions[fate % 8];
 	                        // Check the rubble in that direction
@@ -93,7 +103,11 @@ public class ArchonPlayer {
 	                
 	                }
                 }
-
+                if (sendSignal) {
+                	rc.broadcastMessageSignal(numFriendly, 0, 63);; // try to send signals to nearby units
+                	sendSignal = false;
+                }
+                
                 Clock.yield();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
