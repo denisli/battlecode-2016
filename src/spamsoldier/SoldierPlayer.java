@@ -89,7 +89,57 @@ public class SoldierPlayer {
 
                 if (!shouldAttack) {
                     if (rc.isCoreReady()) {
-                    	// get all the allied robots within range
+                    	
+                    	Signal currentSig = rc.readSignal();
+                    	
+                    	while(currentSig != null) {
+                    		if (currentSig.getTeam().equals(myTeam)) {
+                    			break;
+                    		} else {
+                    			currentSig = rc.readSignal();
+                    		}
+                    	}
+                    	
+                    	// if we have a signal
+                    	if (currentSig != null) {
+                    		Direction dirToMove = RobotPlayer.directions[fate % 8];
+                    		boolean foundDirection = false;
+                    		int count = 0;
+                    		while (!foundDirection) {
+                    			if (count > 8) {
+                    				foundDirection = true;
+                    			}
+                    			
+                        		if (rc.getLocation().add(dirToMove).distanceSquaredTo(currentSig.getLocation()) > 64) {
+                        			dirToMove = dirToMove.rotateLeft();
+                        			count++;
+                        		} else {
+                        			foundDirection = true;
+                        		}
+                    		}
+                    		if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                                // Too much rubble, so I should clear it
+                                rc.clearRubble(dirToMove);
+                                // Check if I can move in this direction
+                            } else if (rc.canMove(dirToMove)) {
+                                // Move
+                                rc.move(dirToMove);
+                            }
+                    	} else { // if no signal, move randomly
+                    		// Choose a random direction to try to move in
+                            Direction dirToMove = RobotPlayer.directions[fate % 8];
+                            // Check the rubble in that direction
+                            if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
+                                // Too much rubble, so I should clear it
+                                rc.clearRubble(dirToMove);
+                                // Check if I can move in this direction
+                            } else if (rc.canMove(dirToMove)) {
+                                // Move
+                                rc.move(dirToMove);
+                            }
+                    	}
+                    	
+                    	/*// get all the allied robots within range
                     	RobotInfo[] alliesWithinRange = rc.senseNearbyRobots(-1, myTeam);
                     	
                     	// if there are no allies within range, then move randomly
@@ -134,7 +184,7 @@ public class SoldierPlayer {
                                     rc.move(dirToMove);
                                 }
                             }
-                    	}
+                    	}*/
                     	
                     
                     }
