@@ -61,9 +61,23 @@ public class Movement {
         else {
 	        Direction dirToMove = Direction.NORTH;
 	        if (numSafeDir > 4) {
+	        	//if there fewer than 4 dangerous directions
 	        	//randomly choose one of the unsafe directions and move opposite it
 	        	for (int i : unsafeDirs) {
 	        		dirToMove = intToDir(i).opposite();
+	        		if (rc.canMove(dirToMove)) {
+	        			try {
+							rc.move(dirToMove);
+							return true;
+						} catch (GameActionException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+	        		}
+	        	}
+	        	//check other directions that arent opposite the dangerous ones in case the directions opposite the dangerous ones are blocked
+	        	for (int i : safeDirs) {
+	        		dirToMove = intToDir(i);
 	        		if (rc.canMove(dirToMove)) {
 	        			try {
 							rc.move(dirToMove);
@@ -120,6 +134,7 @@ public class Movement {
     	return curDir;
 	}
 	
+	//converts int to direction
 	public static Direction intToDir(int i) {
 		Direction curDir = Direction.NORTH;
     	switch (i) {
