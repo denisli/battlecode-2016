@@ -35,13 +35,20 @@ public class TurretPlayer {
                             		//could check if it looked through all the archons- specs say there would be 6 max
                             	}
                         		//if it sees scout, attack it first
-                            	else if (r.type == RobotType.SCOUT) {
-                            		//attack acout first
+                            	else if ((r.type == RobotType.SCOUT) && (toAttack.type != RobotType.ARCHON)) {
+                            		if (toAttack.type == RobotType.SCOUT) {
+                            			if (r.health < toAttack.health) {
+                                			toAttack = r;
+                            			}
+                            		}
+                            		else {
+                            			toAttack = r;
+                            		}
                             	}
                             	else {
-                            		//no archons in sight
-                        			if (toAttack.type != RobotType.ARCHON) {
-                        				//cur is not archon and sees no archons in list
+                            		//no archons/scouts in sight
+                        			if (toAttack.type != RobotType.ARCHON && toAttack.type != RobotType.SCOUT) {
+                        				//cur is not archon and sees no archons/scouts in list
                         				if (r.health < toAttack.health) {
                         					//attacks least health
                         					toAttack = r;

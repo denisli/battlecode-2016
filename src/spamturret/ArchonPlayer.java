@@ -95,7 +95,7 @@ public class ArchonPlayer {
 						if (toheal == false) {
 							RobotInfo[] friendlyAdjacent = rc.senseNearbyRobots(2, myTeam);
 							//if there are <2 turrets next to archon, build asap
-							if (rc.hasBuildRequirements(RobotType.TURRET) && friendlyAdjacent.length <2) {
+							if (rc.hasBuildRequirements(RobotType.TURRET) && rc.isCoreReady() && friendlyAdjacent.length <2) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
 								for (int i = 0; i < 4; i++) {
 									// If possible, build in this direction
