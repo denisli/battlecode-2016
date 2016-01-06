@@ -16,6 +16,7 @@ import spamturret.Movement;
 public class ArchonPlayer {
 	public static int turretCount = 0;
 	public static int scoutCount = 0;
+	public static int archonCount = 0;
 	public static void run(RobotController rc) {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
@@ -35,7 +36,6 @@ public class ArchonPlayer {
 		while (true) {
 			// This is a loop to prevent the run() method from returning. Because of the Clock.yield()
 			// at the end of it, the loop will iterate once per game round.
-
 			try {
 				// sense all the hostile robots within the scout's radius
 				RobotInfo[] hostileWithinRange = rc.senseHostileRobots(rc.getLocation(), rc.getType().sensorRadiusSquared);
@@ -60,9 +60,9 @@ public class ArchonPlayer {
 				}
 				
 				boolean escape = false;
-				if (rc.isCoreReady()) {
-					escape = Movement.moveAwayFromEnemy(rc);
-				}
+//				if (rc.isCoreReady()) {
+//					escape = Movement.moveAwayFromEnemy(rc);
+//				}
 				if (!escape) {
 					if (adjNeutralRobots.length > 0){
 						//if there is a neutral robot adjacent, activate it or wait until there's no core delay
@@ -93,6 +93,23 @@ public class ArchonPlayer {
 							}
 						}
 						if (toheal == false) {
+							RobotInfo[] friendlyAdjacent = rc.senseNearbyRobots(2, myTeam);
+							//if there are <2 turrets next to archon, build asap
+							if (rc.hasBuildRequirements(RobotType.TURRET) && friendlyAdjacent.length <2) {
+								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
+								for (int i = 0; i < 4; i++) {
+									// If possible, build in this direction
+									if (rc.canBuild(dirToBuild, RobotType.TURRET)) {
+										rc.build(dirToBuild, RobotType.TURRET);
+										turretCount++;
+										break;
+									} else {
+										// Rotate the direction to try
+										dirToBuild = dirToBuild.rotateLeft();
+										dirToBuild = dirToBuild.rotateLeft();
+									}
+								}
+							}
 							//build turret every 100 turns until turn 400
 							int turnNum = rc.getRoundNum();
 							if (turnNum > 1 && turnNum < 400) {
