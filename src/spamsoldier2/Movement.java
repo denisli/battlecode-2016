@@ -110,26 +110,75 @@ public class Movement {
         }
 	}
 	
+	//moves to parts/neutral robots in sight radius
+	//returns true if there were parts/neutral robots to go to; else returns false
+	public static boolean getToParts(RobotController rc) throws Exception {
+		MapLocation goTo = null;
+		MapLocation myLoc = rc.getLocation();
+		int sightRadius = rc.getType().sensorRadiusSquared;
+		MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRadius);
+        RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
+
+        //goes to closest parts/neutral robot
+		if (nearbyNeutralRobots.length > 0) {
+			goTo = nearbyNeutralRobots[0].location;
+			for (RobotInfo n : nearbyNeutralRobots) {
+				if (myLoc.distanceSquaredTo(n.location) < myLoc.distanceSquaredTo(goTo)) {
+					goTo = n.location;
+				}
+			}
+		}
+		for (MapLocation sq : squaresInSight) {
+			if ((rc.senseParts(sq) > 0) && (goTo != null)) {
+				if (myLoc.distanceSquaredTo(sq) < myLoc.distanceSquaredTo(goTo)) {
+					goTo = sq;
+				}
+			}
+		}
+		if (goTo != null) {
+			MapLocation curLoc = rc.getLocation();
+			Direction dirToGo = curLoc.directionTo(goTo);
+			if (rc.canMove(dirToGo)) {
+				rc.move(dirToGo);
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
+	}
+	
 	//returns an int value for a direction
 	public static int dirToInt(Direction d) {
 		int curDir = 0;
     	switch (d) {
 			case NORTH:
 				curDir = 0;
+				break;
 			case NORTH_EAST:
 				curDir = 1;
+				break;
 			case EAST:
 				curDir = 2;
+				break;
 			case SOUTH_EAST:
 				curDir = 3;
+				break;
 			case SOUTH:
 				curDir = 4;
+				break;
 			case SOUTH_WEST:
 				curDir = 5;
+				break;
 			case WEST:
 				curDir = 6;
+				break;
 			case NORTH_WEST:
 				curDir = 7;
+				break;
     	}
     	return curDir;
 	}
@@ -140,20 +189,28 @@ public class Movement {
     	switch (i) {
 			case 0:
 				curDir = Direction.NORTH;
+				break;
 			case 1:
 				curDir = Direction.NORTH_EAST;
+				break;
 			case 2:
 				curDir = Direction.EAST;
+				break;
 			case 3:
 				curDir = Direction.SOUTH_EAST;
+				break;
 			case 4:
 				curDir = Direction.SOUTH;
+				break;
 			case 5:
 				curDir = Direction.SOUTH_WEST;
+				break;
 			case 6:
 				curDir = Direction.WEST;
+				break;
 			case 7:
 				curDir = Direction.NORTH_WEST;
+				break;
     	}
     	return curDir;
 	}

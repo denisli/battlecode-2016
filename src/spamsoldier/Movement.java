@@ -157,20 +157,28 @@ public class Movement {
     	switch (d) {
 			case NORTH:
 				curDir = 0;
+				break;
 			case NORTH_EAST:
 				curDir = 1;
+				break;
 			case EAST:
 				curDir = 2;
+				break;
 			case SOUTH_EAST:
 				curDir = 3;
+				break;
 			case SOUTH:
 				curDir = 4;
+				break;
 			case SOUTH_WEST:
 				curDir = 5;
+				break;
 			case WEST:
 				curDir = 6;
+				break;
 			case NORTH_WEST:
 				curDir = 7;
+				break;
     	}
     	return curDir;
 	}
@@ -181,20 +189,28 @@ public class Movement {
     	switch (i) {
 			case 0:
 				curDir = Direction.NORTH;
+				break;
 			case 1:
 				curDir = Direction.NORTH_EAST;
+				break;
 			case 2:
 				curDir = Direction.EAST;
+				break;
 			case 3:
 				curDir = Direction.SOUTH_EAST;
+				break;
 			case 4:
 				curDir = Direction.SOUTH;
+				break;
 			case 5:
 				curDir = Direction.SOUTH_WEST;
+				break;
 			case 6:
 				curDir = Direction.WEST;
+				break;
 			case 7:
 				curDir = Direction.NORTH_WEST;
+				break;
     	}
     	return curDir;
 	}

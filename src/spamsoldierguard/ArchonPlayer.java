@@ -10,6 +10,7 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Signal;
 import battlecode.common.Team;
+import spamsoldier.Movement;
 
 public class ArchonPlayer {
 	
@@ -19,6 +20,8 @@ public class ArchonPlayer {
         Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
 		boolean sendSignal = false;
+        RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
+
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
         } catch (Exception e) {
@@ -38,6 +41,15 @@ public class ArchonPlayer {
             		escape = Movement.moveAwayFromEnemy(rc);
             	}
             	if (!escape) {
+            		if (adjNeutralRobots.length > 0){
+            			//if there is a neutral robot adjacent, activate it or wait until there's no core delay
+            			if (rc.isCoreReady()) {
+            				rc.activate(adjNeutralRobots[0].location);
+            			}            			
+            		}
+            		else if (Movement.getToParts(rc)) {
+            			//blank because getToParts does moving
+            		}
 	            	boolean toheal = false;
 	            	//repair a nearby friendly robot
 	                if (rc.isWeaponReady()) {
