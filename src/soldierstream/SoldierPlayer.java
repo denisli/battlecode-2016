@@ -11,7 +11,7 @@ public class SoldierPlayer {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
-		
+		ArrayList<MapLocation> denLocations = new ArrayList<>(); 
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
             myAttackRange = rc.getType().attackRadiusSquared;
@@ -27,8 +27,7 @@ public class SoldierPlayer {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
             try {
-                int fate = rand.nextInt(1000);
-
+            	int fate = rand.nextInt(1000);
                 boolean shouldAttack = false;
 
              // If this robot type can attack, check for enemies within range and attack one
@@ -84,62 +83,45 @@ public class SoldierPlayer {
                     }
                 }
 
-                if (!shouldAttack) {
+                if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest zombie den
                     if (rc.isCoreReady()) {
-                    	
-                    	Signal currentSig = rc.readSignal();
-                    	
-                    	while(currentSig != null) {
-                    		if (currentSig.getTeam().equals(myTeam)) {
-                    			break;
-                    		} else {
-                    			currentSig = rc.readSignal();
+                    	// first check if there are any new signals from scouts
+                    	Signal currentSignal = rc.readSignal();
+                    	while (currentSignal != null) {
+                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { // if we get a scout signal
+                    			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
+                    		}
+                    		currentSignal = rc.readSignal();
+                    	}
+                    	// now we want it to move towards the nearest zombie den
+                    	MapLocation nearestDen = denLocations.get(0);
+                    	MapLocation currentLocation = rc.getLocation();
+                    	for (int i = 1; i < denLocations.size(); i++) {
+                    		if (denLocations.get(i).distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
+                    			nearestDen = denLocations.get(i);
                     		}
                     	}
-                    	if (currentSig == null) {
-                    		currentSig = oldSignal;
-                    	}
-                    	// if we have a signal
-                    	if (currentSig != null) {
-                    		Direction dirToMove = RobotPlayer.directions[fate % 8];
-                    		boolean foundDirection = false;
-                    		int count = 0;
-                    		while (!foundDirection) {
-                    			if (count > 8) {
-                    				foundDirection = true;
+                    	if (rc.canMove(currentLocation.directionTo(nearestDen))) { // if we can move towards the den, do it
+                    		rc.move(currentLocation.directionTo(nearestDen));
+                    	} else if (rc.senseRubble(currentLocation.add(currentLocation.directionTo(nearestDen))) < 200) { // if the rubble is reasonably cleared, do it
+                    		rc.clearRubble(currentLocation.directionTo(nearestDen));
+                    	} else { // otherwise, try to bug around the wall
+                    		MapLocation left = currentLocation.add(currentLocation.directionTo(nearestDen).rotateLeft().rotateLeft());
+                    		MapLocation right = currentLocation.add(currentLocation.directionTo(nearestDen).rotateRight().rotateRight());
+                    		if (left.distanceSquaredTo(nearestDen) < right.distanceSquaredTo(nearestDen)) { // if the left is closer to target, try to move there
+                    			if (rc.canMove(currentLocation.directionTo(left))) {
+                    				rc.move(currentLocation.directionTo(left));
+                    			} else if (rc.canMove(currentLocation.directionTo(right))) {
+                    				rc.move(currentLocation.directionTo(right));
                     			}
-                    			
-                        		if (rc.getLocation().add(dirToMove).distanceSquaredTo(currentSig.getLocation()) > currentSig.getMessage()[0]* 0.7) {
-                        			dirToMove = dirToMove.rotateLeft();
-                        			count++;
-                        		} else {
-                        			foundDirection = true;
-                        		}
+                    		} else { // if the right is closer to target, try to move there
+                    			if (rc.canMove(currentLocation.directionTo(right))) {
+                    				rc.move(currentLocation.directionTo(right));
+                    			} else if (rc.canMove(currentLocation.directionTo(left))) {
+                    				rc.move(currentLocation.directionTo(left));
+                    			}
                     		}
-                    		if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-                                // Too much rubble, so I should clear it
-                                rc.clearRubble(dirToMove);
-                                // Check if I can move in this direction
-                            } else if (rc.canMove(dirToMove)) {
-                                // Move
-                                rc.move(dirToMove);
-                            }
-                    		oldSignal = currentSig; //update the old signal
-                    	} else { // if no signal, move randomly
-                    		// Choose a random direction to try to move in
-                            Direction dirToMove = RobotPlayer.directions[fate % 8];
-                            // Check the rubble in that direction
-                            if (rc.senseRubble(rc.getLocation().add(dirToMove)) >= GameConstants.RUBBLE_OBSTRUCTION_THRESH) {
-                                // Too much rubble, so I should clear it
-                                rc.clearRubble(dirToMove);
-                                // Check if I can move in this direction
-                            } else if (rc.canMove(dirToMove)) {
-                                // Move
-                                rc.move(dirToMove);
-                            }
                     	}
-                    	
-                    
                     }
                 }
                 Clock.yield();
