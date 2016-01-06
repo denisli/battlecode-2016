@@ -12,6 +12,18 @@ import battlecode.common.Team;
 
 public class Movement {
 
+	public static Direction getBestMoveableDirection(Direction dir, RobotController rc) {
+		int ordinal = dir.ordinal();
+		int[] disps = { 0, 1, -1, 2, -2 };
+		for (int disp : disps) {
+			Direction testDir = Direction.values()[mod8(ordinal + disp)];
+			if ( rc.canMove(testDir) ) {
+				return testDir;
+			}
+		}
+		return Direction.NONE;
+	}
+	
 	//returns true if the robot moved away
 	public static boolean moveAwayFromEnemy(RobotController rc) {
 		Team myTeam = rc.getTeam();
@@ -218,6 +230,10 @@ public class Movement {
 			break;
 		}
 		return curDir;
+	}
+	
+	private static int mod8(int num) {
+		return ((num % 8) + 8) % 8;
 	}
 
 }
