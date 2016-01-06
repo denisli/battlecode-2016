@@ -1,13 +1,6 @@
 package spamturret;
 
-import java.util.Random;
-
-import battlecode.common.Clock;
-import battlecode.common.GameActionException;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
-import battlecode.common.Team;
+import battlecode.common.*;
 
 public class TurretPlayer {
 
@@ -53,7 +46,9 @@ public class TurretPlayer {
                             	}
                             }
                         	
-                            rc.attackLocation(toAttack.location);
+                            if (rc.canAttackLocation(toAttack.location)) {
+                        		rc.attackLocation(toAttack.location);
+                        	}
                         }
                     } else if (zombiesWithinRange.length > 0) {
                     	if (rc.isWeaponReady()) {
@@ -64,9 +59,28 @@ public class TurretPlayer {
                             		toAttack = r;
                             	}
                             }
-                        	
-                            rc.attackLocation(toAttack.location);
+                        	if (rc.canAttackLocation(toAttack.location)) {
+                        		rc.attackLocation(toAttack.location);
+                        	}
+                            
                         }
+                    } else { // in this case, there are no enemies, so check if we have a scout signal
+                    	Signal currentSignal = rc.readSignal();
+                    	while (currentSignal != null) {
+                    		if (currentSignal.getTeam().equals(myTeam)) {
+                    			break;
+                    		}
+                    		currentSignal = rc.readSignal();
+                    	}
+                    	if (currentSignal != null) { // if we actually have a scout signal
+                    		if (rc.isWeaponReady()) { // and if we attack
+                    			if (rc.canAttackLocation(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]))) {
+                    				rc.attackLocation(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1])); // attack the location in the message
+                    			}
+                    			
+                    		}
+                    	}
+                    	rc.emptySignalQueue();
                     }
                 }
 

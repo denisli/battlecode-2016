@@ -13,14 +13,15 @@ import battlecode.common.Team;
 import spamturret.Movement;
 
 public class ArchonPlayer {
-
+	public static int turretCount = 0;
+	public static int scoutCount = 0;
 	public static void run(RobotController rc) {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
 		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
-
+		
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
 		} catch (Exception e) {
@@ -72,8 +73,10 @@ public class ArchonPlayer {
 							// Check if this ARCHON's core is ready
 							if (rc.isCoreReady()) {
 								boolean built = false;
-								// sometimes build soldier
 								RobotType typeToBuild = RobotType.TURRET;
+								if (scoutCount < turretCount / 2) {
+									typeToBuild = RobotType.SCOUT;
+								}
 								// Check for sufficient parts
 								if (rc.hasBuildRequirements(typeToBuild)) {
 									// Choose a random direction to try to build in; NESW
@@ -83,6 +86,11 @@ public class ArchonPlayer {
 										if (rc.canBuild(dirToBuild, typeToBuild)) {
 											rc.build(dirToBuild, typeToBuild);
 											built = true;
+											if (typeToBuild.equals(RobotType.TURRET)) {
+												turretCount++;
+											} else {
+												scoutCount++;
+											}
 											break;
 										} else {
 											// Rotate the direction to try
