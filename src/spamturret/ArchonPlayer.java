@@ -91,7 +91,8 @@ public class ArchonPlayer {
 										}
 									}
 								}
-								if (!built) {
+								//only move around if there are resources
+								if ((!built) && rc.hasBuildRequirements(RobotType.TURRET))  {
 									Direction dirToMove = RobotPlayer.directions[(rand.nextInt(4)*2) + 1];
 									for (int i = 0; i < 4; i++) {
 										if (rc.canMove(dirToMove)) {
