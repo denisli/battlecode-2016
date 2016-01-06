@@ -44,7 +44,7 @@ public class ScoutPlayer {
 						}
 					} else {
 						int dist = myLocation.distanceSquaredTo(enemy.location);
-						if (closestDist < dist) {
+						if (closestDist > dist) {
 							closestNonDenEnemy = enemy;
 							closestDist = dist;
 						}
@@ -57,6 +57,7 @@ public class ScoutPlayer {
 						Direction oppDir = closestNonDenEnemy.location.directionTo(myLocation);
 						Direction getAwayDir = Movement.getBestMoveableDirection(oppDir, rc);
 						rc.move(getAwayDir);
+						dir = getAwayDir;
 					// Otherwise just move in random direction if possible
 					} else {
 						// Move in random direction
