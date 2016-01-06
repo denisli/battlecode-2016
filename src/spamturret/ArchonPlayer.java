@@ -40,7 +40,7 @@ public class ArchonPlayer {
                     rc.setIndicatorString(0, "I don't any signal buddies");
                 }
                 if (rc.isCoreReady()) {
-                    if (fate < 800) {
+                    if (fate < 200) {
                         // Choose a random direction to try to move in
                         Direction dirToMove = RobotPlayer.directions[fate % 8];
                         // Check the rubble in that direction
@@ -54,7 +54,7 @@ public class ArchonPlayer {
                         }
                     } else {
                         // Choose a random unit to build
-                        RobotType typeToBuild = RobotPlayer.robotTypes[fate % 8];
+                        RobotType typeToBuild = RobotType.TURRET;
                         // Check for sufficient parts
                         if (rc.hasBuildRequirements(typeToBuild)) {
                             // Choose a random direction to try to build in
