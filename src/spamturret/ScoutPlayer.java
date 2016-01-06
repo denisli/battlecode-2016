@@ -3,7 +3,7 @@ package spamturret;
 import battlecode.common.*;
 
 public class ScoutPlayer {
-	
+
 	public static void run(RobotController rc) {
 		while (true) {
 			try {
@@ -26,8 +26,8 @@ public class ScoutPlayer {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				
-			}
+
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

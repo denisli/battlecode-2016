@@ -4,6 +4,7 @@ import java.util.Random;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -21,7 +22,7 @@ public class ArchonPlayer {
 		Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
 		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
-		
+
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
 		} catch (Exception e) {
@@ -36,6 +37,28 @@ public class ArchonPlayer {
 			// at the end of it, the loop will iterate once per game round.
 
 			try {
+				// sense all the hostile robots within the scout's radius
+				RobotInfo[] hostileWithinRange = rc.senseHostileRobots(rc.getLocation(), rc.getType().sensorRadiusSquared);
+				RobotInfo closestRobot = null;
+				int closestDistance = 0;
+				// get the furthest robot from the scout
+				for (RobotInfo r : hostileWithinRange) {
+					if (r.location.distanceSquaredTo(rc.getLocation()) > closestDistance) {
+						closestRobot = r;
+						closestDistance = r.location.distanceSquaredTo(rc.getLocation());
+					}
+				}
+				// if there is such an enemy, signal it to 9 squares around it
+				if (closestRobot != null) {
+					try {
+						rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 9);
+					} catch (GameActionException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+				}
+				
 				boolean escape = false;
 				if (rc.isCoreReady()) {
 					escape = Movement.moveAwayFromEnemy(rc);
@@ -70,27 +93,16 @@ public class ArchonPlayer {
 							}
 						}
 						if (toheal == false) {
-							// Check if this ARCHON's core is ready
-							if (rc.isCoreReady()) {
-								boolean built = false;
-								RobotType typeToBuild = RobotType.TURRET;
-								if (scoutCount < turretCount / 2) {
-									typeToBuild = RobotType.SCOUT;
-								}
-								// Check for sufficient parts
-								if (rc.hasBuildRequirements(typeToBuild)) {
-									// Choose a random direction to try to build in; NESW
+							//build turret every 100 turns until turn 400
+							int turnNum = rc.getRoundNum();
+							if (turnNum > 1 && turnNum < 400) {
+								if (turnNum % 100 == 85) {
 									Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
 									for (int i = 0; i < 4; i++) {
 										// If possible, build in this direction
-										if (rc.canBuild(dirToBuild, typeToBuild)) {
-											rc.build(dirToBuild, typeToBuild);
-											built = true;
-											if (typeToBuild.equals(RobotType.TURRET)) {
-												turretCount++;
-											} else {
-												scoutCount++;
-											}
+										if (rc.canBuild(dirToBuild, RobotType.TURRET)) {
+											rc.build(dirToBuild, RobotType.TURRET);
+											turretCount++;
 											break;
 										} else {
 											// Rotate the direction to try
@@ -99,17 +111,66 @@ public class ArchonPlayer {
 										}
 									}
 								}
-								//only move around if there are resources
-								if ((!built) && rc.hasBuildRequirements(RobotType.TURRET))  {
-									Direction dirToMove = RobotPlayer.directions[(rand.nextInt(4)*2) + 1];
+							}
+							else if (turnNum > 400 && turnNum <= 420) {
+								if (turnNum == 420) {
+									Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
 									for (int i = 0; i < 4; i++) {
-										if (rc.canMove(dirToMove)) {
-											rc.move(dirToMove);
+										// If possible, build in this direction
+										if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
+											rc.build(dirToBuild, RobotType.SCOUT);
+											scoutCount++;
 											break;
+										} else {
+											// Rotate the direction to try
+											dirToBuild = dirToBuild.rotateLeft();
+											dirToBuild = dirToBuild.rotateLeft();
 										}
-										else {
-											dirToMove = dirToMove.rotateLeft();
-											dirToMove = dirToMove.rotateLeft();
+									}
+								}
+							}
+							else {
+								// Check if this ARCHON's core is ready
+								if (rc.isCoreReady()) {
+									boolean built = false;
+									RobotType typeToBuild = RobotType.TURRET;
+									if (scoutCount < turretCount / 5) {
+										typeToBuild = RobotType.SCOUT;
+									}
+									// Check for sufficient parts
+									if (rc.hasBuildRequirements(typeToBuild)) {
+										// Choose a random direction to try to build in; NESW
+										Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
+										for (int i = 0; i < 4; i++) {
+											// If possible, build in this direction
+											if (rc.canBuild(dirToBuild, typeToBuild)) {
+												rc.build(dirToBuild, typeToBuild);
+												built = true;
+												if (typeToBuild.equals(RobotType.TURRET)) {
+													turretCount++;
+												} else {
+													scoutCount++;
+												}
+												break;
+											} else {
+												// Rotate the direction to try
+												dirToBuild = dirToBuild.rotateLeft();
+												dirToBuild = dirToBuild.rotateLeft();
+											}
+										}
+									}
+									//only move around if there are resources
+									if ((!built) && rc.hasBuildRequirements(RobotType.TURRET))  {
+										Direction dirToMove = RobotPlayer.directions[(rand.nextInt(4)*2) + 1];
+										for (int i = 0; i < 4; i++) {
+											if (rc.canMove(dirToMove)) {
+												rc.move(dirToMove);
+												break;
+											}
+											else {
+												dirToMove = dirToMove.rotateLeft();
+												dirToMove = dirToMove.rotateLeft();
+											}
 										}
 									}
 								}
