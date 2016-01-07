@@ -56,9 +56,11 @@ public class ScoutPlayer {
 					if (closestNonDenEnemy != null) {
 						Direction oppDir = closestNonDenEnemy.location.directionTo(myLocation);
 						Direction getAwayDir = Movement.getBestMoveableDirection(oppDir, rc);
-						rc.move(getAwayDir);
-						dir = getAwayDir;
-					// Otherwise just move in random direction if possible
+						if (getAwayDir != Direction.NONE) {
+							rc.move(getAwayDir);
+							dir = getAwayDir;
+						}
+						// Otherwise just move in random direction if possible
 					} else {
 						// Move in random direction
 						if (rc.canMove(dir)) {
