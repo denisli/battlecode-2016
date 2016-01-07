@@ -30,11 +30,12 @@ public class SoldierPlayer {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
             try {
+            	MapLocation myLoc = rc.getLocation();
             	int fate = rand.nextInt(1000);
                 boolean shouldAttack = false;
                 
                 // take a look at all hostile robots within the sight radius
-                RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(rc.getLocation(), rc.getType().sensorRadiusSquared);
+                RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, rc.getType().sensorRadiusSquared);
                 if (enemiesWithinRange.length > 0) {
                 	randomDirection = null;
                 	shouldAttack = true; // don't want this to wander away if we can't attack
@@ -57,16 +58,16 @@ public class SoldierPlayer {
                     		//no archons in sight
                 			if (bestEnemy.type != RobotType.ARCHON) {
                 				//cur is not archon and sees no archons in list
-                				if (r.location.distanceSquaredTo(rc.getLocation()) < bestEnemy.location.distanceSquaredTo(rc.getLocation())) {
+                				if (r.location.distanceSquaredTo(myLoc) < bestEnemy.location.distanceSquaredTo(myLoc)) {
                 					//attacks least health
                 					bestEnemy = r;
                 				}
                 			}
                     	}
                     }
-                    Direction d = rc.getLocation().directionTo(bestEnemy.location);
+                    Direction d = myLoc.directionTo(bestEnemy.location);
                 	// if we are too close, we want to move further away
-                	if (rc.getLocation().distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
+                	if (myLoc.distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
                 		if (rc.canMove(d.opposite())) {
                 			rc.move(d.opposite());
                 		} else if (rc.canMove(d.opposite().rotateLeft())) {
@@ -74,7 +75,7 @@ public class SoldierPlayer {
                 		} else if (rc.canMove(d.opposite().rotateRight())) {
                 			rc.move(d.opposite().rotateRight());
                 		}
-                	} else if (rc.getLocation().distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
+                	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
                 		if (rc.canMove(d)) {
                 			rc.move(d);
                 		} else if (rc.canMove(d.rotateLeft())) {
@@ -88,57 +89,6 @@ public class SoldierPlayer {
                 		}
                 	}
                 }
-                /*RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(myAttackRange, enemyTeam);
-                RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
-                
-                if (enemiesWithinRange.length > 0) {
-                	randomDirection = null;
-                	shouldAttack = true;
-                    // Check if weapon is ready
-                    if (rc.isWeaponReady()) {
-                        RobotInfo toAttack = enemiesWithinRange[0];
-                        for (RobotInfo r: enemiesWithinRange) {
-                        	if (r.type == RobotType.ARCHON) {
-                        		//it sees archon
-                        		if (toAttack.type == RobotType.ARCHON) {
-                        			if (r.health < toAttack.health) {
-                            			toAttack = r;
-                        			}
-                        		}
-                        		else {
-                        			toAttack = r;
-                        		}
-                        		//could check if it looked through all the archons- specs say there would be 6 max
-                        	}
-                        	else {
-                        		//no archons in sight
-                    			if (toAttack.type != RobotType.ARCHON) {
-                    				//cur is not archon and sees no archons in list
-                    				if (r.health < toAttack.health) {
-                    					//attacks least health
-                    					toAttack = r;
-                    				}
-                    			}
-                        	}
-                        }
-                    	
-                        rc.attackLocation(toAttack.location);
-                    }
-                } else if (zombiesWithinRange.length > 0) {
-                	randomDirection = null;
-                	shouldAttack = true;
-                    if (rc.isWeaponReady()) {
-                        RobotInfo toAttack = zombiesWithinRange[0];
-                        for (RobotInfo r : zombiesWithinRange) {
-                        	if (r.health < toAttack.health) {
-                        		//attack zombie with least health
-                        		toAttack = r;
-                        	}
-                        }
-                    	
-                        rc.attackLocation(toAttack.location);
-                    }
-                }*/
                 
 
                 if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest zombie den
@@ -146,6 +96,7 @@ public class SoldierPlayer {
                     	// first check if there are any new signals from scouts
                     	Signal currentSignal = rc.readSignal();
                     	while (currentSignal != null) {
+                    		// signal from scout
                     		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { // if we get a scout signal
                     			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
                     		}
@@ -154,11 +105,25 @@ public class SoldierPlayer {
                     	// now we want it to move towards the nearest zombie den, if we can
                     	if (denLocations.size() > 0) {
                     		randomDirection = null;
-	                    	MapLocation currentLocation = rc.getLocation();
+	                    	MapLocation currentLocation = myLoc;
 	                    	MapLocation nearestDen = denLocations.iterator().next();
 	                    	for (MapLocation l : denLocations) {
 	                    		if (l.distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
 	                    			nearestDen = l;
+	                    		}
+	                    	}
+	                    	// if we can sense the nearest den and it doesn't exist, try to get the next nearest den or just break
+	                    	if (rc.canSense(nearestDen) && rc.senseRobotAtLocation(nearestDen) == null) {
+	                    		denLocations.remove(nearestDen);
+	                    		if (denLocations.size() > 0) {
+	                    			nearestDen = denLocations.iterator().next();
+	    	                    	for (MapLocation l : denLocations) {
+	    	                    		if (l.distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
+	    	                    			nearestDen = l;
+	    	                    		}
+	    	                    	}
+	                    		} else {
+	                    			Clock.yield();
 	                    		}
 	                    	}
 	                    	if (rc.canMove(currentLocation.directionTo(nearestDen))) { // if we can move towards the den, do it
