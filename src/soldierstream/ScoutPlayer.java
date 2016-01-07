@@ -35,7 +35,7 @@ public class ScoutPlayer {
 				int closestDist = 500;
 				for (RobotInfo enemy : enemies) {
 					if (enemy.type == RobotType.ZOMBIEDEN) {
-						if (enemy.location != recentlyBroadcastedDenLoc) {
+						if (!enemy.location.equals(recentlyBroadcastedDenLoc)) {
 							rc.broadcastMessageSignal(enemy.location.x, enemy.location.y, maxSignal);
 							recentlyBroadcastedDenLoc = enemy.location;
 							dir = randDir();
