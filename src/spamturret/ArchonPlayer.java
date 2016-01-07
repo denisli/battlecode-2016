@@ -99,7 +99,7 @@ public class ArchonPlayer {
 							// if there is such an enemy, signal it to 9 squares around it
 							if (closestRobot != null) {
 								try {
-									rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 9);
+									rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 9);//why is this 9?
 								} catch (GameActionException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -118,8 +118,8 @@ public class ArchonPlayer {
 									numNearbyTurrets++;
 								}
 							}
-							//for sensing if there are guards within range 5
-							RobotInfo[] friendlyClose = rc.senseNearbyRobots(5, myTeam);
+							//for sensing if there are guards within range 24
+							RobotInfo[] friendlyClose = rc.senseNearbyRobots(24, myTeam);
 							int numNearbyGuards = 0;
 							for (RobotInfo f : friendlyClose) {
 								if (f.type == RobotType.GUARD) {
