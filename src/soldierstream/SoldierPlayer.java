@@ -8,6 +8,10 @@ import java.util.Set;
 import battlecode.common.*;
 
 public class SoldierPlayer {
+	
+	static Bugging bugging = null;
+	static MapLocation storedNearestDen = null;
+	
 	public static void run(RobotController rc) {
 		int myAttackRange = 0;
 		Random rand = new Random(rc.getID());
@@ -118,6 +122,7 @@ public class SoldierPlayer {
                     		currentSignal = rc.readSignal();
                     	}
                     	// now we want it to move towards the nearest zombie den, if we can
+                    	
                     	if (denLocations.size() > 0) {
                     		randomDirection = null;
 	                    	MapLocation currentLocation = myLoc;
@@ -141,26 +146,11 @@ public class SoldierPlayer {
 	                    			Clock.yield();
 	                    		}
 	                    	}
-	                    	if (rc.canMove(currentLocation.directionTo(nearestDen))) { // if we can move towards the den, do it
-	                    		rc.move(currentLocation.directionTo(nearestDen));
-	                    	} else if (rc.senseRubble(currentLocation.add(currentLocation.directionTo(nearestDen))) < 200) { // if the rubble is reasonably cleared, do it
-	                    		rc.clearRubble(currentLocation.directionTo(nearestDen));
-	                    	} else { // otherwise, try to bug around the wall
-	                    		MapLocation left = currentLocation.add(currentLocation.directionTo(nearestDen).rotateLeft().rotateLeft());
-	                    		MapLocation right = currentLocation.add(currentLocation.directionTo(nearestDen).rotateRight().rotateRight());
-	                    		if (left.distanceSquaredTo(nearestDen) < right.distanceSquaredTo(nearestDen)) { // if the left is closer to target, try to move there
-	                    			if (rc.canMove(currentLocation.directionTo(left))) {
-	                    				rc.move(currentLocation.directionTo(left));
-	                    			} else if (rc.canMove(currentLocation.directionTo(right))) {
-	                    				rc.move(currentLocation.directionTo(right));
-	                    			}
-	                    		} else { // if the right is closer to target, try to move there
-	                    			if (rc.canMove(currentLocation.directionTo(right))) {
-	                    				rc.move(currentLocation.directionTo(right));
-	                    			} else if (rc.canMove(currentLocation.directionTo(left))) {
-	                    				rc.move(currentLocation.directionTo(left));
-	                    			}
-	                    		}
+	                    	if (!nearestDen.equals(storedNearestDen)) {
+	                    		bugging = new Bugging(rc, nearestDen);
+	                    	}
+	                    	if (rc.isCoreReady()) {
+	                    		bugging.move();
 	                    	}
 	                    } else { // there are no dens to move towards, we want to move in one random direction
 	                    	if (randomDirection != null && rc.canMove(randomDirection)) {
