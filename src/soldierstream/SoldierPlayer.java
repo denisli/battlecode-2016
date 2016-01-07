@@ -1,7 +1,9 @@
 package soldierstream;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import battlecode.common.*;
 
@@ -11,7 +13,7 @@ public class SoldierPlayer {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
-		ArrayList<MapLocation> denLocations = new ArrayList<>();
+		Set<MapLocation> denLocations = new HashSet<>();
 		Direction randomDirection = null;
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
@@ -99,11 +101,11 @@ public class SoldierPlayer {
                     	// now we want it to move towards the nearest zombie den, if we can
                     	if (denLocations.size() > 0) {
                     		randomDirection = null;
-	                    	MapLocation nearestDen = denLocations.get(0);
 	                    	MapLocation currentLocation = rc.getLocation();
-	                    	for (int i = 1; i < denLocations.size(); i++) {
-	                    		if (denLocations.get(i).distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
-	                    			nearestDen = denLocations.get(i);
+	                    	MapLocation nearestDen = denLocations.iterator().next();
+	                    	for (MapLocation l : denLocations) {
+	                    		if (l.distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
+	                    			nearestDen = l;
 	                    		}
 	                    	}
 	                    	if (rc.canMove(currentLocation.directionTo(nearestDen))) { // if we can move towards the den, do it
