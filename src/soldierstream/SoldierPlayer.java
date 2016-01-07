@@ -11,7 +11,8 @@ public class SoldierPlayer {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
-		ArrayList<MapLocation> denLocations = new ArrayList<>(); 
+		ArrayList<MapLocation> denLocations = new ArrayList<>();
+		Direction randomDirection = null;
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
             myAttackRange = rc.getType().attackRadiusSquared;
@@ -36,6 +37,7 @@ public class SoldierPlayer {
                     RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
                     
                     if (enemiesWithinRange.length > 0) {
+                    	randomDirection = null;
                     	shouldAttack = true;
                         // Check if weapon is ready
                         if (rc.isWeaponReady()) {
@@ -68,6 +70,7 @@ public class SoldierPlayer {
                             rc.attackLocation(toAttack.location);
                         }
                     } else if (zombiesWithinRange.length > 0) {
+                    	randomDirection = null;
                     	shouldAttack = true;
                         if (rc.isWeaponReady()) {
                             RobotInfo toAttack = zombiesWithinRange[0];
@@ -93,35 +96,44 @@ public class SoldierPlayer {
                     		}
                     		currentSignal = rc.readSignal();
                     	}
-                    	// now we want it to move towards the nearest zombie den
-                    	MapLocation nearestDen = denLocations.get(0);
-                    	MapLocation currentLocation = rc.getLocation();
-                    	for (int i = 1; i < denLocations.size(); i++) {
-                    		if (denLocations.get(i).distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
-                    			nearestDen = denLocations.get(i);
-                    		}
-                    	}
-                    	if (rc.canMove(currentLocation.directionTo(nearestDen))) { // if we can move towards the den, do it
-                    		rc.move(currentLocation.directionTo(nearestDen));
-                    	} else if (rc.senseRubble(currentLocation.add(currentLocation.directionTo(nearestDen))) < 200) { // if the rubble is reasonably cleared, do it
-                    		rc.clearRubble(currentLocation.directionTo(nearestDen));
-                    	} else { // otherwise, try to bug around the wall
-                    		MapLocation left = currentLocation.add(currentLocation.directionTo(nearestDen).rotateLeft().rotateLeft());
-                    		MapLocation right = currentLocation.add(currentLocation.directionTo(nearestDen).rotateRight().rotateRight());
-                    		if (left.distanceSquaredTo(nearestDen) < right.distanceSquaredTo(nearestDen)) { // if the left is closer to target, try to move there
-                    			if (rc.canMove(currentLocation.directionTo(left))) {
-                    				rc.move(currentLocation.directionTo(left));
-                    			} else if (rc.canMove(currentLocation.directionTo(right))) {
-                    				rc.move(currentLocation.directionTo(right));
-                    			}
-                    		} else { // if the right is closer to target, try to move there
-                    			if (rc.canMove(currentLocation.directionTo(right))) {
-                    				rc.move(currentLocation.directionTo(right));
-                    			} else if (rc.canMove(currentLocation.directionTo(left))) {
-                    				rc.move(currentLocation.directionTo(left));
-                    			}
-                    		}
-                    	}
+                    	// now we want it to move towards the nearest zombie den, if we can
+                    	if (denLocations.size() > 0) {
+                    		randomDirection = null;
+	                    	MapLocation nearestDen = denLocations.get(0);
+	                    	MapLocation currentLocation = rc.getLocation();
+	                    	for (int i = 1; i < denLocations.size(); i++) {
+	                    		if (denLocations.get(i).distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
+	                    			nearestDen = denLocations.get(i);
+	                    		}
+	                    	}
+	                    	if (rc.canMove(currentLocation.directionTo(nearestDen))) { // if we can move towards the den, do it
+	                    		rc.move(currentLocation.directionTo(nearestDen));
+	                    	} else if (rc.senseRubble(currentLocation.add(currentLocation.directionTo(nearestDen))) < 200) { // if the rubble is reasonably cleared, do it
+	                    		rc.clearRubble(currentLocation.directionTo(nearestDen));
+	                    	} else { // otherwise, try to bug around the wall
+	                    		MapLocation left = currentLocation.add(currentLocation.directionTo(nearestDen).rotateLeft().rotateLeft());
+	                    		MapLocation right = currentLocation.add(currentLocation.directionTo(nearestDen).rotateRight().rotateRight());
+	                    		if (left.distanceSquaredTo(nearestDen) < right.distanceSquaredTo(nearestDen)) { // if the left is closer to target, try to move there
+	                    			if (rc.canMove(currentLocation.directionTo(left))) {
+	                    				rc.move(currentLocation.directionTo(left));
+	                    			} else if (rc.canMove(currentLocation.directionTo(right))) {
+	                    				rc.move(currentLocation.directionTo(right));
+	                    			}
+	                    		} else { // if the right is closer to target, try to move there
+	                    			if (rc.canMove(currentLocation.directionTo(right))) {
+	                    				rc.move(currentLocation.directionTo(right));
+	                    			} else if (rc.canMove(currentLocation.directionTo(left))) {
+	                    				rc.move(currentLocation.directionTo(left));
+	                    			}
+	                    		}
+	                    	}
+	                    } else { // there are no dens to move towards, we want to move in one random direction
+	                    	if (randomDirection != null && rc.canMove(randomDirection)) {
+	                    		rc.move(randomDirection);
+	                    	} else {
+	                    		randomDirection = RobotPlayer.directions[fate % 8];
+	                    	}
+	                    }
                     }
                 }
                 Clock.yield();
