@@ -1,6 +1,5 @@
 package soldierstream;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,7 +67,7 @@ public class SoldierPlayer {
 	            				}
 	            			}
 	            			if (bestDir != Direction.NONE) {
-	            				Direction dir = Movement.getBestMoveableDirection(bestDir, rc);
+	            				Direction dir = Movement.getBestMoveableDirection(bestDir, rc, 2);
 	            				if (dir != Direction.NONE) {
 	            					rc.move(dir);
 	            				} else {

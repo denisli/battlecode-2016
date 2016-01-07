@@ -1,6 +1,5 @@
 package soldierstream;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 import battlecode.common.Clock;
@@ -53,7 +52,7 @@ public class ScoutPlayer {
 					// Get away from closest non den enemy if it exists and is too close
 					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) < 45) {
 						Direction oppDir = closestNonDenEnemy.location.directionTo(myLocation);
-						Direction getAwayDir = Movement.getBestMoveableDirection(oppDir, rc);
+						Direction getAwayDir = Movement.getBestMoveableDirection(oppDir, rc, 2);
 						if (getAwayDir != Direction.NONE) {
 							rc.move(getAwayDir);
 							dir = getAwayDir;

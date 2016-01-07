@@ -10,7 +10,7 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Team;
-import spamturret.RobotPlayer;
+import soldierstream.RobotPlayer;
 
 public class GuardPlayer {
 	public static void run(RobotController rc) {
