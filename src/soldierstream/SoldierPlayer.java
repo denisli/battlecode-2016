@@ -14,7 +14,6 @@ public class SoldierPlayer {
 	static Bugging bugging = null;
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestArchon = null;
-	static boolean committedMicro = false;
 	
 	public static void run(RobotController rc) {
 		int myAttackRange = 0;
@@ -44,6 +43,7 @@ public class SoldierPlayer {
                 boolean shouldAttack = false;
                 boolean useSoldierMicro = false;
                 double totalEnemySoldierHealth = 0;
+                int numEnemySoldiers = 0;
                 
                 // take a look at all hostile robots within the sight radius
                 RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, rc.getType().sensorRadiusSquared);
@@ -60,13 +60,14 @@ public class SoldierPlayer {
                     		// Use soldier micro
                     		useSoldierMicro = true;
                     		totalEnemySoldierHealth += r.health;
+                    		numEnemySoldiers++;
                     	}
                     	else if (r.type == RobotType.TURRET) {
                     		//check if there's a turret in range; if there is, code later prioritizes moving away from turret
                     		//later fix so that if there's 1 turret, move towards it and kill it
                     		turretDir = myLoc.directionTo(r.location);
                     	}
-                    	else if (r.type == RobotType.ARCHON) {
+                    	if (r.type == RobotType.ARCHON) {
                     		//it sees archon
                     		if (bestEnemy.type == RobotType.ARCHON) {
                     			if (r.health < bestEnemy.health) {
@@ -137,9 +138,9 @@ public class SoldierPlayer {
                     		if (bestBackAwayDir != Direction.NONE) {
                     			rc.move(bestBackAwayDir);
                     		} else {
-		                    	// If the enemy can be killed in one hit but we're not in range, move forward
-	                    		if (rc.getHealth() > RobotType.SOLDIER.attackPower) {
-			                    	if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && bestEnemy.health < RobotType.SOLDIER.attackPower) {
+	                    		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
+	                    			// If the enemy can be killed but we're not in range, move forward
+			                    	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health < RobotType.SOLDIER.attackPower) {
 			                    		if (rc.canMove(d)) {
 				                			rc.move(d);
 				                		} else if (rc.canMove(d.rotateLeft())) {
@@ -150,14 +151,16 @@ public class SoldierPlayer {
 			                    	// If not in range, see if we should move in by comparing soldier health
 			                    	} else {
 			                    		double totalOurSoldierHealth = 0;
-			                    		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 21, rc.getTeam());
+			                    		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
 			                    		for (RobotInfo ally : allies) {
 			                    			if (ally.type == RobotType.SOLDIER) {
-			                    				totalOurSoldierHealth += ally.health;
+			                    				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
+			                    					totalOurSoldierHealth += ally.health;
+			                    				}
 			                    			}
 			                    		}
 			                    		// If we feel that we are strong enough, rush in.
-			                    		if (3 * totalOurSoldierHealth > 4 * totalEnemySoldierHealth || committedMicro) {
+			                    		if (4 * totalOurSoldierHealth > 5 * totalEnemySoldierHealth) {
 			                    			if (!rc.canAttackLocation(bestEnemy.location)) {
 				                    			if (rc.canMove(d)) {
 						                			rc.move(d);
@@ -166,7 +169,6 @@ public class SoldierPlayer {
 						                		} else if (rc.canMove(d.rotateRight())) {
 						                			rc.move(d.rotateRight());
 						                		}
-				                    			committedMicro = true;
 			                    			}
 			                    		} else {
 			                    			if (rc.canMove(d.opposite())) {
@@ -182,7 +184,6 @@ public class SoldierPlayer {
                     		}
                     	}
                     } else {
-                    	committedMicro = false;
 	                    // if we are too close, we want to move further away
 	                    if (myLoc.distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
 	                		if (rc.canMove(d.opposite())) {
