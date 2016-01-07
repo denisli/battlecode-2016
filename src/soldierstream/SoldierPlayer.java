@@ -8,6 +8,8 @@ import java.util.Random;
 import java.util.Set;
 
 import battlecode.common.*;
+import soldierstream.Bugging;
+import soldierstream.RobotPlayer;
 
 public class SoldierPlayer {
 	
@@ -251,7 +253,7 @@ public class SoldierPlayer {
 	                }
 	                
 	
-	                if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest zombie den
+	                if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest enemy
 	                    if (rc.isCoreReady()) {
 	                    	// first check if there are any new signals from scouts
 	                    	Signal currentSignal = rc.readSignal();
@@ -259,12 +261,10 @@ public class SoldierPlayer {
 	                    		// signal from scout
 	                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] != -100) { // if we get a scout signal
 	                    			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
-	                    		} else if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] == -100) { // if we get a archon signal
-	                    			archonLocations.put(currentSignal.getID(), currentSignal.getLocation());
 	                    		}
 	                    		currentSignal = rc.readSignal();
 	                    	}
-	                    	// now we want it to move towards the nearest zombie den, if we can
+	                    	// now we want it to move towards the nearest enemy, if we can
 	                    	
 	                    	if (denLocations.size() > 0) {
 	                    		randomDirection = null;
@@ -292,21 +292,6 @@ public class SoldierPlayer {
 		                    	if (!nearestDen.equals(storedNearestDen)) {
 		                    		bugging = new Bugging(rc, nearestDen);
 		                    		storedNearestDen = nearestDen;
-		                    	}
-		                    	if (rc.isCoreReady()) {
-		                    		bugging.move();
-		                    	}
-		                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
-		                    	Set<Integer> archonIDs = archonLocations.keySet();
-		                    	MapLocation nearestArchon = archonLocations.get(archonIDs.iterator().next());
-		                    	for (Integer id : archonIDs) {
-		                    		if (archonLocations.get(id).distanceSquaredTo(rc.getLocation()) < nearestArchon.distanceSquaredTo(rc.getLocation())) {
-		                    			nearestArchon = archonLocations.get(id);
-		                    		}
-		                    	}
-		                    	if (!nearestArchon.equals(storedNearestArchon)) {
-		                    		bugging = new Bugging(rc, nearestArchon);
-		                    		storedNearestArchon = nearestArchon;
 		                    	}
 		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();

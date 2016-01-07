@@ -1,5 +1,6 @@
 package soldierstream;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import battlecode.common.Clock;
@@ -18,7 +19,7 @@ public class ScoutPlayer {
 	static int sightRange = RobotType.SCOUT.sensorRadiusSquared;
 	static int maxSignal = 100 * 100 * 2;
 
-	static MapLocation recentlyBroadcastedDenLoc;
+	static MapLocation recentlyBroadcastedDenLoc = new MapLocation(1000000, 1000000);
 
 	public static void run(RobotController rc) {
 		try {
@@ -26,48 +27,59 @@ public class ScoutPlayer {
 			dir = randDir();
 			loop: while (true) {
 				MapLocation myLocation = rc.getLocation();
-
+				RobotInfo closestNonDenEnemy = null;
+				RobotInfo closestDen = null;
 				// Loop through enemies
 				// If there is den, then report
 				// Keep track of the closest non den enemy.
 				RobotInfo[] enemies = rc.senseHostileRobots(myLocation, sightRange);
-				RobotInfo closestNonDenEnemy = null;
-				int closestDist = 500;
+				int closestNonDenDist = 500;
+				int closestDenDist = 500;
 				for (RobotInfo enemy : enemies) {
-					if (enemy.type == RobotType.ZOMBIEDEN) {
-						if (!enemy.location.equals(recentlyBroadcastedDenLoc)) {
-							rc.broadcastMessageSignal(enemy.location.x, enemy.location.y, maxSignal);
-							recentlyBroadcastedDenLoc = enemy.location;
-							dir = randDir();
-							Clock.yield();
-							continue loop;
-						}
-					} else {
-						int dist = myLocation.distanceSquaredTo(enemy.location);
-						if (closestDist > dist) {
-							closestNonDenEnemy = enemy;
-							closestDist = dist;
-						}
+					
+					int dist = myLocation.distanceSquaredTo(enemy.location);
+					if (closestNonDenDist > dist && enemy.type != RobotType.ZOMBIEDEN) {
+						closestNonDenEnemy = enemy;
+						closestNonDenDist = dist;
+					
+					}
+					if (closestDenDist > dist && enemy.type == RobotType.ZOMBIEDEN) {
+						closestDen = enemy;
+						closestDenDist = dist;
 					}
 				}
 				// If you can move...
 				if (rc.isCoreReady()) {
-					// Get away from closest non den enemy if it exists
-					if (closestNonDenEnemy != null) {
+					// Get away from closest non den enemy if it exists and is too close
+					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) < 45) {
 						Direction oppDir = closestNonDenEnemy.location.directionTo(myLocation);
 						Direction getAwayDir = Movement.getBestMoveableDirection(oppDir, rc);
 						if (getAwayDir != Direction.NONE) {
 							rc.move(getAwayDir);
 							dir = getAwayDir;
 						}
-						// Otherwise just move in random direction if possible
+					} else if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) > 48
+							&& rc.canMove(rc.getLocation().directionTo(closestNonDenEnemy.location))) { // otherwise if too far, move closer
+						rc.move(rc.getLocation().directionTo(closestNonDenEnemy.location));
 					} else {
-						// Move in random direction
+						// try to move randomly
+						Direction dir = randDir();
 						if (rc.canMove(dir)) {
 							rc.move(dir);
-						} else {
-							dir = randDir();
 						}
+					}
+					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
+							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 600) {
+						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, 100*100);
+						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
+						dir = randDir();
+						Clock.yield();
+						continue loop;
+					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1) {
+						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, 100*100);
+						recentlyBroadcastedDenLoc = closestDen.location;
+						dir = randDir();
+						Clock.yield();
 					}
 				}
 
