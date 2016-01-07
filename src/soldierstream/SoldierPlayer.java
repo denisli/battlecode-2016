@@ -32,61 +32,114 @@ public class SoldierPlayer {
             try {
             	int fate = rand.nextInt(1000);
                 boolean shouldAttack = false;
-
-             // If this robot type can attack, check for enemies within range and attack one
-                if (myAttackRange > 0) {
-                    RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(myAttackRange, enemyTeam);
-                    RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
-                    
-                    if (enemiesWithinRange.length > 0) {
-                    	randomDirection = null;
-                    	shouldAttack = true;
-                        // Check if weapon is ready
-                        if (rc.isWeaponReady()) {
-                            RobotInfo toAttack = enemiesWithinRange[0];
-                            for (RobotInfo r: enemiesWithinRange) {
-                            	if (r.type == RobotType.ARCHON) {
-                            		//it sees archon
-                            		if (toAttack.type == RobotType.ARCHON) {
-                            			if (r.health < toAttack.health) {
-                                			toAttack = r;
-                            			}
-                            		}
-                            		else {
-                            			toAttack = r;
-                            		}
-                            		//could check if it looked through all the archons- specs say there would be 6 max
-                            	}
-                            	else {
-                            		//no archons in sight
-                        			if (toAttack.type != RobotType.ARCHON) {
-                        				//cur is not archon and sees no archons in list
-                        				if (r.health < toAttack.health) {
-                        					//attacks least health
-                        					toAttack = r;
-                        				}
-                        			}
-                            	}
-                            }
-                        	
-                            rc.attackLocation(toAttack.location);
-                        }
-                    } else if (zombiesWithinRange.length > 0) {
-                    	randomDirection = null;
-                    	shouldAttack = true;
-                        if (rc.isWeaponReady()) {
-                            RobotInfo toAttack = zombiesWithinRange[0];
-                            for (RobotInfo r : zombiesWithinRange) {
-                            	if (r.health < toAttack.health) {
-                            		//attack zombie with least health
-                            		toAttack = r;
-                            	}
-                            }
-                        	
-                            rc.attackLocation(toAttack.location);
-                        }
+                
+                // take a look at all hostile robots within the sight radius
+                RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(rc.getLocation(), rc.getType().sensorRadiusSquared);
+                if (enemiesWithinRange.length > 0) {
+                	randomDirection = null;
+                	shouldAttack = true; // don't want this to wander away if we can't attack
+                	// we want to get the closest enemy
+                	RobotInfo bestEnemy = enemiesWithinRange[0];
+                    for (RobotInfo r: enemiesWithinRange) {
+                    	if (r.type == RobotType.ARCHON) {
+                    		//it sees archon
+                    		if (bestEnemy.type == RobotType.ARCHON) {
+                    			if (r.health < bestEnemy.health) {
+                    				bestEnemy = r;
+                    			}
+                    		}
+                    		else {
+                    			bestEnemy = r;
+                    		}
+                    		//could check if it looked through all the archons- specs say there would be 6 max
+                    	}
+                    	else {
+                    		//no archons in sight
+                			if (bestEnemy.type != RobotType.ARCHON) {
+                				//cur is not archon and sees no archons in list
+                				if (r.location.distanceSquaredTo(rc.getLocation()) < bestEnemy.location.distanceSquaredTo(rc.getLocation())) {
+                					//attacks least health
+                					bestEnemy = r;
+                				}
+                			}
+                    	}
                     }
+                    Direction d = rc.getLocation().directionTo(bestEnemy.location);
+                	// if we are too close, we want to move further away
+                	if (rc.getLocation().distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
+                		if (rc.canMove(d.opposite())) {
+                			rc.move(d.opposite());
+                		} else if (rc.canMove(d.opposite().rotateLeft())) {
+                			rc.move(d.opposite().rotateLeft());
+                		} else if (rc.canMove(d.opposite().rotateRight())) {
+                			rc.move(d.opposite().rotateRight());
+                		}
+                	} else if (rc.getLocation().distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
+                		if (rc.canMove(d)) {
+                			rc.move(d);
+                		} else if (rc.canMove(d.rotateLeft())) {
+                			rc.move(d.rotateLeft());
+                		} else if (rc.canMove(d.rotateRight())) {
+                			rc.move(d.rotateRight());
+                		}
+                	} else { // otherwise we want to try to attack
+                		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
+                			rc.attackLocation(bestEnemy.location);
+                		}
+                	}
                 }
+                /*RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(myAttackRange, enemyTeam);
+                RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(myAttackRange, Team.ZOMBIE);
+                
+                if (enemiesWithinRange.length > 0) {
+                	randomDirection = null;
+                	shouldAttack = true;
+                    // Check if weapon is ready
+                    if (rc.isWeaponReady()) {
+                        RobotInfo toAttack = enemiesWithinRange[0];
+                        for (RobotInfo r: enemiesWithinRange) {
+                        	if (r.type == RobotType.ARCHON) {
+                        		//it sees archon
+                        		if (toAttack.type == RobotType.ARCHON) {
+                        			if (r.health < toAttack.health) {
+                            			toAttack = r;
+                        			}
+                        		}
+                        		else {
+                        			toAttack = r;
+                        		}
+                        		//could check if it looked through all the archons- specs say there would be 6 max
+                        	}
+                        	else {
+                        		//no archons in sight
+                    			if (toAttack.type != RobotType.ARCHON) {
+                    				//cur is not archon and sees no archons in list
+                    				if (r.health < toAttack.health) {
+                    					//attacks least health
+                    					toAttack = r;
+                    				}
+                    			}
+                        	}
+                        }
+                    	
+                        rc.attackLocation(toAttack.location);
+                    }
+                } else if (zombiesWithinRange.length > 0) {
+                	randomDirection = null;
+                	shouldAttack = true;
+                    if (rc.isWeaponReady()) {
+                        RobotInfo toAttack = zombiesWithinRange[0];
+                        for (RobotInfo r : zombiesWithinRange) {
+                        	if (r.health < toAttack.health) {
+                        		//attack zombie with least health
+                        		toAttack = r;
+                        	}
+                        }
+                    	
+                        rc.attackLocation(toAttack.location);
+                    }
+                }*/
+                
 
                 if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest zombie den
                     if (rc.isCoreReady()) {
