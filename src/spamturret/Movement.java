@@ -11,30 +11,35 @@ import battlecode.common.Team;
 
 public class Movement {
 
-	//returns true if the robot moved away; for archons only
+	public static Direction getBestMoveableDirection(Direction dir, RobotController rc, int fan) {
+		int ordinal = dir.ordinal();
+		for (int i = 0; i < 2 * fan + 1; i++) {
+			int disp = ((i % 2) * 2 - 1) * (i+1) / 2;
+			Direction testDir = Direction.values()[mod8(ordinal + disp)];
+			if ( rc.canMove(testDir) ) {
+				return testDir;
+			}
+		}
+		return Direction.NONE;
+	}
+	
+	private static int mod8(int num) {
+		return ((num % 8) + 8) % 8;
+	}
+	
+	//returns true if the robot moved away
 	public static boolean moveAwayFromEnemy(RobotController rc) throws GameActionException {
 		Team myTeam = rc.getTeam();
-		Team enemyTeam = myTeam.opponent();
-		int mySightRange = rc.getType().attackRadiusSquared;
-		//NOTE ENEMIES WITHIN 13 RANGE ONLY
-		RobotInfo[] enemiesWithinSightRange = rc.senseNearbyRobots(13, enemyTeam);
-		RobotInfo[] zombiesWithinSightRange = rc.senseNearbyRobots(13, Team.ZOMBIE);
+		int mySightRange = rc.getType().sensorRadiusSquared;
 		MapLocation myLoc = rc.getLocation();
+		RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, mySightRange);
 
 		MapLocation closestEnemy = null;
 		int closestEnemyDist = 60;
-		for (RobotInfo e : enemiesWithinSightRange) {
+		for (RobotInfo e : hostiles) {
 			MapLocation curEnemyLoc = e.location;
 			int curDist = myLoc.distanceSquaredTo(curEnemyLoc);
-			if (curDist < closestEnemyDist && rc.canMove(myLoc.directionTo(curEnemyLoc).opposite())) {
-				closestEnemyDist = curDist;
-				closestEnemy = e.location;
-			}
-		}
-		for (RobotInfo e : zombiesWithinSightRange) {
-			MapLocation curEnemyLoc = e.location;
-			int curDist = myLoc.distanceSquaredTo(curEnemyLoc);
-			if (curDist < closestEnemyDist && rc.canMove(myLoc.directionTo(curEnemyLoc).opposite())) {
+			if (curDist < closestEnemyDist) {
 				closestEnemyDist = curDist;
 				closestEnemy = e.location;
 			}
@@ -43,97 +48,14 @@ public class Movement {
 			return false;
 		}
 		else {
-			rc.move(myLoc.directionTo(closestEnemy).opposite());
-			return true;
+			Direction dir = getBestMoveableDirection(closestEnemy.directionTo(myLoc), rc, 4);
+			if (dir != Direction.NONE) {
+				rc.move(dir);
+				return true;
+			} else {
+				return false;
+			}
 		}
-		
-		//north = 0; northeast = 1; east = 2; southeast = 3; south = 4; southwest = 5; west = 6; northwest = 7
-		//enemiesInDir stores threat level in each direction
-//		int[] enemiesInDir = new int[8];
-//		for (RobotInfo e : enemiesWithinSightRange) {
-//			MapLocation enemyLoc = e.location;
-//			int curDir = dirToInt(myLoc.directionTo(enemyLoc));
-//			int distToEnemy = myLoc.distanceSquaredTo(enemyLoc);
-//			int threat = 35-distToEnemy;
-//			enemiesInDir[curDir] = enemiesInDir[curDir] + threat;
-//		}
-//		for (RobotInfo e : zombiesWithinSightRange) {
-//			MapLocation enemyLoc = e.location;
-//			int curDir = dirToInt(myLoc.directionTo(enemyLoc));
-//			int distToEnemy = myLoc.distanceSquaredTo(enemyLoc);
-//			int threat = 35-distToEnemy;
-//			enemiesInDir[curDir] = enemiesInDir[curDir] + threat;
-//		}
-//
-//		ArrayList<Integer> safeDirs = new ArrayList<>();
-//		ArrayList<Integer> unsafeDirs = new ArrayList<>();
-//		//number of directions with no enemies
-//		int numSafeDir = 8;
-//		for (int i = 0; i < 8; i++) {
-//			int threat = enemiesInDir[i];
-//			if (threat > 0) {
-//				numSafeDir = numSafeDir - 1;
-//				unsafeDirs.add(i);
-//			}
-//			else {
-//				safeDirs.add(i);
-//			}
-//		}
-//
-//		if (numSafeDir == 8) {
-//			//no enemies nearby
-//			return false;
-//		}
-//		else {
-//			Direction dirToMove = Direction.NORTH;
-//			if (numSafeDir > 4) {
-//				//if there fewer than 4 dangerous directions
-//				//randomly choose one of the unsafe directions and move opposite it
-//				for (int i : unsafeDirs) {
-//					dirToMove = intToDir(i).opposite();
-//					if (rc.canMove(dirToMove)) {
-//						try {
-//							rc.move(dirToMove);
-//							return true;
-//						} catch (GameActionException e1) {
-//							// TODO Auto-generated catch block
-//							e1.printStackTrace();
-//						}
-//					}
-//				}
-//				//check other directions that arent opposite the dangerous ones in case the directions opposite the dangerous ones are blocked
-//				for (int i : safeDirs) {
-//					dirToMove = intToDir(i);
-//					if (rc.canMove(dirToMove)) {
-//						try {
-//							rc.move(dirToMove);
-//							return true;
-//						} catch (GameActionException e1) {
-//							// TODO Auto-generated catch block
-//							e1.printStackTrace();
-//						}
-//					}
-//				}
-//				//all directions were blocked
-//				return false;
-//			}
-//			else {
-//				for (int i : safeDirs) {
-//					dirToMove = intToDir(i);
-//					if (rc.canMove(dirToMove)) {
-//						try {
-//							rc.move(dirToMove);
-//							return true;
-//						} catch (GameActionException e1) {
-//							// TODO Auto-generated catch block
-//							e1.printStackTrace();
-//						}
-//					}
-//				}
-//				//all directions were blocked
-//				return false;
-//			}
-//		}
 	}
 
 	//moves to parts/neutral robots in sight radius
