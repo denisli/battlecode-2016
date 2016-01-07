@@ -52,6 +52,20 @@ public class Movement {
 		}
 	}
 	
+	public static boolean getToAdjParts(RobotController rc) throws GameActionException {
+		if (rc.isCoreReady()) {
+			MapLocation myLoc = rc.getLocation();
+			MapLocation[] squaresAdj = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), 2);
+			for (MapLocation sq : squaresAdj) {
+				if ((rc.senseParts(sq) > 0) && (rc.canMove(myLoc.directionTo(sq)))) {
+					rc.move(myLoc.directionTo(sq));
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 	//moves to parts/neutral robots in sight radius
 	//returns true if there were parts/neutral robots to go to; else returns false
 	public static boolean getToParts(RobotController rc) throws Exception {

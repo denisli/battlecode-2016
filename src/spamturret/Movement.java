@@ -22,11 +22,11 @@ public class Movement {
 		}
 		return Direction.NONE;
 	}
-	
+
 	private static int mod8(int num) {
 		return ((num % 8) + 8) % 8;
 	}
-	
+
 	//returns true if the robot moved away
 	public static boolean moveAwayFromEnemy(RobotController rc) throws GameActionException {
 		Team myTeam = rc.getTeam();
@@ -56,6 +56,20 @@ public class Movement {
 				return false;
 			}
 		}
+	}
+
+	public static boolean getToAdjParts(RobotController rc) throws GameActionException {
+		if (rc.isCoreReady()) {
+			MapLocation myLoc = rc.getLocation();
+			MapLocation[] squaresAdj = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), 2);
+			for (MapLocation sq : squaresAdj) {
+				if ((rc.senseParts(sq) > 0) && (rc.canMove(myLoc.directionTo(sq)))) {
+					rc.move(myLoc.directionTo(sq));
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	//moves to parts/neutral robots in sight radius

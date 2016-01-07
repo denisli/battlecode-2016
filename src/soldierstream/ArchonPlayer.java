@@ -11,6 +11,7 @@ import battlecode.common.RobotType;
 import battlecode.common.Signal;
 import battlecode.common.Team;
 import soldierstream.RobotPlayer;
+import soldierstream.Movement;
 
 public class ArchonPlayer {
 
@@ -47,22 +48,18 @@ public class ArchonPlayer {
 							rc.activate(adjNeutralRobots[0].location);
 						}            			
 					}
-					else if (Movement.getToParts(rc)) {
-						//blank because getToParts does moving
+					if (Movement.getToAdjParts(rc)){
 					}
 					else {
 						boolean toheal = false;
 						//repair a nearby friendly robot
 						if (rc.isWeaponReady()) {
 							RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(24, myTeam);
-							if (numFriendly != friendlyWithinRange.length) {
-								numFriendly = friendlyWithinRange.length;
-							}
-
+							numFriendly = friendlyWithinRange.length;
 							if (friendlyWithinRange.length > 0) {
 								RobotInfo toRepair = friendlyWithinRange[0];
-								for (RobotInfo r : friendlyWithinRange ) {
-									if ((r.health < toRepair.health) && (r.type != RobotType.ARCHON)) {
+								for (RobotInfo r : friendlyWithinRange) {
+									if ((r.health < toRepair.health) && (r.type != RobotType.ARCHON) && (r.maxHealth-r.health>1)) {
 										toRepair = r;
 									}
 								}
