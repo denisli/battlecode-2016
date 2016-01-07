@@ -37,9 +37,9 @@ public class ArchonPlayer {
 
 			try {
 				boolean escape = false;
-				//            	if (rc.isCoreReady()) {
-				//            		escape = Movement.moveAwayFromEnemy(rc);
-				//            	}
+				if (rc.isCoreReady()) {
+					escape = Movement.moveAwayFromEnemy(rc);
+				}
 				if (!escape) {
 					if (adjNeutralRobots.length > 0){
 						//if there is a neutral robot adjacent, activate it or wait until there's no core delay
@@ -75,7 +75,7 @@ public class ArchonPlayer {
 						if (toheal == false) {
 							boolean built = false;
 							int turnNum = rc.getRoundNum();
-							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && turnNum > 1 && turnNum % 150 >= 0 && turnNum % 150 <= 33) {
+							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && turnNum > 1 && turnNum % 150 >= 0 && turnNum % 150 <= 33 && turnNum < 900) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 								for (int i = 0; i < 8; i++) {
 									// If possible, build in this direction

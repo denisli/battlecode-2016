@@ -41,7 +41,15 @@ public class SoldierPlayer {
                 	shouldAttack = true; // don't want this to wander away if we can't attack
                 	// we want to get the closest enemy
                 	RobotInfo bestEnemy = enemiesWithinRange[0];
+                	//turret direction, if it exits
+                	Direction turretDir = null;
+          
                     for (RobotInfo r: enemiesWithinRange) {
+                    	if (r.type == RobotType.TURRET) {
+                    		//check if there's a turret in range; if there is, code later prioritizes moving away from turret
+                    		//later fix so that if there's 1 turret, move towards it and kill it
+                    		turretDir = myLoc.directionTo(r.location);
+                    	}
                     	if (r.type == RobotType.ARCHON) {
                     		//it sees archon
                     		if (bestEnemy.type == RobotType.ARCHON) {
@@ -66,8 +74,15 @@ public class SoldierPlayer {
                     	}
                     }
                     Direction d = myLoc.directionTo(bestEnemy.location);
-                	// if we are too close, we want to move further away
-                	if (myLoc.distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
+                    
+                    //if it sees turret, move away from it
+                    if (turretDir != null && rc.isCoreReady()) {
+                    	if (rc.canMove(turretDir.opposite())) {
+                    		rc.move(turretDir.opposite());
+                    	}
+                    }
+                    // if we are too close, we want to move further away
+                    if (myLoc.distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
                 		if (rc.canMove(d.opposite())) {
                 			rc.move(d.opposite());
                 		} else if (rc.canMove(d.opposite().rotateLeft())) {
