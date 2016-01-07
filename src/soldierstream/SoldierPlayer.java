@@ -1,7 +1,9 @@
 package soldierstream;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -11,13 +13,14 @@ public class SoldierPlayer {
 	
 	static Bugging bugging = null;
 	static MapLocation storedNearestDen = null;
-	
+	static MapLocation storedNearestArchon = null;
 	public static void run(RobotController rc) {
 		int myAttackRange = 0;
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
 		Set<MapLocation> denLocations = new HashSet<>();
+		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		Direction randomDirection = null;
 		try {
             // Any code here gets executed exactly once at the beginning of the game.
@@ -116,8 +119,10 @@ public class SoldierPlayer {
                     	Signal currentSignal = rc.readSignal();
                     	while (currentSignal != null) {
                     		// signal from scout
-                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { // if we get a scout signal
+                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] != -100) { // if we get a scout signal
                     			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
+                    		} else if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] == -100) { // if we get a archon signal
+                    			archonLocations.put(currentSignal.getID(), currentSignal.getLocation());
                     		}
                     		currentSignal = rc.readSignal();
                     	}
@@ -148,6 +153,22 @@ public class SoldierPlayer {
 	                    	}
 	                    	if (!nearestDen.equals(storedNearestDen)) {
 	                    		bugging = new Bugging(rc, nearestDen);
+	                    		storedNearestDen = nearestDen;
+	                    	}
+	                    	if (rc.isCoreReady()) {
+	                    		bugging.move();
+	                    	}
+	                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
+	                    	Set<Integer> archonIDs = archonLocations.keySet();
+	                    	MapLocation nearestArchon = archonLocations.get(archonIDs.iterator().next());
+	                    	for (Integer id : archonIDs) {
+	                    		if (archonLocations.get(id).distanceSquaredTo(rc.getLocation()) < nearestArchon.distanceSquaredTo(rc.getLocation())) {
+	                    			nearestArchon = archonLocations.get(id);
+	                    		}
+	                    	}
+	                    	if (!nearestArchon.equals(storedNearestArchon)) {
+	                    		bugging = new Bugging(rc, nearestArchon);
+	                    		storedNearestArchon = nearestArchon;
 	                    	}
 	                    	if (rc.isCoreReady()) {
 	                    		bugging.move();
