@@ -93,9 +93,21 @@ public class ArchonPlayer {
 							}
 						}
 						if (toheal == false) {
-							RobotInfo[] friendlyAdjacent = rc.senseNearbyRobots(2, myTeam);
-							//if there are <2 turrets next to archon, build asap
-							if (rc.hasBuildRequirements(RobotType.TURRET) && rc.isCoreReady() && friendlyAdjacent.length <2) {
+							int turnNum = rc.getRoundNum();
+							RobotInfo[] friendlyAdjacent = rc.senseNearbyRobots(RobotType.ARCHON.sensorRadiusSquared, myTeam);
+							int numNearbyScouts = 0;
+							int numNearbyTurrets = 0;
+							for (RobotInfo f : friendlyAdjacent) {
+								if (f.type == RobotType.SCOUT) {
+									numNearbyScouts++;
+								}
+								if (f.type == RobotType.TURRET) {
+									numNearbyTurrets++;
+								}
+							}
+							
+							//if there are <1 turrets next to archon, build asap
+							if (rc.hasBuildRequirements(RobotType.TURRET) && rc.isCoreReady() && numNearbyTurrets<1) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
 								for (int i = 0; i < 4; i++) {
 									// If possible, build in this direction
@@ -110,10 +122,24 @@ public class ArchonPlayer {
 									}
 								}
 							}
+							//if there are <1 scout next to archon and 1 turret, build scout asap
+							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && numNearbyTurrets>0 && numNearbyScouts==0 && turnNum < 200) {
+								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+								for (int i = 0; i < 8; i++) {
+									// If possible, build in this direction
+									if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
+										rc.build(dirToBuild, RobotType.SCOUT);
+										scoutCount++;
+										break;
+									} else {
+										// Rotate the direction to try
+										dirToBuild = dirToBuild.rotateLeft();
+									}
+								}
+							}
 							//build turret every 100 turns until turn 400
-							int turnNum = rc.getRoundNum();
 							if (turnNum > 1 && turnNum < 400) {
-								if (turnNum % 100 == 85) {
+								if (turnNum % 100 == 85 && rc.isCoreReady()) {
 									Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
 									for (int i = 0; i < 4; i++) {
 										// If possible, build in this direction
@@ -129,23 +155,23 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							else if (turnNum > 400 && turnNum <= 420) {
-								if (turnNum == 420) {
-									Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
-									for (int i = 0; i < 4; i++) {
-										// If possible, build in this direction
-										if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
-											rc.build(dirToBuild, RobotType.SCOUT);
-											scoutCount++;
-											break;
-										} else {
-											// Rotate the direction to try
-											dirToBuild = dirToBuild.rotateLeft();
-											dirToBuild = dirToBuild.rotateLeft();
-										}
-									}
-								}
-							}
+//							else if (turnNum > 400 && turnNum <= 420) {
+//								if (turnNum == 420) {
+//									Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
+//									for (int i = 0; i < 4; i++) {
+//										// If possible, build in this direction
+//										if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
+//											rc.build(dirToBuild, RobotType.SCOUT);
+//											scoutCount++;
+//											break;
+//										} else {
+//											// Rotate the direction to try
+//											dirToBuild = dirToBuild.rotateLeft();
+//											dirToBuild = dirToBuild.rotateLeft();
+//										}
+//									}
+//								}
+//							}
 							else {
 								// Check if this ARCHON's core is ready
 								if (rc.isCoreReady()) {
@@ -154,30 +180,45 @@ public class ArchonPlayer {
 									if (scoutCount < turretCount / 5) {
 										typeToBuild = RobotType.SCOUT;
 									}
+									//never build scouts after a certain turn
+									if (turnNum < 1500) {
+										typeToBuild = RobotType.TURRET;
+									}
 									// Check for sufficient parts
 									if (rc.hasBuildRequirements(typeToBuild)) {
-										// Choose a random direction to try to build in; NESW
-										Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
-										for (int i = 0; i < 4; i++) {
-											// If possible, build in this direction
-											if (rc.canBuild(dirToBuild, typeToBuild)) {
-												rc.build(dirToBuild, typeToBuild);
-												built = true;
-												if (typeToBuild.equals(RobotType.TURRET)) {
+										// Choose a random direction to try to build in; NESW for turrets; all 8 for scouts
+										if (typeToBuild.equals(RobotType.TURRET)) {
+											Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
+											for (int i = 0; i < 4; i++) {
+												// If possible, build in this direction
+												if (rc.canBuild(dirToBuild, RobotType.TURRET)) {
+													rc.build(dirToBuild, RobotType.TURRET);
 													turretCount++;
+													break;
 												} else {
-													scoutCount++;
+													// Rotate the direction to try
+													dirToBuild = dirToBuild.rotateLeft();
+													dirToBuild = dirToBuild.rotateLeft();
 												}
-												break;
-											} else {
-												// Rotate the direction to try
-												dirToBuild = dirToBuild.rotateLeft();
-												dirToBuild = dirToBuild.rotateLeft();
+											}
+										}
+										else {
+											Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+											for (int i = 0; i < 8; i++) {
+												// If possible, build in this direction
+												if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
+													rc.build(dirToBuild, RobotType.SCOUT);
+													scoutCount++;
+													break;
+												} else {
+													// Rotate the direction to try
+													dirToBuild = dirToBuild.rotateLeft();
+												}
 											}
 										}
 									}
 									//only move around if there are resources
-									if ((!built) && rc.hasBuildRequirements(RobotType.TURRET))  {
+									if ((!built) && rc.hasBuildRequirements(RobotType.TURRET) && (rc.isCoreReady()))  {
 										Direction dirToMove = RobotPlayer.directions[(rand.nextInt(4)*2) + 1];
 										for (int i = 0; i < 4; i++) {
 											if (rc.canMove(dirToMove)) {

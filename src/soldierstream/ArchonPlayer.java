@@ -73,6 +73,15 @@ public class ArchonPlayer {
 							}
 						}
 						if (toheal == false) {
+							//for sensing if there are guards within range 5
+							RobotInfo[] friendlyClose = rc.senseNearbyRobots(5, myTeam);
+							int numNearbyGuards = 0;
+							for (RobotInfo f : friendlyClose) {
+								if (f.type == RobotType.GUARD) {
+									numNearbyGuards++;
+								}
+							}
+							
 							boolean built = false;
 							int turnNum = rc.getRoundNum();
 							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && turnNum > 1 && turnNum % 150 >= 0 && turnNum % 150 <= 33 && turnNum < 900) {
@@ -81,6 +90,20 @@ public class ArchonPlayer {
 									// If possible, build in this direction
 									if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
 										rc.build(dirToBuild, RobotType.SCOUT);
+										built = true;
+										break;
+									} else {
+										// Rotate the direction to try
+										dirToBuild = dirToBuild.rotateLeft();
+									}
+								}
+							}
+							if (rc.hasBuildRequirements(RobotType.GUARD) && rc.isCoreReady() && !built && numNearbyGuards < 2) {
+								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+								for (int i = 0; i < 8; i++) {
+									// If possible, build in this direction
+									if (rc.canBuild(dirToBuild, RobotType.GUARD)) {
+										rc.build(dirToBuild, RobotType.GUARD);
 										built = true;
 										break;
 									} else {
