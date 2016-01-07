@@ -19,7 +19,6 @@ public class ArchonPlayer {
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
-		boolean sendSignal = false;
 		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 
 
@@ -58,7 +57,6 @@ public class ArchonPlayer {
 							RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(24, myTeam);
 							if (numFriendly != friendlyWithinRange.length) {
 								numFriendly = friendlyWithinRange.length;
-								sendSignal = true;
 							}
 
 							if (friendlyWithinRange.length > 0) {
@@ -107,10 +105,6 @@ public class ArchonPlayer {
 							}
 						}
 					}
-				}
-				if (sendSignal) {
-					rc.broadcastMessageSignal(numFriendly, 0, 63);; // try to send signals to nearby units
-					sendSignal = false;
 				}
 
 				Clock.yield();
