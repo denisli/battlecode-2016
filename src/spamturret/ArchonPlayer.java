@@ -11,6 +11,7 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Signal;
 import battlecode.common.Team;
+import spamturret.RobotPlayer;
 import spamturret.Movement;
 
 public class ArchonPlayer {
@@ -37,33 +38,22 @@ public class ArchonPlayer {
 			// This is a loop to prevent the run() method from returning. Because of the Clock.yield()
 			// at the end of it, the loop will iterate once per game round.
 			try {
-				// sense all the hostile robots within the scout's radius
-				RobotInfo[] hostileWithinRange = rc.senseHostileRobots(rc.getLocation(), rc.getType().sensorRadiusSquared);
-				RobotInfo closestRobot = null;
-				int closestDistance = 0;
-				// get the furthest robot from the scout
-				for (RobotInfo r : hostileWithinRange) {
-					if (r.location.distanceSquaredTo(rc.getLocation()) > closestDistance) {
-						closestRobot = r;
-						closestDistance = r.location.distanceSquaredTo(rc.getLocation());
-					}
-				}
-				// if there is such an enemy, signal it to 9 squares around it
-				if (closestRobot != null) {
-					try {
-						rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 9);
-					} catch (GameActionException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-
-				}
-				
 				boolean escape = false;
+//				if (rc.isCoreReady()) {
+//					int numAdjTurrets = 0;
+//					for (RobotInfo f : friendlyAdjacent) {
+//						if (f.type == RobotType.TURRET) {
+//							numAdjTurrets++;
+//						}
+//					}
+//					if (numAdjTurrets < 3) {
+//						escape = Movement.moveAwayFromEnemy(rc);
+//					}
+//				}
 //				if (rc.isCoreReady()) {
 //					escape = Movement.moveAwayFromEnemy(rc);
 //				}
-				if (!escape) {
+				if (!escape) {		
 					if (adjNeutralRobots.length > 0){
 						//if there is a neutral robot adjacent, activate it or wait until there's no core delay
 						if (rc.isCoreReady()) {
@@ -92,12 +82,35 @@ public class ArchonPlayer {
 								}
 							}
 						}
-						if (toheal == false) {
+						if (toheal == false && rc.isCoreReady()) {
+							//did not heal any robots
+							
+							// sense all the hostile robots within the archon's radius
+							RobotInfo[] hostileWithinRange = rc.senseHostileRobots(rc.getLocation(), RobotType.ARCHON.sensorRadiusSquared);
+							RobotInfo closestRobot = null;
+							int closestDistance = 0;
+							// get the furthest robot from the scout
+							for (RobotInfo r : hostileWithinRange) {
+								if (r.location.distanceSquaredTo(rc.getLocation()) > closestDistance) {
+									closestRobot = r;
+									closestDistance = r.location.distanceSquaredTo(rc.getLocation());
+								}
+							}
+							// if there is such an enemy, signal it to 9 squares around it
+							if (closestRobot != null) {
+								try {
+									rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 9);
+								} catch (GameActionException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							}
+							
 							int turnNum = rc.getRoundNum();
-							RobotInfo[] friendlyAdjacent = rc.senseNearbyRobots(RobotType.ARCHON.sensorRadiusSquared, myTeam);
 							int numNearbyScouts = 0;
 							int numNearbyTurrets = 0;
-							for (RobotInfo f : friendlyAdjacent) {
+							RobotInfo[] friendlyNearby = rc.senseNearbyRobots(RobotType.ARCHON.sensorRadiusSquared, myTeam);
+							for (RobotInfo f : friendlyNearby) {
 								if (f.type == RobotType.SCOUT) {
 									numNearbyScouts++;
 								}
@@ -105,7 +118,27 @@ public class ArchonPlayer {
 									numNearbyTurrets++;
 								}
 							}
-							
+							//for sensing if there are guards within range 5
+							RobotInfo[] friendlyClose = rc.senseNearbyRobots(5, myTeam);
+							int numNearbyGuards = 0;
+							for (RobotInfo f : friendlyClose) {
+								if (f.type == RobotType.GUARD) {
+									numNearbyGuards++;
+								}
+							}
+							if (rc.hasBuildRequirements(RobotType.GUARD) && rc.isCoreReady() && numNearbyGuards < 1) {
+								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+								for (int i = 0; i < 8; i++) {
+									// If possible, build in this direction
+									if (rc.canBuild(dirToBuild, RobotType.GUARD)) {
+										rc.build(dirToBuild, RobotType.GUARD);
+										break;
+									} else {
+										// Rotate the direction to try
+										dirToBuild = dirToBuild.rotateLeft();
+									}
+								}
+							}
 							//if there are <1 turrets next to archon, build asap
 							if (rc.hasBuildRequirements(RobotType.TURRET) && rc.isCoreReady() && numNearbyTurrets<1) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(4)*2];
