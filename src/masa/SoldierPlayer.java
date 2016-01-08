@@ -27,6 +27,7 @@ public class SoldierPlayer {
 		MapLocation spawningArchonLocation = null;
 		RobotInfo[] closeAllies = rc.senseNearbyRobots(5, myTeam);
 		boolean wasRetreating = false;
+		int currentZombieScheduleIndex = 0;
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
 				
@@ -142,7 +143,41 @@ public class SoldierPlayer {
 	                    		rc.move(turretDir.opposite());
 	                    	}
 	                    }
-	                    if (useSoldierMicro) {
+	                    int roundNum = rc.getRoundNum();
+	                    int outbreakLevel = roundNum / 300 + 1;
+	                    int thresholdLevel = 6;
+	                    int[] rounds = rc.getZombieSpawnSchedule().getRounds();
+	                    boolean useRush = false;
+	                    if (rounds.length == 0) {
+	                    	useRush = outbreakLevel >= 6;
+	                    } else {
+	                    	if (rounds.length > 1) {
+	                    		if (roundNum >= rounds[currentZombieScheduleIndex+1]) {
+	                    			currentZombieScheduleIndex++;
+	                    		}
+	                    	}
+	                    	useRush = outbreakLevel >= thresholdLevel && rounds[currentZombieScheduleIndex] >= 300 * (thresholdLevel - 1);
+	                    }
+	                    if (useRush) {
+	                    	// Attack whenever you can
+	                    	if (rc.isWeaponReady()) {
+	                    		if (rc.canAttackLocation(bestEnemy.location)) {
+	                    			rc.attackLocation(bestEnemy.location);
+	                    		}
+	                    	}
+	                    	if (rc.isCoreReady()) {
+	                    		if (!rc.canAttackLocation(bestEnemy.location)) {
+	                    			if (rc.canMove(d)) {
+			                			rc.move(d);
+			                		} else if (rc.canMove(d.rotateLeft())) {
+			                			rc.move(d.rotateLeft());
+			                		} else if (rc.canMove(d.rotateRight())) {
+			                			rc.move(d.rotateRight());
+			                		}
+	                    		}
+	                    	}
+	                    }
+	                    else if (useSoldierMicro) {
 	                    	// Attack whenever you can
 	                    	if (rc.isWeaponReady()) {
 	                    		if (rc.canAttackLocation(bestEnemy.location)) {
@@ -314,4 +349,5 @@ public class SoldierPlayer {
             }
         }
 	}
+	
 }
