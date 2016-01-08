@@ -1,9 +1,10 @@
 package masa;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import soldierstream.Movement;
+import masa.Movement;
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -36,6 +37,8 @@ public class SoldierPlayer2 {
 	private static MapLocation destination = null;
 	
 	private static Bugging bugging = null;
+
+	private static Direction randomDir = Direction.NONE;
 	
 	public static void run(RobotController rc) {
 		try {
@@ -73,6 +76,9 @@ public class SoldierPlayer2 {
 							
 					// If there are enemies, engage in micromode
 					if (thereAreEnemies) {
+						
+						// Reset random direction.
+						randomDir = Direction.NONE;
 						
 						// Find the best enemy
 						RobotInfo bestEnemy = findBestEnemy(rc, enemies);
@@ -120,7 +126,7 @@ public class SoldierPlayer2 {
 						} else if (destination != null) {
 							
 							// Set destinations
-							Message[] messages = Message.readMessageSignals(rc);
+							List<Message> messages = Message.readMessageSignals(rc);
 							for (Message message : messages) {
 								if (message.type == Message.DEN) {
 									denLocations.add(message.location);
@@ -136,21 +142,22 @@ public class SoldierPlayer2 {
 							if (isSwarming) {
 								
 								destination = swarmingLocation;
-								Bugging bugging = new Bugging(rc, destination);
+								bugging = new Bugging(rc, destination);
 								if (rc.isCoreReady()) {
 									bugging.move();
 								}
 								
 							} else {
 						
-								if (rc.isCoreReady()) {
-									bugging.move();
-								}
-								
 								// If reached destination, then reset the destination.
-								boolean reachedDestination = false;
+								// The destination at this point in code is when destination is a zombie den
+								boolean reachedDestination = rc.canSense(destination);
 								if (reachedDestination) {
 									destination = null;
+								} else {
+									if (rc.isCoreReady()) {
+										bugging.move();
+									}
 								}
 							}
 							
@@ -158,7 +165,7 @@ public class SoldierPlayer2 {
 						} else {
 							
 							// Set destinations
-							Message[] messages = Message.readMessageSignals(rc);
+							List<Message> messages = Message.readMessageSignals(rc);
 							for (Message message : messages) {
 								if (message.type == Message.DEN) {
 									denLocations.add(message.location);
@@ -174,7 +181,8 @@ public class SoldierPlayer2 {
 							if (isSwarming) {
 								
 								destination = swarmingLocation;
-								Bugging bugging = new Bugging(rc, destination);
+								bugging = new Bugging(rc, destination);
+								randomDir = Movement.getRandomDirection();
 								if (rc.isCoreReady()) {
 									bugging.move();
 								}
@@ -183,10 +191,29 @@ public class SoldierPlayer2 {
 							
 								if (!denLocations.isEmpty()) {
 									destination = denLocations.iterator().next();
-									Bugging bugging = new Bugging(rc, destination);
+									bugging = new Bugging(rc, destination);
+									randomDir = Movement.getRandomDirection();
 									if (rc.isCoreReady()) {
 										bugging.move();
 									}
+								// Just wander around
+								} else {
+									
+									if (rc.isCoreReady()) {
+										if (randomDir == Direction.NONE) {
+											randomDir = Movement.getRandomDirection();
+											if (rc.canMove(randomDir)) {
+												rc.move(randomDir);
+											}
+										} else {
+											if (rc.canMove(randomDir)) {
+												rc.move(randomDir);
+											} else {
+												randomDir = Movement.getRandomDirection();
+											}
+										}
+									}
+									
 								}
 								
 							}
@@ -211,7 +238,9 @@ public class SoldierPlayer2 {
 			
 			if (!rc.canAttackLocation(bestEnemy.location)) {
 				Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
-				rc.move(dir);
+				if (dir != Direction.NONE) {
+					rc.move(dir);
+				}
 			}
 			
 		} else {
@@ -317,13 +346,17 @@ public class SoldierPlayer2 {
 	            if (myLoc.distanceSquaredTo(bestEnemy.location) < 8 && rc.isCoreReady()) {
 	            	Direction dir = d.opposite();
 	            	Direction realDir = Movement.getBestMoveableDirection(dir, rc, 1);
-	            	rc.move(realDir);
+	            	if (realDir != Direction.NONE) {
+	            		rc.move(realDir);
+	            	}
 	            
 	            // if we are too far, we want to move closer
 	        	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) {
 	        		Direction dir = d;
 	            	Direction realDir = Movement.getBestMoveableDirection(dir, rc, 1);
-	            	rc.move(realDir);
+	            	if (realDir != Direction.NONE) {
+	            		rc.move(realDir);
+	            	}
 	        	}
 				
 			}

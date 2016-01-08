@@ -71,16 +71,30 @@ public class ScoutPlayer {
 						}
 					}
 					// if we at at the best round, broadcast swarming location and enemy location
+//					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
+//							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() >= bestRound) {
+//						rc.broadcastMessageSignal(rc.getLocation().x, rc.getLocation().y, maxSignal);
+//						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, maxSignal);
+//						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
+//						dir = randDir();
+//						Clock.yield();
+//						continue loop;
+//					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1 && rc.getRoundNum() < bestRound) {
+//						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, maxSignal);
+//						recentlyBroadcastedDenLoc = closestDen.location;
+//						dir = randDir();
+//						Clock.yield();
+//					}
 					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
 							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() >= bestRound) {
-						rc.broadcastMessageSignal(rc.getLocation().x, rc.getLocation().y, maxSignal);
-						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, maxSignal);
+						Message.sendMessage(rc, rc.getLocation(), Message.SWARM, maxSignal);
+						Message.sendMessage(rc, closestNonDenEnemy.location, Message.ENEMY, maxSignal);
 						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
 						Clock.yield();
 						continue loop;
 					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1 && rc.getRoundNum() < bestRound) {
-						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, maxSignal);
+						Message.sendMessage(rc, closestDen.location, Message.DEN, maxSignal);
 						recentlyBroadcastedDenLoc = closestDen.location;
 						dir = randDir();
 						Clock.yield();

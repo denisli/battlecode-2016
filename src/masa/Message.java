@@ -1,5 +1,8 @@
 package masa;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
@@ -28,20 +31,18 @@ public class Message {
 		rc.broadcastMessageSignal(x, y, range);
 	}
 	
-	public static Message[] readMessageSignals(RobotController rc) {
-		int numMessages = rc.getMessageSignalCount();
-		Message[] messages = new Message[numMessages];
+	public static List<Message> readMessageSignals(RobotController rc) {
+		List<Message> messages = new ArrayList<Message>();
 		Signal signal = rc.readSignal();
-		int i = 0;
 		while (signal != null) {
-			signal = rc.readSignal();
 			boolean isOurMessage = signal.getTeam().equals(rc.getTeam());
 			if (isOurMessage) {
 				int[] signalMessage = signal.getMessage();
 				int x = signalMessage[0], y = signalMessage[1];
 				int type = x / AYY;
-				messages[i++] = new Message(new MapLocation(x - D - type * AYY, y - D - type * AYY), type);
+				messages.add(new Message(new MapLocation(x - D - type * AYY, y - D - type * AYY), type));
 			}
+			signal = rc.readSignal();
 		}
 		return messages;
 	}

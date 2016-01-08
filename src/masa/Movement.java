@@ -1,5 +1,6 @@
 package masa;
 
+import masa.RobotPlayer;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -8,6 +9,11 @@ import battlecode.common.RobotInfo;
 import battlecode.common.Team;
 
 public class Movement {
+	
+	public static Direction getRandomDirection() {
+		Direction dir = Direction.values()[RobotPlayer.rand.nextInt(8)];
+		return dir;
+	}
 
 	public static Direction getBestMoveableDirection(Direction dir, RobotController rc, int fan) {
 		int ordinal = dir.ordinal();
