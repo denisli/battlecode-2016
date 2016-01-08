@@ -79,12 +79,27 @@ public class TurretPlayer {
                     	Signal currentSignal = rc.readSignal();
                     	MapLocation bestTarget = null;
                     	if (currentSignal != null) {
-                    		bestTarget = new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]);
+                			int messageX = currentSignal.getMessage()[0];
+                			int messageY = currentSignal.getMessage()[1];
+                			//if signal message > 80000, then the message is signaling a turret location
+                			if (messageX > 80000) {
+                				messageX = messageX-100000;
+                				messageY = messageY-100000;
+                			}
+                    		bestTarget = new MapLocation(messageX, messageY);
                     	}
                     	while (currentSignal != null) {
-                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { // if we have a scout signal
-                    			if (rc.getLocation().distanceSquaredTo(bestTarget) > rc.getLocation().distanceSquaredTo(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]))) {
-                    				bestTarget = new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]);
+                			// if we have a scout signal
+                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { 
+                    			int messageX = currentSignal.getMessage()[0];
+                    			int messageY = currentSignal.getMessage()[1];
+                    			//if signal message > 80000, then the message is signaling a turret location
+                    			if (messageX > 80000) {
+                    				messageX = messageX-100000;
+                    				messageY = messageY-100000;
+                    			}
+                    			if (rc.getLocation().distanceSquaredTo(bestTarget) > rc.getLocation().distanceSquaredTo(new MapLocation(messageX, messageY))) {
+                    				bestTarget = new MapLocation(messageX, messageY);
                     			}
                     		}
                     		currentSignal = rc.readSignal();

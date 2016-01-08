@@ -29,6 +29,8 @@ public class SoldierPlayer {
 		boolean wasRetreating = false;
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
+				
+				//TODO this might be null
 				spawningArchonLocation = ally.location; break;
 			}
 		}

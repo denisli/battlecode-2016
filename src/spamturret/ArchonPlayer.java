@@ -1,11 +1,14 @@
 package spamturret;
 
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
@@ -60,6 +63,7 @@ public class ArchonPlayer {
 							rc.activate(adjNeutralRobots[0].location);
 						}            			
 					}
+					//careful- moving to parts might get into enemy turret range
 					if (Movement.getToAdjParts(rc)){
 					}
 					else {
@@ -85,20 +89,22 @@ public class ArchonPlayer {
 							//did not heal any robots
 							
 							// sense all the hostile robots within the archon's radius
-							RobotInfo[] hostileWithinRange = rc.senseHostileRobots(rc.getLocation(), RobotType.ARCHON.sensorRadiusSquared);
+							MapLocation myLoc = rc.getLocation();
+							RobotInfo[] hostileWithinRange = rc.senseHostileRobots(myLoc, RobotType.ARCHON.sensorRadiusSquared);
 							RobotInfo closestRobot = null;
 							int closestDistance = 0;
 							// get the furthest robot from the scout
 							for (RobotInfo r : hostileWithinRange) {
-								if (r.location.distanceSquaredTo(rc.getLocation()) > closestDistance) {
+								if (r.location.distanceSquaredTo(myLoc) > closestDistance) {
 									closestRobot = r;
-									closestDistance = r.location.distanceSquaredTo(rc.getLocation());
+									closestDistance = r.location.distanceSquaredTo(myLoc);
 								}
 							}
-							// if there is such an enemy, signal it to 9 squares around it
+							// if there is such an enemy, signal it to range 8
 							if (closestRobot != null) {
 								try {
-									rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 9);//why is this 9?
+									//this signaling is only effective against non turret enemies
+									rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 8);
 								} catch (GameActionException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -106,13 +112,10 @@ public class ArchonPlayer {
 							}
 							
 							int turnNum = rc.getRoundNum();
-							int numNearbyScouts = 0;
+							int numVeryCloseScouts = 0;
 							int numNearbyTurrets = 0;
 							RobotInfo[] friendlyNearby = rc.senseNearbyRobots(RobotType.ARCHON.sensorRadiusSquared, myTeam);
 							for (RobotInfo f : friendlyNearby) {
-								if (f.type == RobotType.SCOUT) {
-									numNearbyScouts++;
-								}
 								if (f.type == RobotType.TURRET) {
 									numNearbyTurrets++;
 								}
@@ -123,6 +126,13 @@ public class ArchonPlayer {
 							for (RobotInfo f : friendlyClose) {
 								if (f.type == RobotType.GUARD) {
 									numNearbyGuards++;
+								}
+							}
+							//check for scouts; how close should they be????
+							RobotInfo[] friendlyVeryClose = rc.senseNearbyRobots(15, myTeam);
+							for (RobotInfo f : friendlyClose) {
+								if (f.type == RobotType.SCOUT) {
+									numVeryCloseScouts++;
 								}
 							}
 							if (rc.hasBuildRequirements(RobotType.GUARD) && rc.isCoreReady() && numNearbyGuards < 1) {
@@ -155,7 +165,7 @@ public class ArchonPlayer {
 								}
 							}
 							//if there are <1 scout next to archon and 1 turret, build scout asap
-							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && numNearbyTurrets>0 && numNearbyScouts==0 && turnNum < 200) {
+							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && numNearbyTurrets>0 && numVeryCloseScouts==0 && turnNum < 400) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 								for (int i = 0; i < 8; i++) {
 									// If possible, build in this direction
@@ -251,9 +261,36 @@ public class ArchonPlayer {
 									}
 									//only move around if there are resources
 									if ((!built) && rc.hasBuildRequirements(RobotType.TURRET) && (rc.isCoreReady()))  {
+										//don't move into enemy turret range if scout sends signal about it
+										Set<Direction> dangerousDirs = new HashSet<>();
+										Signal currentSignal = rc.readSignal();
+										while (currentSignal != null) {
+											int messageX = currentSignal.getMessage()[0];
+											int messageY = currentSignal.getMessage()[1];
+											//if signal message > 80000, then the message is signaling a turret location
+			                    			if (messageX > 80000) {
+			                    				messageX = messageX-100000;
+			                    				messageY = messageY-100000;
+			                    				MapLocation enemyTurretLoc = new MapLocation(messageX, messageY);
+			                    				Direction dirToEnemyTurret = myLoc.directionTo(enemyTurretLoc);
+			                    				Direction dirToEnemyTurretL = myLoc.directionTo(enemyTurretLoc).rotateLeft();
+			                    				Direction dirToEnemyTurretR = myLoc.directionTo(enemyTurretLoc).rotateRight();
+			                    				if (myLoc.add(dirToEnemyTurret).distanceSquaredTo(enemyTurretLoc) <= 48) {
+			                    					dangerousDirs.add(dirToEnemyTurret);
+			                    				}
+			                    				if (myLoc.add(dirToEnemyTurretL).distanceSquaredTo(enemyTurretLoc) <= 48) {
+			                    					dangerousDirs.add(dirToEnemyTurretL);
+			                    				}
+			                    				if (myLoc.add(dirToEnemyTurretR).distanceSquaredTo(enemyTurretLoc) <= 48) {
+			                    					dangerousDirs.add(dirToEnemyTurretR);
+			                    				}
+			                    			}
+											currentSignal = rc.readSignal();
+										}
+										
 										Direction dirToMove = RobotPlayer.directions[(rand.nextInt(4)*2) + 1];
 										for (int i = 0; i < 4; i++) {
-											if (rc.canMove(dirToMove)) {
+											if (rc.canMove(dirToMove) && !dangerousDirs.contains(dirToMove)) {
 												rc.move(dirToMove);
 												break;
 											}

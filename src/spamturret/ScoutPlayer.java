@@ -34,7 +34,13 @@ public class ScoutPlayer {
 				if (hostileWithinRange.length > 0) { // broadcast every single enemy
 					for (RobotInfo r : hostileWithinRange) {
 						try {
-							rc.broadcastMessageSignal(r.location.x, r.location.y, 15);
+							//if hostile robot is turret, add 100000 to the coordinates
+							if (r.type == RobotType.TURRET) {
+								rc.broadcastMessageSignal(r.location.x+100000, r.location.y+100000, 15);
+							}
+							else {
+								rc.broadcastMessageSignal(r.location.x, r.location.y, 15);
+							}
 						} catch (GameActionException e) {
 							e.printStackTrace();
 						}

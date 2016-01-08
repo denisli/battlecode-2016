@@ -79,7 +79,7 @@ public class TurretPlayer {
                     	}
                     }
                     // if it's a zombie, kill it
-                    if (rc.canAttackLocation(toAttack.location) && toAttack.team.equals(rc.getTeam().ZOMBIE)) {
+                    if (rc.canAttackLocation(toAttack.location) && toAttack.team.equals(Team.ZOMBIE)) {
                     	if (rc.isWeaponReady() && rc.getType() == RobotType.TURRET) {
                     		rc.attackLocation(toAttack.location);
                     	}
