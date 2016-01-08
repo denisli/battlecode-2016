@@ -28,6 +28,7 @@ public class SoldierPlayer {
 		RobotInfo[] closeAllies = rc.senseNearbyRobots(5, myTeam);
 		boolean wasRetreating = false;
 		int currentZombieScheduleIndex = 0;
+		boolean thereAreZombies = false;
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
 				
@@ -102,8 +103,6 @@ public class SoldierPlayer {
 	          
 	                    for (RobotInfo r: enemiesWithinRange) {
 	                    	if (r.type == RobotType.SOLDIER) {
-	                    		// Use soldier micro
-	                    		useSoldierMicro = true;
 	                    		totalEnemySoldierHealth += r.health;
 	                    		numEnemySoldiers++;
 	                    	}
@@ -158,7 +157,7 @@ public class SoldierPlayer {
 	                    	}
 	                    	useRush = outbreakLevel >= thresholdLevel && rounds[currentZombieScheduleIndex] >= 300 * (thresholdLevel - 1);
 	                    }
-	                    if (useRush) {
+	                    if (useRush && bestEnemy.team != Team.ZOMBIE) {
 	                    	// Attack whenever you can
 	                    	if (rc.isWeaponReady()) {
 	                    		if (rc.canAttackLocation(bestEnemy.location)) {
@@ -177,7 +176,7 @@ public class SoldierPlayer {
 	                    		}
 	                    	}
 	                    }
-	                    else if (useSoldierMicro) {
+	                    else if (bestEnemy.type == RobotType.SOLDIER) {
 	                    	// Attack whenever you can
 	                    	if (rc.isWeaponReady()) {
 	                    		if (rc.canAttackLocation(bestEnemy.location)) {
