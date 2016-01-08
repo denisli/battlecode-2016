@@ -20,7 +20,7 @@ public class ScoutPlayer {
 			rand = new Random(rc.getID());
 			dir = randDir();
 			int[] zombieSchedule = rc.getZombieSpawnSchedule().getRounds();
-			int bestRound = 1500;
+			int bestRound = 2100;
 			// want to get the first spawn after 1500 rounds
 			for (int round : zombieSchedule) {
 				if (round >= bestRound) {
@@ -70,10 +70,11 @@ public class ScoutPlayer {
 							rc.move(dir);
 						}
 					}
-					// if we at at the best round, broadcast swarming location
+					// if we at at the best round, broadcast swarming location and enemy location
 					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
 							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() >= bestRound) {
 						rc.broadcastMessageSignal(rc.getLocation().x, rc.getLocation().y, maxSignal);
+						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, maxSignal);
 						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
 						Clock.yield();

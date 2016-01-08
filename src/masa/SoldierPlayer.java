@@ -56,7 +56,11 @@ public class SoldierPlayer {
             	boolean isRetreating = rc.getHealth() < 2 * RobotType.SOLDIER.attackPower || (wasRetreating && rc.getHealth() < 5 * RobotType.SOLDIER.attackPower);
             	if (isRetreating) {
             		if (!wasRetreating) {
-            			bugging = new Bugging(rc, spawningArchonLocation);
+            			if (spawningArchonLocation != null) {
+            				bugging = new Bugging(rc, spawningArchonLocation);
+            			} else {
+            				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));
+            			}
             		} else {
             			if (rc.isCoreReady()) {
 	            			RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, RobotType.SOLDIER.sensorRadiusSquared);
@@ -144,13 +148,13 @@ public class SoldierPlayer {
 	                    }
 	                    int roundNum = rc.getRoundNum();
 	                    int outbreakLevel = roundNum / 300 + 1;
-	                    int thresholdLevel = 6;
+	                    int thresholdLevel = 8;
 	                    int[] rounds = rc.getZombieSpawnSchedule().getRounds();
 	                    boolean useRush = false;
 	                    if (rounds.length == 0) {
 	                    	useRush = outbreakLevel >= 6;
 	                    } else {
-	                    	if (rounds.length > 1) {
+	                    	if (rounds.length > currentZombieScheduleIndex + 1) {
 	                    		if (roundNum >= rounds[currentZombieScheduleIndex+1]) {
 	                    			currentZombieScheduleIndex++;
 	                    		}

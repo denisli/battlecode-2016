@@ -31,15 +31,18 @@ public class ScoutPlayer {
 						e.printStackTrace();
 					}
 				}*/
+				int signalsSent = 0;
 				if (hostileWithinRange.length > 0) { // broadcast every single enemy
 					for (RobotInfo r : hostileWithinRange) {
 						try {
 							//if hostile robot is turret, add 100000 to the coordinates
-							if (r.type == RobotType.TURRET) {
+							if (r.type == RobotType.TURRET && signalsSent < 20) {
 								rc.broadcastMessageSignal(r.location.x+100000, r.location.y+100000, 15);
+								signalsSent++;
 							}
-							else {
+							else if (signalsSent < 20) {
 								rc.broadcastMessageSignal(r.location.x, r.location.y, 15);
+								signalsSent++;
 							}
 						} catch (GameActionException e) {
 							e.printStackTrace();
