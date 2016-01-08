@@ -2,12 +2,7 @@ package masa;
 
 import java.util.Random;
 
-import battlecode.common.Clock;
-import battlecode.common.Direction;
-import battlecode.common.MapLocation;
-import battlecode.common.RobotController;
-import battlecode.common.RobotInfo;
-import battlecode.common.RobotType;
+import battlecode.common.*;
 
 public class ScoutPlayer {
 
@@ -24,6 +19,15 @@ public class ScoutPlayer {
 		try {
 			rand = new Random(rc.getID());
 			dir = randDir();
+			int[] zombieSchedule = rc.getZombieSpawnSchedule().getRounds();
+			int bestRound = 1500;
+			// want to get the first spawn after 1500 rounds
+			for (int round : zombieSchedule) {
+				if (round >= bestRound) {
+					bestRound = round;
+					break;
+				}
+			}
 			loop: while (true) {
 				MapLocation myLocation = rc.getLocation();
 				RobotInfo closestNonDenEnemy = null;
@@ -35,7 +39,6 @@ public class ScoutPlayer {
 				int closestNonDenDist = 500;
 				int closestDenDist = 500;
 				for (RobotInfo enemy : enemies) {
-					
 					int dist = myLocation.distanceSquaredTo(enemy.location);
 					if (closestNonDenDist > dist && enemy.type != RobotType.ZOMBIEDEN) {
 						closestNonDenEnemy = enemy;
@@ -58,7 +61,7 @@ public class ScoutPlayer {
 							dir = getAwayDir;
 						}
 					} else if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) > 48
-							&& rc.canMove(rc.getLocation().directionTo(closestNonDenEnemy.location))) { // otherwise if too far, move closer
+							&& rc.canMove(rc.getLocation().directionTo(closestNonDenEnemy.location)) && rc.getRoundNum() > 800) { // otherwise if too far, move closer
 						rc.move(rc.getLocation().directionTo(closestNonDenEnemy.location));
 					} else {
 						// try to move randomly
@@ -67,15 +70,16 @@ public class ScoutPlayer {
 							rc.move(dir);
 						}
 					}
+					// if we at at the best round, broadcast swarming location
 					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
-							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 600) {
-						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, 100*100);
+							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() >= bestRound) {
+						rc.broadcastMessageSignal(rc.getLocation().x, rc.getLocation().y, maxSignal);
 						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
 						Clock.yield();
 						continue loop;
-					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1) {
-						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, 100*100);
+					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1 && rc.getRoundNum() < bestRound) {
+						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, maxSignal);
 						recentlyBroadcastedDenLoc = closestDen.location;
 						dir = randDir();
 						Clock.yield();
