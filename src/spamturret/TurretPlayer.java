@@ -77,16 +77,22 @@ public class TurretPlayer {
                         }
                     } else { // in this case, there are no enemies, so check if we have a scout signal
                     	Signal currentSignal = rc.readSignal();
+                    	MapLocation bestTarget = null;
+                    	if (currentSignal != null) {
+                    		bestTarget = new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]);
+                    	}
                     	while (currentSignal != null) {
-                    		if (currentSignal.getTeam().equals(myTeam)) {
-                    			break;
+                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { // if we have a scout signal
+                    			if (rc.getLocation().distanceSquaredTo(bestTarget) > rc.getLocation().distanceSquaredTo(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]))) {
+                    				bestTarget = new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]);
+                    			}
                     		}
                     		currentSignal = rc.readSignal();
                     	}
-                    	if (currentSignal != null) { // if we actually have a scout signal
+                    	if (bestTarget != null) { // if we actually have a target
                     		if (rc.isWeaponReady()) { // and if we attack
-                    			if (rc.canAttackLocation(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]))) {
-                    				rc.attackLocation(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1])); // attack the location in the message
+                    			if (rc.canAttackLocation(bestTarget)) {
+                    				rc.attackLocation(bestTarget); // attack the location in the message
                     			}
                     			
                     		}

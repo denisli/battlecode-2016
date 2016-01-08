@@ -11,8 +11,8 @@ import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 import battlecode.common.Signal;
 import battlecode.common.Team;
-import spamturret.RobotPlayer;
 import spamturret.Movement;
+import spamturret.RobotPlayer;
 
 public class ArchonPlayer {
 	public static int turretCount = 0;
