@@ -124,9 +124,9 @@ public class ArchonPlayer {
 								}
 							}
 							// if archon has nothing to do, tell soldiers to come to it's location
-							/*if (rc.getRoundNum() > 500 && rc.isCoreReady() && rc.isWeaponReady()) {
+							if (rc.getRoundNum() > 500 && rc.isCoreReady() && rc.isWeaponReady()) {
 								rc.broadcastMessageSignal(-100, 0, 70 * 70);
-							}*/
+							}
 						}
 					}
 				}

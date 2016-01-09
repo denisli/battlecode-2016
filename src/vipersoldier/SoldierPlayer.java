@@ -259,9 +259,10 @@ public class SoldierPlayer {
 	                    	// first check if there are any new signals from scouts
 	                    	Signal currentSignal = rc.readSignal();
 	                    	while (currentSignal != null) {
-	                    		// signal from scout
 	                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] != -100) { // if we get a scout signal
 	                    			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
+	                    		} else if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] == -100) { // if we get an archon signal
+	                    			archonLocations.put(currentSignal.getID(), currentSignal.getLocation());
 	                    		}
 	                    		currentSignal = rc.readSignal();
 	                    	}
@@ -297,7 +298,22 @@ public class SoldierPlayer {
 		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();
 		                    	}
-		                    } else { // there are no dens to move towards, we want to move in one random direction
+		                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
+		                    	Set<Integer> archonIDs = archonLocations.keySet();
+		                    	MapLocation nearestArchon = archonLocations.get(archonIDs.iterator().next());
+		                    	for (Integer id : archonIDs) {
+		                    		if (archonLocations.get(id).distanceSquaredTo(rc.getLocation()) < nearestArchon.distanceSquaredTo(rc.getLocation())) {
+		                    			nearestArchon = archonLocations.get(id);
+		                    		}
+		                    	}
+		                    	if (!nearestArchon.equals(storedNearestArchon)) {
+		                    		bugging = new Bugging(rc, nearestArchon);
+		                    		storedNearestArchon = nearestArchon;
+		                    	}
+		                    	if (rc.isCoreReady()) {
+		                    		bugging.move();
+		                    	}
+		                    }else { // there are no dens or archons to move towards, we want to move in one random direction
 		                    	if (randomDirection != null && rc.canMove(randomDirection)) {
 		                    		rc.move(randomDirection);
 		                    	} else {
