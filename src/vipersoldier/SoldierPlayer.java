@@ -122,10 +122,10 @@ public class SoldierPlayer {
 	                    			bestEnemy = r;
 	                    		}
 	                    		//could check if it looked through all the archons- specs say there would be 6 max
-	                    	} else if (r.viperInfectedTurns > 0) {
-	                    		// if there  are any viper infected units, target lowest health one
+	                    	} else if (r.viperInfectedTurns > 0 && r.health > 2 * r.viperInfectedTurns) {
+	                    		// if there  are any viper infected units that won't turn into zombies, target lowest health one
 	                    		if (bestEnemy.type != RobotType.ARCHON) {
-	                    			if (bestEnemy.viperInfectedTurns >0) {
+	                    			if (bestEnemy.viperInfectedTurns > 0) {
 	                    				if (r.health < bestEnemy.health) {
 	                    					bestEnemy = r;
 	                    				}
