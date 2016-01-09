@@ -17,10 +17,8 @@ public class SoldierPlayer {
 	static MapLocation storedNearestArchon = null;
 	
 	public static void run(RobotController rc) {
-		int myAttackRange = 0;
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
-		Team enemyTeam = myTeam.opponent();
 		Set<MapLocation> denLocations = new HashSet<>();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		Direction randomDirection = null;
@@ -35,16 +33,12 @@ public class SoldierPlayer {
 			}
 		}
 		try {
-            // Any code here gets executed exactly once at the beginning of the game.
-            myAttackRange = rc.getType().attackRadiusSquared;
         } catch (Exception e) {
             // Throwing an uncaught exception makes the robot die, so we need to catch exceptions.
             // Caught exceptions will result in a bytecode penalty.
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
-		// keep the previous valid signal recieved
-		Signal oldSignal = null;
 		while (true) {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
@@ -64,12 +58,14 @@ public class SoldierPlayer {
 	            			RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, RobotType.SOLDIER.sensorRadiusSquared);
 	            			int closestDist = 1000;
 	            			Direction bestDir = Direction.NONE;
-	            			// Find the closest hostile and move away from him
+	            			// Find the closest hostile and move away from him, unless you are viper or zombie infected, then move towards them
 	            			for (RobotInfo hostile : hostiles) {
 	            				int dist = myLoc.distanceSquaredTo(hostile.location);
-	            				if (closestDist > dist) {
+	            				if (closestDist > dist && rc.getInfectedTurns() == 0) {
 	            					bestDir = hostile.location.directionTo(myLoc);
 	            					closestDist = dist;
+	            				} else if (closestDist > dist && rc.getInfectedTurns() > 0 && hostile.team.equals(rc.getTeam().opponent())) {
+	            					bestDir = myLoc.directionTo(hostile.location);
 	            				}
 	            			}
 	            			if (bestDir != Direction.NONE) {
@@ -126,12 +122,23 @@ public class SoldierPlayer {
 	                    			bestEnemy = r;
 	                    		}
 	                    		//could check if it looked through all the archons- specs say there would be 6 max
+	                    	} else if (r.viperInfectedTurns > 0) {
+	                    		// if there  are any viper infected units, target lowest health one
+	                    		if (bestEnemy.type != RobotType.ARCHON) {
+	                    			if (bestEnemy.viperInfectedTurns >0) {
+	                    				if (r.health < bestEnemy.health) {
+	                    					bestEnemy = r;
+	                    				}
+	                    			} else {
+	                    				bestEnemy = r;
+	                    			}
+	                    		}
 	                    	}
 	                    	else {
-	                    		//no archons in sight
-	                			if (bestEnemy.type != RobotType.ARCHON) {
+	                    		//no archons or infected units in sight
+	                			if (bestEnemy.type != RobotType.ARCHON && bestEnemy.viperInfectedTurns == 0) {
 	                				//cur is not archon and sees no archons in list
-	                				if (r.location.distanceSquaredTo(myLoc) < bestEnemy.location.distanceSquaredTo(myLoc)) {
+	                				if (r.health < bestEnemy.health) {
 	                					//attacks least health
 	                					bestEnemy = r;
 	                				}
