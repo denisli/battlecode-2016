@@ -39,26 +39,40 @@ public class ViperPlayer {
 				
 				if (rc.isWeaponReady()) {
 					// Find an enemy that satisfies the infection criteria
-					// Criteria is as follows:
-					// - The enemy is next to at least 2 other enemies
-					// - The enemy health is <= our number of soldier that can hit it + 2.
-					// - The enemy is not already infected!
 					RobotInfo bestEnemy = null;
 					RobotInfo[] enemies = rc.senseNearbyRobots(sightRange, enemyTeam);
 					int furthestDist = 0;
+					double lowestHealth = 10000;
 					for (RobotInfo enemy : enemies) {
-						int dist = myLoc.distanceSquaredTo(enemy.location);
-						if (dist > furthestDist) {
-							boolean notInfected = enemy.viperInfectedTurns == 0 || enemy.zombieInfectedTurns == 0;
-							if (notInfected) {
-								boolean atLeastTwoEnemiesAdjacent = rc.senseNearbyRobots(enemy.location, 2, enemyTeam).length >= 2;
-								if (atLeastTwoEnemiesAdjacent) {
-									int approximateNumberOfAllies = rc.senseNearbyRobots(enemy.location, attackRange, team).length - 1;
-									boolean enemyHealthIsLow = enemy.health <= RobotType.SOLDIER.attackPower * approximateNumberOfAllies + 6;
-									if (enemyHealthIsLow) {
+						boolean notInfected = enemy.viperInfectedTurns == 0 || enemy.zombieInfectedTurns == 0;
+						// Prioritize not infected enemies
+						if (notInfected) {
+							int dist = myLoc.distanceSquaredTo(enemy.location);
+							// If the distance is further, that's a good target
+							if (dist > furthestDist) {
+								bestEnemy = enemy;
+								furthestDist = dist;
+							// If same distance, go for the lowest health.
+							} else if (dist == furthestDist) {
+								if (enemy.health < lowestHealth) {
+									lowestHealth = enemy.health;
+									bestEnemy = enemy;
+								}
+							}
+						} else {
+							// If no best enemy yet, just infect someone that's already infected
+							if (bestEnemy == null) {
+								bestEnemy = enemy;
+							// If the best enemy is infected
+							} else if (bestEnemy.viperInfectedTurns > 0 || bestEnemy.zombieInfectedTurns > 0) {
+								int dist = myLoc.distanceSquaredTo(enemy.location);
+								if (dist > furthestDist) {
+									bestEnemy = enemy;
+									furthestDist = dist;
+								} else if (dist == furthestDist) {
+									if (enemy.health < lowestHealth) {
+										lowestHealth = enemy.health;
 										bestEnemy = enemy;
-										furthestDist = dist;
-										break;
 									}
 								}
 							}
