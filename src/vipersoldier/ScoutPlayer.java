@@ -67,14 +67,14 @@ public class ScoutPlayer {
 							rc.move(dir);
 						}
 					}
-					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
+					/*if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
 							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 600) {
 						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, 100*100);
 						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
 						Clock.yield();
 						continue loop;
-					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1) {
+					} else */if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1 && rc.getRoundNum() < 600) {
 						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, 100*100);
 						recentlyBroadcastedDenLoc = closestDen.location;
 						dir = randDir();

@@ -54,7 +54,11 @@ public class SoldierPlayer {
             	boolean isRetreating = rc.getHealth() < 2 * RobotType.SOLDIER.attackPower || (wasRetreating && rc.getHealth() < 5 * RobotType.SOLDIER.attackPower);
             	if (isRetreating) {
             		if (!wasRetreating) {
-            			bugging = new Bugging(rc, spawningArchonLocation);
+            			if (spawningArchonLocation == null) {
+            				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));
+            			} else {
+            				bugging = new Bugging(rc, spawningArchonLocation);
+            			}
             		} else {
             			if (rc.isCoreReady()) {
 	            			RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, RobotType.SOLDIER.sensorRadiusSquared);
