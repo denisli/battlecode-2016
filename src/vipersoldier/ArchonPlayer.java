@@ -21,6 +21,7 @@ public class ArchonPlayer {
 		Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
 		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
+		//number of consecutive turns that it didnt return a signal; used to determine when to build scouts
 		int conseqNoSignal = 0;
 
 		try {
@@ -95,6 +96,22 @@ public class ArchonPlayer {
 									}
 								}
 							}
+							//if - consecutive turns passed and it didnt receive a scout signal, then build a scout for after turn 900
+							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && turnNum > 900 && conseqNoSignal > 50) {
+								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+								for (int i = 0; i < 8; i++) {
+									// If possible, build in this direction
+									if (rc.canBuild(dirToBuild, RobotType.SCOUT)) {
+										rc.build(dirToBuild, RobotType.SCOUT);
+										conseqNoSignal = 0;
+										built = true;
+										break;
+									} else {
+										// Rotate the direction to try
+										dirToBuild = dirToBuild.rotateLeft();
+									}
+								}
+							}
 							if (rc.hasBuildRequirements(RobotType.GUARD) && rc.isCoreReady() && !built && numNearbyGuards < 1) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 								for (int i = 0; i < 8; i++) {
@@ -107,6 +124,27 @@ public class ArchonPlayer {
 										// Rotate the direction to try
 										dirToBuild = dirToBuild.rotateLeft();
 									}
+								}
+							}
+							if (turnNum%300 > 0 && turnNum%300 <100 && turnNum>800) { //turn conditions to build viper
+								if (!rc.hasBuildRequirements(RobotType.VIPER)) {
+									if (rc.isCoreReady() && !built) {
+										Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+										for (int i = 0; i < 8; i++) {
+											// If possible, build in this direction
+											if (rc.canBuild(dirToBuild, RobotType.VIPER)) {
+												rc.build(dirToBuild, RobotType.VIPER);
+												built = true;
+												break;
+											} else {
+												// Rotate the direction to try
+												dirToBuild = dirToBuild.rotateLeft();
+											}
+										}
+									}
+								}
+								else {
+									built = true;
 								}
 							}
 							if (rc.hasBuildRequirements(RobotType.SOLDIER) && rc.isCoreReady() && !built) {
