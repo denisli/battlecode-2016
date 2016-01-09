@@ -317,7 +317,7 @@ public class SoldierPlayer {
 		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();
 		                    	}
-		                    }else { // there are no dens or archons to move towards, we want to move in one random direction
+		                    } else { // there are no dens or archons to move towards, we want to move in one random direction
 		                    	if (randomDirection != null && rc.canMove(randomDirection)) {
 		                    		rc.move(randomDirection);
 		                    	} else {
