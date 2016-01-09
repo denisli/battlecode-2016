@@ -1,6 +1,7 @@
 package vipersoldier;
 
 import battlecode.common.*;
+import vipersoldier.TTMPlayer;
 
 import java.util.Random;
 
@@ -34,8 +35,10 @@ public class RobotPlayer {
         	SoldierPlayer.run(rc);
         } else if (rc.getType() == RobotType.SCOUT) {
         	ScoutPlayer.run(rc);
-        }else if (rc.getType() == RobotType.VIPER) {
+        } else if (rc.getType() == RobotType.VIPER) {
         	ViperPlayer.run(rc);
+        } else if (rc.getType() == RobotType.TTM) {
+        	TTMPlayer.run(rc);
         }
         		
         else {
