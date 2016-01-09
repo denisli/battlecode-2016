@@ -1,5 +1,9 @@
 package vipersoldier;
 
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -8,15 +12,17 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.Signal;
 import battlecode.common.Team;
 
 public class ViperPlayer {
 	
 	private static int sightRange = RobotType.VIPER.sensorRadiusSquared;
 	private static int attackRange = RobotType.VIPER.attackRadiusSquared;
-	
+	static MapLocation storedNearestDen = null;
 	private static Team team;
 	private static Team enemyTeam;
+	static Bugging bugging = null;
 	
 	private static MapLocation myLoc;
 	
@@ -27,6 +33,9 @@ public class ViperPlayer {
 				myLoc = rc.getLocation();
 				team = rc.getTeam();
 				enemyTeam = team.opponent();
+				Set<MapLocation> denLocations = new HashSet<>();
+				Direction randomDirection = null;
+				Random rand = new Random(rc.getID());
 				
 				if (rc.isWeaponReady()) {
 					// Find an enemy that satisfies the infection criteria
@@ -66,6 +75,56 @@ public class ViperPlayer {
 				}
 				
 				if (rc.isCoreReady()) {
+
+                	// first check if there are any new signals from scouts
+                	Signal currentSignal = rc.readSignal();
+                	while (currentSignal != null) {
+                		if (currentSignal.getTeam().equals(rc.getTeam()) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] != -100) { // if we get a scout signal
+                			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
+                		}
+                		currentSignal = rc.readSignal();
+                	}
+                	// now we want it to move towards the nearest enemy, if we can
+                	
+                	if (denLocations.size() > 0) {
+                		randomDirection = null;
+                    	MapLocation currentLocation = myLoc;
+                    	MapLocation nearestDen = denLocations.iterator().next();
+                    	for (MapLocation l : denLocations) {
+                    		if (l.distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
+                    			nearestDen = l;
+                    		}
+                    	}
+                    	// if we can sense the nearest den and it doesn't exist, try to get the next nearest den or just break
+                    	if (rc.canSense(nearestDen) && rc.senseRobotAtLocation(nearestDen) == null) {
+                    		denLocations.remove(nearestDen);
+                    		if (denLocations.size() > 0) {
+                    			nearestDen = denLocations.iterator().next();
+    	                    	for (MapLocation l : denLocations) {
+    	                    		if (l.distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
+    	                    			nearestDen = l;
+    	                    		}
+    	                    	}
+                    		} else {
+                    			Clock.yield();
+                    		}
+                    	}
+                    	if (!nearestDen.equals(storedNearestDen)) {
+                    		bugging = new Bugging(rc, nearestDen);
+                    		storedNearestDen = nearestDen;
+                    	}
+                    	if (rc.isCoreReady()) {
+                    		bugging.move();
+                    	}
+                    } else { // there are no dens or archons to move towards, we want to move in one random direction
+                    	if (randomDirection == null) {
+                    		randomDirection = RobotPlayer.directions[rand.nextInt(1000) % 8];
+                    	}
+                    	if (rc.canMove(randomDirection)) {
+                    		rc.move(randomDirection);
+                    	}
+                    	
+                    }
 					// Stand near the outskirts of the soldiers.
 					// From what we can see, move towards the location at the outskirts.
 					// Keep moving until we see that there is only a single layer of soldiers in a particular direction.
@@ -88,7 +147,7 @@ public class ViperPlayer {
 							MapLocation point = new MapLocation(xDisp, yDisp);
 							Direction dir = origin.directionTo(point);
 							Direction moveableDir = Movement.getBestMoveableDirection(dir, rc, 1);
-							if (moveableDir != Direction.NONE) {
+							if (moveableDir != Direction.NONE && rc.canMove(dir) && rc.isCoreReady()) {
 								rc.move(dir);
 							}
 						}
