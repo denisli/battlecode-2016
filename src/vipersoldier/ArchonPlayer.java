@@ -21,7 +21,7 @@ public class ArchonPlayer {
 		Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
 		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
-
+		int conseqNoSignal = 0;
 
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
@@ -130,6 +130,12 @@ public class ArchonPlayer {
 						}
 					}
 				}
+				if (rc.readSignal() != null) {
+					conseqNoSignal++;
+				} else {
+					conseqNoSignal = 0;
+				}
+				rc.emptySignalQueue();
 
 				Clock.yield();
 			} catch (Exception e) {
