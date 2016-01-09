@@ -1,0 +1,9 @@
+beta: spamturrets if archons are close to each other; else masa
+masa: soldier stream with rally and rush
+soldierstream: soldiers go around killing dens/enemies
+soldierturrets: spamturrets if archons are close to each other; else soldierstream
+spamguard: lots of guards chilling
+spamsoldier: lots of soldiers chilling
+spamsoldierguard: lots of soldiers/guards chilling
+spamturret: turrets turtle
+vipersoldier: soldierstream with vipers
