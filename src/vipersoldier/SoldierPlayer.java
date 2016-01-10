@@ -145,7 +145,7 @@ public class SoldierPlayer {
 	                    		//no archons or infected units in sight
 	                			if (bestEnemy.type != RobotType.ARCHON && bestEnemy.viperInfectedTurns == 0) {
 	                				//cur is not archon and sees no archons in list
-	                				if (r.health < bestEnemy.health) {
+	                				if (r.location.distanceSquaredTo(rc.getLocation()) < bestEnemy.location.distanceSquaredTo(rc.getLocation())) {
 	                					//attacks least health
 	                					bestEnemy = r;
 	                				}

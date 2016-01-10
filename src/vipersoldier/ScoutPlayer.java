@@ -28,7 +28,7 @@ public class ScoutPlayer {
 	public static void run(RobotController rc) {
 		Set<MapLocation> neutralBots = new HashSet<>();
 		Set<MapLocation> partsList = new HashSet<>();
-		
+		Direction randomDirection = null;
 		try {
 			rand = new Random(rc.getID());
 			dir = randDir();
@@ -59,11 +59,12 @@ public class ScoutPlayer {
 					if (closestNonDenDist > dist && enemy.type != RobotType.ZOMBIEDEN) {
 						closestNonDenEnemy = enemy;
 						closestNonDenDist = dist;
-					
+						randomDirection = null;
 					}
 					if (closestDenDist > dist && enemy.type == RobotType.ZOMBIEDEN) {
 						closestDen = enemy;
 						closestDenDist = dist;
+						randomDirection = null;
 					}
 				}
 				// If you can move...
@@ -93,15 +94,19 @@ public class ScoutPlayer {
 						}
 					}
 					
-					// otherwise if enemy is too far, move closer
-					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) > 48
+					// otherwise if enemy is too far, move closer if not a zombie
+					if (closestNonDenEnemy != null && !closestNonDenEnemy.team.equals(Team.ZOMBIE) && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) > 48
 							&& rc.canMove(rc.getLocation().directionTo(closestNonDenEnemy.location)) && rc.isCoreReady()) {
 						rc.move(rc.getLocation().directionTo(closestNonDenEnemy.location));
 					} else {
 						// try to move randomly
-						Direction dir = randDir();
-						if (rc.canMove(dir) && rc.isCoreReady()) {
-							rc.move(dir);
+						if (randomDirection == null) {
+							randomDirection = randDir();
+						}
+						if (rc.canMove(randomDirection) && rc.isCoreReady()) {
+							rc.move(randomDirection);
+						} else if (!rc.canMove(randomDirection)) {
+							randomDirection = randDir();
 						}
 					}
 					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
