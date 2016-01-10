@@ -48,7 +48,7 @@ public class SoldierPlayer {
             try {
             	MapLocation myLoc = rc.getLocation();
             	
-            	boolean isRetreating = rc.getHealth() < 2 * RobotType.SOLDIER.attackPower || (wasRetreating && rc.getHealth() < 5 * RobotType.SOLDIER.attackPower);
+            	boolean isRetreating = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasRetreating && 10 * rc.getHealth() <= 9 * RobotType.SOLDIER.maxHealth);
             	if (isRetreating) {
             		if (!wasRetreating) {
             			if (spawningArchonLocation == null) {
@@ -76,10 +76,30 @@ public class SoldierPlayer {
 	            				if (dir != Direction.NONE) {
 	            					rc.move(dir);
 	            				} else {
-	            					bugging.move();
+	            					int dist = myLoc.distanceSquaredTo(spawningArchonLocation);
+	            					if (dist > 13) { 
+	            						bugging.move();
+	            					} else {
+	            						if (dist <= 5) {
+	            							Direction away = Movement.getBestMoveableDirection(spawningArchonLocation.directionTo(myLoc), rc, 2);
+	            							if (away != Direction.NONE) {
+	            								rc.move(away);
+	            							}
+	            						}
+	            					}
 	            				}
 	            			} else {
-	            				bugging.move();
+	            				int dist = myLoc.distanceSquaredTo(spawningArchonLocation);
+            					if (dist > 13) { 
+            						bugging.move();
+            					} else {
+            						if (dist <= 5) {
+            							Direction away = Movement.getBestMoveableDirection(spawningArchonLocation.directionTo(myLoc), rc, 2);
+            							if (away != Direction.NONE) {
+            								rc.move(away);
+            							}
+            						}
+            					}
 	            			}
             			}
             		}

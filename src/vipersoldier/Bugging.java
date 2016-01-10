@@ -23,8 +23,9 @@ public class Bugging {
 	// Moves the robot according to bugging.
 	// Assume that the robot's core is ready.
 	public void move() throws GameActionException {
+		MapLocation myLocation = rc.getLocation();
+		if (myLocation.equals(destination)) return;
 		if (hugging == Hugging.NONE) {
-			MapLocation myLocation = rc.getLocation();
 			Direction dir = myLocation.directionTo(destination);
 			if (rc.canMove(dir)) {
 				rc.move(dir);
@@ -84,7 +85,6 @@ public class Bugging {
 				// If the direction is fan = 1 away from the direction it came
 				// from,
 				// then do NOT break out of hugging. Else get out of hugging.
-				MapLocation myLocation = rc.getLocation();
 				Direction dirToDest = myLocation.directionTo(destination);
 				Direction cameFromDir = dirWhileHugging.opposite();
 
@@ -113,7 +113,6 @@ public class Bugging {
 				// If the direction is fan = 1 away from the direction it came
 				// from,
 				// then do NOT break out of hugging. Else get out of hugging.
-				MapLocation myLocation = rc.getLocation();
 				Direction dirToDest = myLocation.directionTo(destination);
 				Direction cameFromDir = dirWhileHugging.opposite();
 
