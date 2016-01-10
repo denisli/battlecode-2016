@@ -15,12 +15,14 @@ public class SoldierPlayer {
 	
 	static Bugging bugging = null;
 	static MapLocation storedNearestDen = null;
+	static MapLocation storedNearestEnemy = null;
 	static MapLocation storedNearestArchon = null;
 	
 	public static void run(RobotController rc) {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Set<MapLocation> denLocations = new HashSet<>();
+		Set<MapLocation> enemyLocations = new HashSet<>();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		Direction randomDirection = null;
 		MapLocation spawningArchonLocation = null;
@@ -274,8 +276,11 @@ public class SoldierPlayer {
 	                    		if (m.type == Message.DEN) {
 	                    			denLocations.add(m.location);
 	                    		}
+	                    		if (m.type == Message.ENEMY) {
+	                    			enemyLocations.add(m.location);
+	                    		}
 	                    	}
-	                    	// now we want it to move towards the nearest enemy, if we can
+	                    	// now we want it to move towards the nearest den if we can
 	                    	
 	                    	if (denLocations.size() > 0) {
 	                    		randomDirection = null;
@@ -307,6 +312,36 @@ public class SoldierPlayer {
 		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();
 		                    	}
+		                    } else if (enemyLocations.size() > 0) { // if there are enemies to go to, move towards them
+		                    	randomDirection = null;
+		                    	MapLocation currentLocation = myLoc;
+		                    	MapLocation nearestEnemy = enemyLocations.iterator().next();
+		                    	for (MapLocation l : enemyLocations) {
+		                    		if (l.distanceSquaredTo(currentLocation) < nearestEnemy.distanceSquaredTo(currentLocation)) {
+		                    			nearestEnemy = l;
+		                    		}
+		                    	}
+		                    	// if we can sense the nearest enemy location and it doesn't exist, try to get the next nearest enemy location or just break
+		                    	if (rc.getLocation().distanceSquaredTo(nearestEnemy) < 10) {
+		                    		enemyLocations.remove(nearestEnemy);
+		                    		if (enemyLocations.size() > 0) {
+		                    			nearestEnemy = enemyLocations.iterator().next();
+		    	                    	for (MapLocation l : enemyLocations) {
+		    	                    		if (l.distanceSquaredTo(currentLocation) < nearestEnemy.distanceSquaredTo(currentLocation)) {
+		    	                    			nearestEnemy = l;
+		    	                    		}
+		    	                    	}
+		                    		} else {
+		                    			Clock.yield();
+		                    		}
+		                    	}
+		                    	if (!nearestEnemy.equals(storedNearestEnemy)) {
+		                    		bugging = new Bugging(rc, nearestEnemy);
+		                    		storedNearestEnemy = nearestEnemy;
+		                    	}
+		                    	if (rc.isCoreReady()) {
+		                    		bugging.move();
+		                    	}
 		                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
 		                    	Set<Integer> archonIDs = archonLocations.keySet();
 		                    	MapLocation nearestArchon = archonLocations.get(archonIDs.iterator().next());
@@ -323,11 +358,14 @@ public class SoldierPlayer {
 		                    		bugging.move();
 		                    	}
 		                    } else { // there are no dens or archons to move towards, we want to move in one random direction
-		                    	if (randomDirection != null && rc.canMove(randomDirection)) {
-		                    		rc.move(randomDirection);
-		                    	} else {
-		                    		randomDirection = RobotPlayer.directions[fate % 8];
-		                    	}
+		                    	if (randomDirection == null) {
+									randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
+								}
+								if (rc.canMove(randomDirection) && rc.isCoreReady()) {
+									rc.move(randomDirection);
+								} else if (!rc.canMove(randomDirection)) {
+									randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
+								}
 		                    }
 	                    }
 	                }
