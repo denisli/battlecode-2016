@@ -1,6 +1,7 @@
 package vipersoldier;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
@@ -31,6 +32,7 @@ public class ArchonPlayer {
 		MapLocation partsToGoTo = null;
 		Bugging bug = null;
 		int signalRange = 50*50*2;
+		int sightRadius = RobotType.ARCHON.sensorRadiusSquared;
 		
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
@@ -44,6 +46,28 @@ public class ArchonPlayer {
 		while (true) {
 			MapLocation myLoc = rc.getLocation();
 			RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
+			MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRadius);
+			RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
+			
+			//READ MESSAGES HERE
+			List<Message> messages = Message.readMessageSignals(rc);
+        	for (Message m : messages) {
+        		if (m.type == Message.NEUTRALBOT) {
+        			neutralBots.add(m.location);
+        		}
+        		if (m.type == Message.PARTS) {
+        			partsList.add(m.location);
+        		}
+        	}
+			for (MapLocation sq : squaresInSight) {
+				if (rc.senseParts(sq) > 0) {
+					partsList.add(sq);
+				}
+			}
+			for (RobotInfo n : nearbyNeutralRobots) {
+				neutralBots.add(n.location);
+			}
+
 			// This is a loop to prevent the run() method from returning. Because of the Clock.yield()
 			// at the end of it, the loop will iterate once per game round.
 
@@ -57,10 +81,13 @@ public class ArchonPlayer {
 						//if there is a neutral robot adjacent, activate it or wait until there's no core delay
 						if (rc.isCoreReady()) {
 							rc.activate(adjNeutralRobots[0].location);
+							neutralBots.remove(adjNeutralRobots[0].location);
 							partsToGoTo = null;
 						}            			
 					}
 					if (Movement.getToAdjParts(rc)){
+						//it moved to parts, now remove parts location from the list
+						partsList.remove(rc.getLocation());
 						partsToGoTo = null;
 					}
 					else {
