@@ -4,8 +4,11 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotType;
 
 public class Bugging {
+	
+	private static final int FIFTY_TURN_MINE = 3049;
 
 	private final RobotController rc;
 	private final MapLocation destination;
@@ -25,6 +28,16 @@ public class Bugging {
 			Direction dir = myLocation.directionTo(destination);
 			if (rc.canMove(dir)) {
 				rc.move(dir);
+			} else if (rc.canMove(dir.rotateLeft())) {
+				rc.move(dir.rotateLeft());
+			} else if (rc.canMove(dir.rotateRight())) {
+				rc.move(dir.rotateRight());
+			} else if (shouldMine(dir)) {
+				rc.clearRubble(dir);
+			} else if (shouldMine(dir.rotateLeft())) { 
+				rc.clearRubble(dir.rotateLeft());
+			} else if (shouldMine(dir.rotateRight())) {
+				rc.clearRubble(dir.rotateRight());
 			} else {
 				// Since we can't move closer to the destination, we should
 				// commence hugging.
@@ -76,9 +89,13 @@ public class Bugging {
 				Direction cameFromDir = dirWhileHugging.opposite();
 
 				// In this case, break out of bugging
-				if (getFanDist(dirToDest, cameFromDir) > 1 && rc.canMove(dirToDest)) {
+				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
-					rc.move(dirToDest);
+					if (rc.canMove(dirToDest)) {
+						rc.move(dirToDest);
+					} else {
+						rc.clearRubble(dirToDest);
+					}
 				// Continue to bug...
 				} else {
 					dirWhileHugging = dirWhileHugging.rotateLeft();
@@ -101,10 +118,14 @@ public class Bugging {
 				Direction cameFromDir = dirWhileHugging.opposite();
 
 				// In this case, break out of bugging
-				if (getFanDist(dirToDest, cameFromDir) > 1 && rc.canMove(dirToDest)) {
+				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
-					rc.move(dirToDest);
-					// Continue to bug...
+					if (rc.canMove(dirToDest)) {
+						rc.move(dirToDest);
+					} else {
+						rc.clearRubble(dirToDest);
+					}
+				// Continue to bug...
 				} else {
 					dirWhileHugging = dirWhileHugging.rotateRight();
 					int numRotates = 0;
@@ -131,6 +152,21 @@ public class Bugging {
 	// Number of turns away from the 4 dir.
 	private int getDirTurnsAwayFrom4(Direction dir) {
 		return Math.abs(dir.ordinal() - 4);
+	}
+	
+	// Assumes that you cannot move in that location
+	private boolean shouldMine(Direction dir) {
+		if (isMinerType(rc.getType())) {
+			MapLocation myLoc = rc.getLocation();
+			MapLocation dirLoc = myLoc.add(dir);
+			double rubble = rc.senseRubble(dirLoc);
+			return rubble >= 50 && rubble <= FIFTY_TURN_MINE;
+		}
+		return false;
+	}
+	
+	private static boolean isMinerType(RobotType r) {
+		return !(r == RobotType.TTM || r == RobotType.TURRET || r == RobotType.SCOUT);
 	}
 
 }
