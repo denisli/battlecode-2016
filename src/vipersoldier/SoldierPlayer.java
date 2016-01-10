@@ -315,7 +315,7 @@ public class SoldierPlayer {
 	                    	}
 	                    	// now we want it to move towards the nearest den if we can
 	                    	
-	                    	if (denLocations != null && denLocations.size() > 0) {
+	                    	if (denLocations.size() > 0) {
 	                    		rc.setIndicatorString(0, "moving towards den");
 	                    		randomDirection = null;
 		                    	MapLocation currentLocation = myLoc;
@@ -330,9 +330,6 @@ public class SoldierPlayer {
 		                    		
 		                    		rc.setIndicatorString(2, "" + denLocations.size());
 		                    		denLocations.remove(nearestDen);
-		                    		if (denLocations.size() == 0) {
-		                    			denLocations = null;
-		                    		}
 		                    	}
 		                    	rc.setIndicatorString(1, nearestDen.toString());
 		                    	if (!nearestDen.equals(storedNearestDen)) {
@@ -344,7 +341,7 @@ public class SoldierPlayer {
 		                    	}
 		                    } else if (storedNearestEnemy != null) {
 		                    	rc.setIndicatorString(0, "moving towards enemy");
-		                    	if (rc.getLocation().distanceSquaredTo(storedNearestEnemy) < rc.getType().sensorRadiusSquared) {
+		                    	if (rc.canSense(storedNearestEnemy) && (rc.senseRobotAtLocation(storedNearestEnemy) == null || rc.senseRobotAtLocation(storedNearestEnemy).team != rc.getTeam().opponent())) {
 		                    		enemyLocations.clear();
 		                    		storedNearestEnemy = null;
 		                    	}
@@ -386,7 +383,7 @@ public class SoldierPlayer {
 		                    			nearestArchon = archonLocations.get(id);
 		                    		}
 		                    	}
-		                    	if (!nearestArchon.equals(storedNearestArchon)) {
+		                    	if (!nearestArchon.equals(storedNearestArchon) || bugging == null) {
 		                    		bugging = new Bugging(rc, nearestArchon);
 		                    		storedNearestArchon = nearestArchon;
 		                    	}
