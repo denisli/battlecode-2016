@@ -23,11 +23,10 @@ public class ArchonPlayer {
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
 		int numFriendly = 0;
-		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 		//number of consecutive turns that it didnt return a signal; used to determine when to build scouts
 		int conseqNoSignal = 0;
 		Set<MapLocation> neutralBots = new HashSet<>();
-		Set<MapLocation> parts = new HashSet<>();
+		Set<MapLocation> partsList = new HashSet<>();
 		
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
@@ -39,6 +38,7 @@ public class ArchonPlayer {
 		}
 
 		while (true) {
+			RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 			// This is a loop to prevent the run() method from returning. Because of the Clock.yield()
 			// at the end of it, the loop will iterate once per game round.
 
@@ -179,10 +179,9 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							// if archon has nothing to do, tell soldiers to come to it's location
-							/*if (rc.getRoundNum() > 500 && rc.isCoreReady() && rc.isWeaponReady()) {
-								rc.broadcastMessageSignal(-100, 0, 70 * 70);
-							}*/
+							if (rc.isCoreReady() && built == false) {
+								//TODO move to parts or neutral robot
+							}
 						}
 					}
 				}
