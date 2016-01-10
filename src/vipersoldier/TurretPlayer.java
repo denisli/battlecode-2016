@@ -1,5 +1,6 @@
 package vipersoldier;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,14 +37,13 @@ public class TurretPlayer {
         while (true) {
             // Check which code to run
             try {
-                if(rc.getType() == RobotType.TTM) {
+                if (rc.getType() == RobotType.TTM) {
                 	TTMCode(rc);
-                } else {
-                	
-                	Clock.yield();
+                } 
+                if (rc.getType() == RobotType.TURRET) {
+                	TurretCode(rc);
                 }
-
-                
+                Clock.yield();
             } catch (Exception e) {
                 System.out.println(e.getMessage());
                 e.printStackTrace();
@@ -51,6 +51,71 @@ public class TurretPlayer {
         }
 	}
 
+	public static void TurretCode(RobotController rc) throws GameActionException {
+		MapLocation myLoc = rc.getLocation();
+		int attackRadius = RobotType.TURRET.attackRadiusSquared;
+		int sightRadius = RobotType.TURRET.sensorRadiusSquared;
+		//sight range is less than attack range
+        RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, sightRadius);
+        
+        List<RobotInfo> robotsCanAttack = new ArrayList<>();
+    	for (RobotInfo r : enemiesWithinRange) {
+    		if (myLoc.distanceSquaredTo(r.location) > 5) {
+    			robotsCanAttack.add(r);
+    		}
+    	}
+        
+        if (robotsCanAttack.size() == 0) {
+        	if (rc.isCoreReady()) {
+            	rc.pack();
+        	}
+        }
+        else {
+        	// we want to get the closest enemy
+        	RobotInfo bestEnemy = robotsCanAttack.get(0);
+  
+            for (RobotInfo r: robotsCanAttack) {
+            	if (r.type == RobotType.ARCHON) {
+            		//it sees archon
+            		if (bestEnemy.type == RobotType.ARCHON) {
+            			if (r.health < bestEnemy.health) {
+            				bestEnemy = r;
+            			}
+            		}
+            		else {
+            			bestEnemy = r;
+            		}
+            	} else if (r.viperInfectedTurns > 0) {
+            		// if there are any viper infected units, target lowest health one
+            		if (bestEnemy.type != RobotType.ARCHON) {
+            			if (bestEnemy.viperInfectedTurns > 0) {
+            				if (r.health < bestEnemy.health) {
+            					bestEnemy = r;
+            				}
+            			} else {
+            				bestEnemy = r;
+            			}
+            		}
+            	}
+            	else {
+            		//no archons or infected units in sight
+        			if (bestEnemy.type != RobotType.ARCHON && bestEnemy.viperInfectedTurns == 0) {
+        				//cur is not archon and sees no archons in list
+        				if (r.location.distanceSquaredTo(rc.getLocation()) < bestEnemy.location.distanceSquaredTo(rc.getLocation())) {
+        					//attacks least health
+        					bestEnemy = r;
+        				}
+        			}
+            	}
+            }
+            if (rc.isWeaponReady()) {
+            	rc.attackLocation(bestEnemy.location);
+            }
+
+        }
+
+	}
+	
 	private static void TTMCode(RobotController rc) throws GameActionException {
 		Team myTeam = rc.getTeam();
 		// first check if there are any enemies nearby
@@ -61,6 +126,8 @@ public class TurretPlayer {
 		MapLocation spawningArchonLocation = null;
 		RobotInfo[] closeAllies = rc.senseNearbyRobots(5, myTeam);
 		boolean wasRetreating = false;
+		MapLocation enemyToGoTo = null;
+		
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
 				
@@ -86,8 +153,19 @@ public class TurretPlayer {
             		if (m.type == Message.DEN) {
             			denLocations.add(m.location);
             		}
+            		if (m.type == Message.ENEMY) {
+            			if (enemyToGoTo==null) {
+            				enemyToGoTo = m.location;
+            			}
+            			//set enemyToGoTo to be nearest one
+            			else {
+            				if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(enemyToGoTo)) {
+            					enemyToGoTo = m.location;
+            				}
+            			}
+            		}
             	}
-            	// now we want it to move towards the nearest enemy, if we can
+            	// now we want it to move towards the nearest den, if we can
             	if (denLocations.size() > 0) {
             		randomDirection = null;
                 	MapLocation currentLocation = myLoc;
@@ -118,7 +196,14 @@ public class TurretPlayer {
                 	if (rc.isCoreReady()) {
                 		bugging.move();
                 	}
-                } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
+                }
+            	else if (enemyToGoTo != null) {
+            		bugging = new Bugging(rc, enemyToGoTo);
+            		if (rc.isCoreReady()) {
+            			bugging.move();
+            		}
+            	}
+            	else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
                 	Set<Integer> archonIDs = archonLocations.keySet();
                 	MapLocation nearestArchon = archonLocations.get(archonIDs.iterator().next());
                 	for (Integer id : archonIDs) {
