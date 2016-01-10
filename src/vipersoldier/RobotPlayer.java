@@ -27,7 +27,7 @@ public class RobotPlayer {
 
         if (rc.getType() == RobotType.ARCHON) {
             ArchonPlayer.run(rc);
-        } else if (rc.getType() == RobotType.TURRET) {
+        } else if (rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM) {
             TurretPlayer.run(rc);
         } else if (rc.getType() == RobotType.GUARD) {
             GuardPlayer.run(rc);
@@ -37,12 +37,10 @@ public class RobotPlayer {
         	ScoutPlayer.run(rc);
         } else if (rc.getType() == RobotType.VIPER) {
         	ViperPlayer.run(rc);
-        } else if (rc.getType() == RobotType.TTM) {
-        	TTMPlayer.run(rc);
         }
         		
         else {
-            DefaultAttack.run(rc);
+            throw new IllegalArgumentException("No code implemented for type " + rc.getType());
         } 
     }
 }
