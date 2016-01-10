@@ -283,7 +283,7 @@ public class SoldierPlayer {
 	                    	// now we want it to move towards the nearest den if we can
 	                    	
 	                    	if (denLocations.size() > 0) {
-	                    		rc.setIndicatorString(0, denLocations.toString());
+	                    		rc.setIndicatorString(0, "moving towards den");
 	                    		randomDirection = null;
 		                    	MapLocation currentLocation = myLoc;
 		                    	MapLocation nearestDen = denLocations.iterator().next();
@@ -295,17 +295,6 @@ public class SoldierPlayer {
 		                    	// if we can sense the nearest den and it doesn't exist, try to get the next nearest den or just break
 		                    	if (rc.canSense(nearestDen) && rc.senseRobotAtLocation(nearestDen) == null) {
 		                    		denLocations.remove(nearestDen);
-		                    		if (denLocations.size() > 0) {
-		                    			nearestDen = denLocations.iterator().next();
-		    	                    	for (MapLocation l : denLocations) {
-		    	                    		if (l.distanceSquaredTo(currentLocation) < nearestDen.distanceSquaredTo(currentLocation)) {
-		    	                    			nearestDen = l;
-		    	                    		}
-		    	                    	}
-		                    		} else {
-		                    			Clock.yield();
-		                    			continue;
-		                    		}
 		                    	}
 		                    	if (!nearestDen.equals(storedNearestDen)) {
 		                    		bugging = new Bugging(rc, nearestDen);
@@ -314,8 +303,19 @@ public class SoldierPlayer {
 		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();
 		                    	}
-		                    } else if (enemyLocations.size() > 0) { // if there are enemies to go to, move towards them
-		                    	rc.setIndicatorString(0, enemyLocations.toString());
+		                    } else if (storedNearestEnemy != null) {
+		                    	if (rc.getLocation().distanceSquaredTo(storedNearestEnemy) < rc.getType().sensorRadiusSquared) {
+		                    		enemyLocations.clear();
+		                    		storedNearestEnemy = null;
+		                    	}
+		                    	if (rc.isCoreReady()) {
+		                    		bugging.move();
+		                    		enemyLocations.clear();
+		                    	}
+		                    }
+	                    	
+	                    	else if (enemyLocations.size() > 0) { // if there are enemies to go to, move towards them
+		                    	rc.setIndicatorString(0, "moving towards enemy " + enemyLocations.size());
 		                    	randomDirection = null;
 		                    	MapLocation currentLocation = myLoc;
 		                    	MapLocation nearestEnemy = enemyLocations.iterator().next();
@@ -325,8 +325,9 @@ public class SoldierPlayer {
 		                    		}
 		                    	}
 		                    	// if we can sense the nearest enemy location and it doesn't exist, try to get the next nearest enemy location or just break
-		                    	if (rc.getLocation().distanceSquaredTo(nearestEnemy) < 10) {
+		                    	if (rc.getLocation().distanceSquaredTo(nearestEnemy) < rc.getType().sensorRadiusSquared) {
 		                    		enemyLocations.clear();
+		                    		storedNearestEnemy = null;
 		                    	}
 		                    	if (!nearestEnemy.equals(storedNearestEnemy)) {
 		                    		bugging = new Bugging(rc, nearestEnemy);
@@ -334,6 +335,7 @@ public class SoldierPlayer {
 		                    	}
 		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();
+		                    		enemyLocations.clear();
 		                    	}
 		                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
 		                    	rc.setIndicatorString(0, "should not be doing this");

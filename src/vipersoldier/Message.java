@@ -16,7 +16,6 @@ public class Message {
 	public static final int PARTS = 3;
 	public static final int NEUTRALBOT = 4;
 	public static final int TURRETATTACK = 5;
-	public static final int ARCHONLOC = 6;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;
