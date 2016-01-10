@@ -127,7 +127,7 @@ public class ArchonPlayer {
 								}
 							}
 							if (turnNum%300 > 0 && turnNum%300 <100 && turnNum>800) { //turn conditions to build viper
-								if (!rc.hasBuildRequirements(RobotType.VIPER)) {
+								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (rc.isCoreReady() && !built) {
 										Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 										for (int i = 0; i < 8; i++) {
