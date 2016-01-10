@@ -289,7 +289,9 @@ public class SoldierPlayer {
 	                
 	
 	                if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest enemy
+	                	rc.setIndicatorString(0, " not should attack");
 	                    if (rc.isCoreReady()) {
+	                    	rc.setIndicatorString(0, "core ready");
 	                    	// first check if there are any new signals from scouts
 	                    	List<Message> messages = Message.readMessageSignals(rc);
 	                    	for (Message m : messages) {
@@ -302,7 +304,7 @@ public class SoldierPlayer {
 	                    	}
 	                    	// now we want it to move towards the nearest den if we can
 	                    	
-	                    	if (denLocations.size() > 0) {
+	                    	if (denLocations != null && denLocations.size() > 0) {
 	                    		rc.setIndicatorString(0, "moving towards den");
 	                    		randomDirection = null;
 		                    	MapLocation currentLocation = myLoc;
@@ -313,9 +315,15 @@ public class SoldierPlayer {
 		                    		}
 		                    	}
 		                    	// if we can sense the nearest den and it doesn't exist, try to get the next nearest den or just break
-		                    	if (rc.canSense(nearestDen) && rc.senseRobotAtLocation(nearestDen) == null) {
+		                    	if (rc.canSense(nearestDen) && (rc.senseRobotAtLocation(nearestDen) == null || rc.senseRobotAtLocation(nearestDen).type != RobotType.ZOMBIEDEN)) {
+		                    		
+		                    		rc.setIndicatorString(2, "" + denLocations.size());
 		                    		denLocations.remove(nearestDen);
+		                    		if (denLocations.size() == 0) {
+		                    			denLocations = null;
+		                    		}
 		                    	}
+		                    	rc.setIndicatorString(1, nearestDen.toString());
 		                    	if (!nearestDen.equals(storedNearestDen)) {
 		                    		bugging = new Bugging(rc, nearestDen);
 		                    		storedNearestDen = nearestDen;
@@ -324,6 +332,7 @@ public class SoldierPlayer {
 		                    		bugging.move();
 		                    	}
 		                    } else if (storedNearestEnemy != null) {
+		                    	rc.setIndicatorString(0, "moving towards enemy");
 		                    	if (rc.getLocation().distanceSquaredTo(storedNearestEnemy) < rc.getType().sensorRadiusSquared) {
 		                    		enemyLocations.clear();
 		                    		storedNearestEnemy = null;
