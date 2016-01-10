@@ -21,10 +21,12 @@ public class Message {
 	private static final int D = 20000;
 	private static final int AYY = 50000;
 	
+	public final Signal signal;
 	public final MapLocation location;
 	public final int type;
 
-	public Message(MapLocation location, int type) {
+	public Message(Signal signal, MapLocation location, int type) {
+		this.signal = signal;
 		this.location = location;
 		this.type = type;
 	}
@@ -44,7 +46,7 @@ public class Message {
 				int[] signalMessage = signal.getMessage();
 				int x = signalMessage[0], y = signalMessage[1];
 				int type = x / AYY;
-				messages.add(new Message(new MapLocation(x - D - type * AYY, y - D - type * AYY), type));
+				messages.add(new Message(signal, new MapLocation(x - D - type * AYY, y - D - type * AYY), type));
 			}
 			signal = rc.readSignal();
 		}

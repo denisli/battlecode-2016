@@ -25,14 +25,13 @@ public class SoldierPlayer {
 		Set<MapLocation> enemyLocations = new HashSet<>();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		Direction randomDirection = null;
-		MapLocation spawningArchonLocation = null;
-		RobotInfo[] closeAllies = rc.senseNearbyRobots(5, myTeam);
+		RobotInfo[] closeAllies = rc.senseNearbyRobots(RobotType.SOLDIER.sensorRadiusSquared, myTeam);
 		boolean wasRetreating = false;
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
 				
 				//TODO this might be null
-				spawningArchonLocation = ally.location; break;
+				storedNearestArchon = ally.location; break;
 			}
 		}
 		try {
@@ -51,10 +50,10 @@ public class SoldierPlayer {
             	boolean isRetreating = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasRetreating && 10 * rc.getHealth() <= 9 * RobotType.SOLDIER.maxHealth);
             	if (isRetreating) {
             		if (!wasRetreating) {
-            			if (spawningArchonLocation == null) {
+            			if (storedNearestArchon == null) {
             				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));
             			} else {
-            				bugging = new Bugging(rc, spawningArchonLocation);
+            				bugging = new Bugging(rc, storedNearestArchon);
             			}
             		} else {
             			if (rc.isCoreReady()) {
@@ -76,12 +75,12 @@ public class SoldierPlayer {
 	            				if (dir != Direction.NONE) {
 	            					rc.move(dir);
 	            				} else {
-	            					int dist = myLoc.distanceSquaredTo(spawningArchonLocation);
+	            					int dist = myLoc.distanceSquaredTo(storedNearestArchon);
 	            					if (dist > 13) { 
 	            						bugging.move();
 	            					} else {
 	            						if (dist <= 5) {
-	            							Direction away = Movement.getBestMoveableDirection(spawningArchonLocation.directionTo(myLoc), rc, 2);
+	            							Direction away = Movement.getBestMoveableDirection(storedNearestArchon.directionTo(myLoc), rc, 2);
 	            							if (away != Direction.NONE) {
 	            								rc.move(away);
 	            							}
@@ -89,12 +88,12 @@ public class SoldierPlayer {
 	            					}
 	            				}
 	            			} else {
-	            				int dist = myLoc.distanceSquaredTo(spawningArchonLocation);
+	            				int dist = myLoc.distanceSquaredTo(storedNearestArchon);
             					if (dist > 13) { 
             						bugging.move();
             					} else {
             						if (dist <= 5) {
-            							Direction away = Movement.getBestMoveableDirection(spawningArchonLocation.directionTo(myLoc), rc, 2);
+            							Direction away = Movement.getBestMoveableDirection(storedNearestArchon.directionTo(myLoc), rc, 2);
             							if (away != Direction.NONE) {
             								rc.move(away);
             							}
@@ -300,6 +299,18 @@ public class SoldierPlayer {
 	                    		}
 	                    		if (m.type == Message.ENEMY) {
 	                    			enemyLocations.add(m.location);
+	                    		}
+	                    		if (m.type == Message.ARCHONLOC) {
+	                    			Signal signal = m.signal;
+	                    			archonLocations.put(signal.getID(), m.location);
+	                    			int closestDist = Integer.MAX_VALUE;
+	                    			for (MapLocation loc : archonLocations.values()) {
+	                    				int dist = myLoc.distanceSquaredTo(loc);
+	                    				if (dist < closestDist) {
+	                    					storedNearestArchon = loc;
+	                    					closestDist = dist;
+	                    				}
+	                    			}
 	                    		}
 	                    	}
 	                    	// now we want it to move towards the nearest den if we can
