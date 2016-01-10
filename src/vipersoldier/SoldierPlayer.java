@@ -47,7 +47,19 @@ public class SoldierPlayer {
             try {
             	MapLocation myLoc = rc.getLocation();
             	
-            	boolean isRetreating = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasRetreating && 10 * rc.getHealth() <= 9 * RobotType.SOLDIER.maxHealth);
+            	boolean isRetreating = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasRetreating && 10 * rc.getHealth() <= 8 * RobotType.SOLDIER.maxHealth);
+            	if (storedNearestArchon != null && rc.getLocation().distanceSquaredTo(storedNearestArchon) < 10) {
+    				RobotInfo[] nearby = rc.senseNearbyRobots(10, rc.getTeam());
+    				boolean archon = false;
+    				for (RobotInfo r : nearby) {
+    					if (r.type == RobotType.ARCHON) {
+    						archon = true;
+    					}
+    				}
+    				if (!archon) {
+    					isRetreating = false;
+    				}
+    			}
             	if (isRetreating) {
             		if (!wasRetreating) {
             			if (storedNearestArchon == null) {
@@ -104,6 +116,9 @@ public class SoldierPlayer {
             		}
             		wasRetreating = true;
             	} else {
+            		if (wasRetreating) {
+            			bugging = null;
+            		}
             		wasRetreating = false;
 	            	int fate = rand.nextInt(1000);
 	                boolean shouldAttack = false;
@@ -349,7 +364,7 @@ public class SoldierPlayer {
 		                    		enemyLocations.clear();
 		                    		storedNearestEnemy = null;
 		                    	}
-		                    	if (rc.isCoreReady()) {
+		                    	if (rc.isCoreReady() && storedNearestEnemy != null) {
 		                    		if (bugging == null) {
 		                    			bugging = new Bugging(rc, storedNearestEnemy);
 		                    		}
