@@ -178,28 +178,28 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							if (turnNum%300 > 0 && turnNum%300 <100 && turnNum>800) { //turn conditions to build viper
-								if (rc.hasBuildRequirements(RobotType.VIPER)) {
-									if (rc.isCoreReady() && !built) {
-										Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
-										for (int i = 0; i < 8; i++) {
-											// If possible, build in this direction
-											if (rc.canBuild(dirToBuild, RobotType.VIPER)) {
-												rc.build(dirToBuild, RobotType.VIPER);
-												built = true;
-												break;
-											} else {
-												// Rotate the direction to try
-												dirToBuild = dirToBuild.rotateLeft();
-											}
-										}
-									}
-								}
-								else {
-									built = true;
-								}
-							}
-							if (rc.hasBuildRequirements(RobotType.SOLDIER) && rc.isCoreReady() && !built) {
+//							if (turnNum%300 > 0 && turnNum%300 <100 && turnNum>800) { //turn conditions to build viper
+//								if (rc.hasBuildRequirements(RobotType.VIPER)) {
+//									if (rc.isCoreReady() && !built) {
+//										Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+//										for (int i = 0; i < 8; i++) {
+//											// If possible, build in this direction
+//											if (rc.canBuild(dirToBuild, RobotType.VIPER)) {
+//												rc.build(dirToBuild, RobotType.VIPER);
+//												built = true;
+//												break;
+//											} else {
+//												// Rotate the direction to try
+//												dirToBuild = dirToBuild.rotateLeft();
+//											}
+//										}
+//									}
+//								}
+//								else {
+//									built = true;
+//								}
+//							}
+							if (rc.hasBuildRequirements(RobotType.SOLDIER) && rc.isCoreReady() && !built && turnNum < 500) {
 								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 								for (int i = 0; i < 8; i++) {
 									// If possible, build in this direction
@@ -213,6 +213,28 @@ public class ArchonPlayer {
 									}
 								}
 							}
+							//past turn 500, start building turrets with 1/5 chance
+							if (rc.isCoreReady() && !built && rc.hasBuildRequirements(RobotType.TURRET) && turnNum >= 500) {
+								int buildFate = rand.nextInt(5);
+								RobotType toBuild = null;
+								if (buildFate == 0) {
+									toBuild = RobotType.TURRET;
+								}
+								else {
+									toBuild = RobotType.SOLDIER;
+								}
+								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+								for (int i = 0; i < 8; i++) {
+									// If possible, build in this direction
+									if (rc.canBuild(dirToBuild, toBuild)) {
+										rc.build(dirToBuild, toBuild);
+										built = true;
+										break;
+									} else {
+										// Rotate the direction to try
+										dirToBuild = dirToBuild.rotateLeft();
+									}
+								}							}
 							boolean moveToParts = false;
 							if (rc.isCoreReady() && built == false) {
 								Set<MapLocation> partsBots = new HashSet<>();
