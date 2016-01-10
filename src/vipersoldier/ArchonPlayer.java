@@ -30,6 +30,7 @@ public class ArchonPlayer {
 		//partsToGoTo = parts and neutral bots
 		MapLocation partsToGoTo = null;
 		Bugging bug = null;
+		int signalRange = 50*50*2;
 		
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
@@ -185,6 +186,7 @@ public class ArchonPlayer {
 									}
 								}
 							}
+							boolean moveToParts = false;
 							if (rc.isCoreReady() && built == false) {
 								Set<MapLocation> partsBots = new HashSet<>();
 								partsBots.addAll(partsList);
@@ -202,7 +204,11 @@ public class ArchonPlayer {
 										bug = new Bugging(rc, partsToGoTo);
 									}
 									bug.move();
+									moveToParts = true;
 								}
+							}
+							if (rc.getCoreDelay()<3 && !moveToParts) {
+								Message.sendMessage(rc, myLoc, Message.ARCHONLOC, signalRange);
 							}
 						}
 					}
