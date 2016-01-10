@@ -207,7 +207,7 @@ public class ArchonPlayer {
 									moveToParts = true;
 								}
 							}
-							if (rc.getCoreDelay()<3 && !moveToParts) {
+							if (rc.isCoreReady() && !moveToParts) {
 								Message.sendMessage(rc, myLoc, Message.ARCHONLOC, signalRange);
 							}
 						}
