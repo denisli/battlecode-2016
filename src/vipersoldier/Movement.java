@@ -5,6 +5,7 @@ import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
+import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public class Movement {
@@ -23,7 +24,6 @@ public class Movement {
 	
 	//returns true if the robot moved away
 	public static boolean moveAwayFromEnemy(RobotController rc) throws GameActionException {
-		Team myTeam = rc.getTeam();
 		int mySightRange = rc.getType().sensorRadiusSquared;
 		MapLocation myLoc = rc.getLocation();
 		RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, mySightRange);
@@ -31,6 +31,7 @@ public class Movement {
 		MapLocation closestEnemy = null;
 		int closestEnemyDist = 60;
 		for (RobotInfo e : hostiles) {
+			if (e.type == RobotType.ZOMBIEDEN) continue;
 			MapLocation curEnemyLoc = e.location;
 			int curDist = myLoc.distanceSquaredTo(curEnemyLoc);
 			if (curDist < closestEnemyDist) {
