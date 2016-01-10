@@ -386,7 +386,7 @@ public class SoldierPlayer {
 		                    			nearestArchon = archonLocations.get(id);
 		                    		}
 		                    	}
-		                    	if (!nearestArchon.equals(storedNearestArchon)) {
+		                    	if (!nearestArchon.equals(storedNearestArchon) || bugging == null) {
 		                    		bugging = new Bugging(rc, nearestArchon);
 		                    		storedNearestArchon = nearestArchon;
 		                    	}
