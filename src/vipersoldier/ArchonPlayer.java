@@ -1,10 +1,13 @@
 package vipersoldier;
 
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameConstants;
+import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
@@ -23,7 +26,9 @@ public class ArchonPlayer {
 		RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 		//number of consecutive turns that it didnt return a signal; used to determine when to build scouts
 		int conseqNoSignal = 0;
-
+		Set<MapLocation> neutralBots = new HashSet<>();
+		Set<MapLocation> parts = new HashSet<>();
+		
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
 		} catch (Exception e) {

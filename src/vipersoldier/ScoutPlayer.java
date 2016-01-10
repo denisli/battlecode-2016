@@ -8,6 +8,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import vipersoldier.Message;
 
 public class ScoutPlayer {
 
@@ -69,13 +70,13 @@ public class ScoutPlayer {
 					}
 					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1
 							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 600) {
-						rc.broadcastMessageSignal(closestNonDenEnemy.location.x, closestNonDenEnemy.location.y, 100*100);
+						Message.sendMessage(rc, closestNonDenEnemy.location, Message.ENEMY, maxSignal);
 						recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
 						Clock.yield();
 						continue loop;
 					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1 && rc.getRoundNum() < 600) {
-						rc.broadcastMessageSignal(closestDen.location.x, closestDen.location.y, 100*100);
+						Message.sendMessage(rc, closestDen.location, Message.DEN, maxSignal);
 						recentlyBroadcastedDenLoc = closestDen.location;
 						dir = randDir();
 						Clock.yield();

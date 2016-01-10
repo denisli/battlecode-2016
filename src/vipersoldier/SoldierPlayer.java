@@ -2,6 +2,7 @@ package vipersoldier;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -268,14 +269,11 @@ public class SoldierPlayer {
 	                if (!shouldAttack) { // if the soldier cannot attack, we want it to move towards the nearest enemy
 	                    if (rc.isCoreReady()) {
 	                    	// first check if there are any new signals from scouts
-	                    	Signal currentSignal = rc.readSignal();
-	                    	while (currentSignal != null) {
-	                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] != -100) { // if we get a scout signal
-	                    			denLocations.add(new MapLocation(currentSignal.getMessage()[0], currentSignal.getMessage()[1]));
-	                    		} else if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null && currentSignal.getMessage()[0] == -100) { // if we get an archon signal
-	                    			archonLocations.put(currentSignal.getID(), currentSignal.getLocation());
+	                    	List<Message> messages = Message.readMessageSignals(rc);
+	                    	for (Message m : messages) {
+	                    		if (m.type == Message.DEN) {
+	                    			denLocations.add(m.location);
 	                    		}
-	                    		currentSignal = rc.readSignal();
 	                    	}
 	                    	// now we want it to move towards the nearest enemy, if we can
 	                    	

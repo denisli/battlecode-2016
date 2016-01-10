@@ -13,6 +13,8 @@ public class Message {
 	public static final int DEN = 0;
 	public static final int SWARM = 1;
 	public static final int ENEMY = 2;
+	public static final int PARTS = 3;
+	public static final int NEUTRALBOT = 4;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;
