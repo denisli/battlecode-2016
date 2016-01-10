@@ -27,6 +27,9 @@ public class ArchonPlayer {
 		int conseqNoSignal = 0;
 		Set<MapLocation> neutralBots = new HashSet<>();
 		Set<MapLocation> partsList = new HashSet<>();
+		//partsToGoTo = parts and neutral bots
+		MapLocation partsToGoTo = null;
+		Bugging bug = null;
 		
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
@@ -38,6 +41,7 @@ public class ArchonPlayer {
 		}
 
 		while (true) {
+			MapLocation myLoc = rc.getLocation();
 			RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 			// This is a loop to prevent the run() method from returning. Because of the Clock.yield()
 			// at the end of it, the loop will iterate once per game round.
@@ -52,9 +56,11 @@ public class ArchonPlayer {
 						//if there is a neutral robot adjacent, activate it or wait until there's no core delay
 						if (rc.isCoreReady()) {
 							rc.activate(adjNeutralRobots[0].location);
+							partsToGoTo = null;
 						}            			
 					}
 					if (Movement.getToAdjParts(rc)){
+						partsToGoTo = null;
 					}
 					else {
 						boolean toheal = false;
@@ -180,7 +186,23 @@ public class ArchonPlayer {
 								}
 							}
 							if (rc.isCoreReady() && built == false) {
-								//TODO move to parts or neutral robot
+								Set<MapLocation> partsBots = new HashSet<>();
+								partsBots.addAll(partsList);
+								partsBots.addAll(neutralBots);
+								//if there are parts/neutralbots to go to
+								if (partsBots.size() > 0) {
+									//if it isnt already going towards a specific parts/bot
+									if (partsToGoTo == null) {
+										partsToGoTo = partsBots.iterator().next();
+										for (MapLocation p : partsBots) {
+											if (myLoc.distanceSquaredTo(p) < myLoc.distanceSquaredTo(partsToGoTo)) {
+												partsToGoTo = p;
+											}
+										}
+										bug = new Bugging(rc, partsToGoTo);
+									}
+									bug.move();
+								}
 							}
 						}
 					}
