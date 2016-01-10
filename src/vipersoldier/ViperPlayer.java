@@ -74,10 +74,16 @@ public class ViperPlayer {
 	            				if (dir != Direction.NONE) {
 	            					rc.move(dir);
 	            				} else {
-	            					bugging.move();
+	            					dir = bugging.moveDir();
+	            					if (dir != Direction.NONE) {
+	            						rc.move(dir);
+	            					}
 	            				}
 	            			} else {
-	            				bugging.move();
+	            				Direction dir = bugging.moveDir();
+	            				if (dir != Direction.NONE) {
+	            					rc.move(dir);
+	            				}
 	            			}
             			}
             		}
@@ -183,7 +189,10 @@ public class ViperPlayer {
 		                    		storedNearestDen = nearestDen;
 		                    	}
 		                    	if (rc.isCoreReady()) {
-		                    		bugging.move();
+		                    		Direction dir = bugging.moveDir();
+		                    		if (dir != Direction.NONE) {
+		                    			rc.move(dir);
+		                    		}
 		                    	}
 		                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
 		                    	Set<Integer> archonIDs = archonLocations.keySet();
@@ -198,7 +207,10 @@ public class ViperPlayer {
 		                    		storedNearestArchon = nearestArchon;
 		                    	}
 		                    	if (rc.isCoreReady()) {
-		                    		bugging.move();
+		                    		Direction dir = bugging.moveDir();
+		                    		if (dir != Direction.NONE) {
+		                    			rc.move(dir);
+		                    		}
 		                    	}
 		                    } else { // there are no dens or archons to move towards, we want to move in one random direction
 		                    	if (randomDirection != null && rc.canMove(randomDirection)) {
