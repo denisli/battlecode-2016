@@ -330,29 +330,22 @@ public class SoldierPlayer {
 		                    		
 		                    		rc.setIndicatorString(2, "" + denLocations.size());
 		                    		denLocations.remove(nearestDen);
-		                    		if (denLocations.size() == 0) {
-		                    			bugging = null;
-		                    		}
 		                    	}
 		                    	rc.setIndicatorString(1, nearestDen.toString());
 		                    	if (!nearestDen.equals(storedNearestDen)) {
 		                    		bugging = new Bugging(rc, nearestDen);
 		                    		storedNearestDen = nearestDen;
 		                    	}
-		                    	if (rc.isCoreReady() && bugging != null) {
+		                    	if (rc.isCoreReady()) {
 		                    		bugging.move();
 		                    	}
 		                    } else if (storedNearestEnemy != null) {
-		                    	rc.setIndicatorString(0, "moving towards enemy" + rc.getRoundNum());
-		                    	rc.setIndicatorString(1, storedNearestEnemy.toString());
+		                    	rc.setIndicatorString(0, "moving towards enemy");
 		                    	if (rc.canSense(storedNearestEnemy) && (rc.senseRobotAtLocation(storedNearestEnemy) == null || rc.senseRobotAtLocation(storedNearestEnemy).team != rc.getTeam().opponent())) {
 		                    		enemyLocations.clear();
 		                    		storedNearestEnemy = null;
 		                    	}
 		                    	if (rc.isCoreReady()) {
-		                    		if (bugging == null) {
-		                    			bugging = new Bugging(rc, storedNearestEnemy);
-		                    		}
 		                    		bugging.move();
 		                    		enemyLocations.clear();
 		                    	}
