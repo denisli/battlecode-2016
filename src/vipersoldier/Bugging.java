@@ -19,12 +19,12 @@ public class Bugging {
 
 	// Moves the robot according to bugging.
 	// Assume that the robot's core is ready.
-	public Direction moveDir() throws GameActionException {
+	public void move() throws GameActionException {
 		if (hugging == Hugging.NONE) {
 			MapLocation myLocation = rc.getLocation();
 			Direction dir = myLocation.directionTo(destination);
 			if (rc.canMove(dir)) {
-				return dir;
+				rc.move(dir);
 			} else {
 				// Since we can't move closer to the destination, we should
 				// commence hugging.
@@ -62,9 +62,7 @@ public class Bugging {
 
 				// Complete the move.
 				if (rc.canMove(dirWhileHugging)) {
-					return dirWhileHugging;
-				} else {
-					return Direction.NONE;
+					rc.move(dirWhileHugging);
 				}
 			}
 		} else {
@@ -80,7 +78,7 @@ public class Bugging {
 				// In this case, break out of bugging
 				if (getFanDist(dirToDest, cameFromDir) > 1 && rc.canMove(dirToDest)) {
 					hugging = Hugging.NONE;
-					return dirToDest;
+					rc.move(dirToDest);
 				// Continue to bug...
 				} else {
 					dirWhileHugging = dirWhileHugging.rotateLeft();
@@ -90,9 +88,7 @@ public class Bugging {
 						numRotates++;
 					}
 					if (rc.canMove(dirWhileHugging)) {
-						return dirWhileHugging;
-					} else {
-						return Direction.NONE;
+						rc.move(dirWhileHugging);
 					}
 				}
 			} else { // hugging = Hugging.RIGHT MOSTLY COPY PASTA FROM ABOVE
@@ -107,7 +103,7 @@ public class Bugging {
 				// In this case, break out of bugging
 				if (getFanDist(dirToDest, cameFromDir) > 1 && rc.canMove(dirToDest)) {
 					hugging = Hugging.NONE;
-					return dirToDest;
+					rc.move(dirToDest);
 					// Continue to bug...
 				} else {
 					dirWhileHugging = dirWhileHugging.rotateRight();
@@ -117,9 +113,7 @@ public class Bugging {
 						numRotates++;
 					}
 					if (rc.canMove(dirWhileHugging)) {
-						return dirWhileHugging;
-					} else {
-						return Direction.NONE;
+						rc.move(dirWhileHugging);
 					}
 				}
 			}
@@ -138,5 +132,5 @@ public class Bugging {
 	private int getDirTurnsAwayFrom4(Direction dir) {
 		return Math.abs(dir.ordinal() - 4);
 	}
-	
+
 }
