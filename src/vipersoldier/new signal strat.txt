@@ -1,14 +1,14 @@
 SOLDIERS:
 soldiers store location of dens
->if soldier sees den not in dens list, broadcast its location
->if soldier sees loc in den list but no den at loc, broadcast its location
->if get DELETE loc message, delete loc form den list
+if soldier sees den not in dens list, broadcast its location
+if soldier sees loc in den list but no den at loc, broadcast its location
+--if get DELETE loc message, delete loc form den list
 
 SCOUTS:
->if a scout gets a basic signal, it's from a soldier. go to basic signal loc
->if a scout sees a den not in den list, broadcast loc of den
->if a scout is at basic signal loc, set basic signal loc = null:
-	>if it sees den, broadcast den loc
-	>if it sees no den, broadcast DELETE loc message
-	>broadcast REMOVE BASIC message
->if a scout gets REMOVE BASIC message, set basic signal loc = null
+if a scout gets a basic signal, it's from a soldier. go to basic signal loc
+if a scout sees a den not in den list, broadcast loc of den
+if a scout is at basic signal loc, set basic signal loc = null:
+	if it sees den, broadcast den loc
+	if it sees no den, broadcast DELETE loc message
+	broadcast REMOVE BASIC message
+if a scout gets REMOVE BASIC message, set basic signal loc = null
