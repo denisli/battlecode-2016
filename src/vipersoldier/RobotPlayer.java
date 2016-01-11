@@ -1,7 +1,6 @@
 package vipersoldier;
 
 import battlecode.common.*;
-import vipersoldier.TTMPlayer;
 
 import java.util.Random;
 

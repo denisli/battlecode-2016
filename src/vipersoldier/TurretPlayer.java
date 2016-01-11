@@ -27,6 +27,9 @@ public class TurretPlayer {
 		int myAttackRange = 0;
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
+		Set<MapLocation> denLocations = new HashSet<>();
+		Map<Integer, MapLocation> archonLocations = new HashMap<>();
+		
 		try {
             myAttackRange = rc.getType().attackRadiusSquared;
         } catch (Exception e) {
@@ -38,7 +41,7 @@ public class TurretPlayer {
             // Check which code to run
             try {
                 if (rc.getType() == RobotType.TTM) {
-                	TTMCode(rc);
+                	TTMCode(rc, denLocations, archonLocations);
                 } 
                 if (rc.getType() == RobotType.TURRET) {
                 	TurretCode(rc);
@@ -64,7 +67,7 @@ public class TurretPlayer {
 		List<Message> messages = Message.readMessageSignals(rc);
 		for (Message m : messages) {
 			if (m.type == Message.TURRETATTACK) {
-				if (myLoc.distanceSquaredTo(m.location) <= attackRadius) {
+				if (myLoc.distanceSquaredTo(m.location) <= attackRadius && myLoc.distanceSquaredTo(m.location) > 5) {
 					canAttackCantSee.add(m.location);
 				}
 			}
@@ -117,8 +120,10 @@ public class TurretPlayer {
             	rc.attackLocation(bestEnemy.location);
             }
         }
-        else if (canAttackCantSee.size() > 0){
-        	
+        else if (canAttackCantSee.size() > 0) {
+        	if (rc.isWeaponReady()) {
+        		rc.attackLocation(canAttackCantSee.get(0));
+        	}
         }
         else {
         	if (rc.isCoreReady()) {
@@ -127,18 +132,19 @@ public class TurretPlayer {
         }
 	}
 	
-	private static void TTMCode(RobotController rc) throws GameActionException {
+	private static void TTMCode(RobotController rc, Set<MapLocation> denLocations, Map<Integer, MapLocation> archonLocations) throws GameActionException {
 		Team myTeam = rc.getTeam();
 		// first check if there are any enemies nearby
 		Random rand = new Random(rc.getID());
-		Set<MapLocation> denLocations = new HashSet<>();
-		Map<Integer, MapLocation> archonLocations = new HashMap<>();
+
 		Direction randomDirection = null;
 		MapLocation spawningArchonLocation = null;
 		RobotInfo[] closeAllies = rc.senseNearbyRobots(5, myTeam);
 		boolean wasRetreating = false;
 		MapLocation enemyToGoTo = null;
-		
+        List<MapLocation> canAttackCantSee = new ArrayList<>();
+		int attackRadius = RobotType.TURRET.attackRadiusSquared;
+
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
 				
@@ -152,30 +158,37 @@ public class TurretPlayer {
         
         // take a look at all hostile robots within the sight radius
         RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, rc.getType().sensorRadiusSquared);
-        if (enemiesWithinRange.length > 0) {
+        
+        // first check if there are any new signals from scouts
+    	List<Message> messages = Message.readMessageSignals(rc);
+    	for (Message m : messages) {
+    		if (m.type == Message.DEN) {
+    			denLocations.add(m.location);
+    		}
+    		if (m.type == Message.ENEMY) {
+    			if (enemyToGoTo==null) {
+    				enemyToGoTo = m.location;
+    			}
+    			//set enemyToGoTo to be nearest one
+    			else {
+    				if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(enemyToGoTo)) {
+    					enemyToGoTo = m.location;
+    				}
+    			}
+    		}
+    		if (m.type == Message.TURRETATTACK) {
+				if (myLoc.distanceSquaredTo(m.location) <= attackRadius && myLoc.distanceSquaredTo(m.location) > 5) {
+					canAttackCantSee.add(m.location);
+				}
+    		}
+    	}
+        
+        if (enemiesWithinRange.length > 0 || canAttackCantSee.size() > 0) {
         	// we want to turret up
         	rc.unpack();
         }
         else { // if there are no enemies nearby
             if (rc.isCoreReady()) {
-            	// first check if there are any new signals from scouts
-            	List<Message> messages = Message.readMessageSignals(rc);
-            	for (Message m : messages) {
-            		if (m.type == Message.DEN) {
-            			denLocations.add(m.location);
-            		}
-            		if (m.type == Message.ENEMY) {
-            			if (enemyToGoTo==null) {
-            				enemyToGoTo = m.location;
-            			}
-            			//set enemyToGoTo to be nearest one
-            			else {
-            				if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(enemyToGoTo)) {
-            					enemyToGoTo = m.location;
-            				}
-            			}
-            		}
-            	}
             	// now we want it to move towards the nearest den, if we can
             	if (denLocations.size() > 0) {
             		randomDirection = null;
