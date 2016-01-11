@@ -43,9 +43,9 @@ public class LocationSet implements Iterable<MapLocation> {
 	}
 	
 	public void add(MapLocation location) {
-		mapLocations[size] = location;
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
 		if (containsLocation[x][y] == 0) {
+			mapLocations[size] = location;
 			containsLocation[x][y] = ++size;
 		}
 	}
