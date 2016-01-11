@@ -140,7 +140,6 @@ public class SoldierPlayer {
             			bugging = null;
             		}
             		wasRetreating = false;
-	            	int fate = rand.nextInt(1000);
 	                boolean shouldAttack = false;
 	                boolean useSoldierMicro = false;
 	                double totalEnemySoldierHealth = 0;

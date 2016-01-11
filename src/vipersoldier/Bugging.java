@@ -161,15 +161,21 @@ public class Bugging {
 			}
 		};
 		if (!predicate.test(Direction.NONE)) {
-			int maxDist = 0;
+			int maxMinDist = 0;
 			Direction bestDir = Direction.NONE;
 			for (Direction dir : Direction.values()) {
-				MapLocation dirLoc = myLocation.add(dir);
-				for (MapLocation turret : enemyTurrets) {
-					int dist = dirLoc.distanceSquaredTo(turret);
-					if (dist > maxDist) {
+				if (rc.canMove(dir)) {
+					MapLocation dirLoc = myLocation.add(dir);
+					int minDist = 1000;
+					for (MapLocation turret : enemyTurrets) {
+						int dist = dirLoc.distanceSquaredTo(turret);
+						if (dist < minDist) {
+							minDist = dist;
+						}
+					}
+					if (maxMinDist < minDist) {
+						maxMinDist = minDist;
 						bestDir = dir;
-						maxDist = dist;
 					}
 				}
 			}

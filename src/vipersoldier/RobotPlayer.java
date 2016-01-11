@@ -31,7 +31,11 @@ public class RobotPlayer {
         } else if (rc.getType() == RobotType.GUARD) {
             GuardPlayer.run(rc);
         } else if (rc.getType() == RobotType.SOLDIER) {
-        	SoldierPlayer.run(rc);
+        	try {
+				SoldierPlayer.run(rc);
+			} catch (GameActionException e) {
+				e.printStackTrace();
+			}
         } else if (rc.getType() == RobotType.SCOUT) {
         	ScoutPlayer.run(rc);
         } else if (rc.getType() == RobotType.VIPER) {
