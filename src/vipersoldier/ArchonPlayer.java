@@ -7,6 +7,7 @@ import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.GameConstants;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
@@ -19,7 +20,7 @@ import vipersoldier.Movement;
 
 public class ArchonPlayer {
 
-	public static void run(RobotController rc) {
+	public static void run(RobotController rc) throws GameActionException {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
@@ -33,6 +34,7 @@ public class ArchonPlayer {
 		Bugging bug = null;
 		int signalRange = 50*50*2;
 		int sightRadius = RobotType.ARCHON.sensorRadiusSquared;
+		Set<MapLocation> enemyTurrets = new HashSet<>();
 
 		try {
 			// Any code here gets executed exactly once at the beginning of the game.
@@ -58,6 +60,9 @@ public class ArchonPlayer {
 				if (m.type == Message.PARTS) {
 					partsList.add(m.location);
 				}
+				if (m.type == Message.DANGERTURRETS) {
+					enemyTurrets.add(m.location);
+				}
 				if (!(m.type == Message.ARCHONLOC)) {
 					conseqNoSignal = 0;
 				}
@@ -67,6 +72,11 @@ public class ArchonPlayer {
 			for (MapLocation sq : squaresInSight) {
 				if (rc.senseParts(sq) > 0) {
 					partsList.add(sq);
+				}
+				if (enemyTurrets.contains(sq)) {
+					if (rc.senseRobotAtLocation(sq) == null || rc.senseRobotAtLocation(sq).team != enemyTeam) {
+						enemyTurrets.remove(sq);
+					}
 				}
 			}
 			for (RobotInfo n : nearbyNeutralRobots) {
@@ -273,7 +283,7 @@ public class ArchonPlayer {
 										bug = new Bugging(rc, partsToGoTo);
 										rc.setIndicatorString(1, partsToGoTo+"");
 									}
-									bug.move();
+									bug.moveAvoid(enemyTurrets);
 									moveToParts = true;
 								}
 							}
