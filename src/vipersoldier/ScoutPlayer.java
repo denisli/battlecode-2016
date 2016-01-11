@@ -111,7 +111,7 @@ public class ScoutPlayer {
 					
 					//if sees parts or neutral robots, send message for archons
 					MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRange);
-					RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRange, Team.NEUTRAL);
+					RobotInfo[] nearbyRobots = rc.senseNearbyRobots(sightRange);
 					for (MapLocation sq : squaresInSight) {
 						if (rc.senseParts(sq) > 0 && !partsList.contains(sq) && messageCount < 20) {
 							Message.sendMessage(rc, sq, Message.PARTS, maxSignal);
@@ -119,14 +119,22 @@ public class ScoutPlayer {
 							messageCount++;
 						}
 					}
-					for (RobotInfo n : nearbyNeutralRobots) {
-						if (!neutralBots.contains(n.location) && messageCount < 20) {
+					int turretCount = 0;
+					MapLocation turretLoc = null;
+					for (RobotInfo n : nearbyRobots) {
+						if (n.team.equals(Team.NEUTRAL) && !neutralBots.contains(n.location) && messageCount < 20) {
 							Message.sendMessage(rc, n.location, Message.NEUTRALBOT, maxSignal);
 							neutralBots.add(n.location);
 							messageCount++;
 						}
+						if (n.team.equals(rc.getTeam().opponent()) && n.type == RobotType.TURRET) {
+							turretCount++;
+							turretLoc = n.location;
+						}
 					}
-					
+					if (turretCount >= 3 && messageCount < 20) { // if there are more than 3 turrets clustered, warn units to not come near
+						Message.sendMessage(rc, turretLoc, Message.AVOIDTURRET, maxSignal);
+					}
 					// otherwise if enemy is too far, move closer if not a zombie
 					if (closestNonDenEnemy != null && !closestNonDenEnemy.team.equals(Team.ZOMBIE) && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) > 48
 							&& rc.canMove(rc.getLocation().directionTo(closestNonDenEnemy.location)) && rc.isCoreReady()) {
@@ -154,10 +162,12 @@ public class ScoutPlayer {
 						dir = randDir();
 						messageCount++;
 					}
+					
 					for (RobotInfo enemy : enemies) {
 						if (messageCount < 20) {
 							Message.sendMessage(rc, enemy.location, Message.TURRETATTACK, 8);
 						}
+						messageCount++;
 					}
 					
 				}
