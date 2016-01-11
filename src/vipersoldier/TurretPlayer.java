@@ -254,6 +254,7 @@ public class TurretPlayer {
             if (rc.isCoreReady()) {
             	// now we want it to move towards the nearest den, if we can
             	if (denLocations.size() > 0) {
+            		rc.setIndicatorString(0, "moving towards den " + rc.getRoundNum());
             		randomDirection = null;
                 	MapLocation currentLocation = myLoc;
                 	MapLocation nearestDen = denLocations.iterator().next();
@@ -286,6 +287,7 @@ public class TurretPlayer {
                 	}
                 }
             	else if (enemyToGoTo != null || storedNearestEnemy != null) {
+            		rc.setIndicatorString(1, storedNearestEnemy+"enemy " + rc.getRoundNum());
             		if (storedNearestEnemy == null) {
             			//if went to enemy loc but no enemy, move randomly
                 		if ((myLoc.distanceSquaredTo(enemyToGoTo) <= 24) && enemiesWithinRange.length == 0) {
@@ -294,11 +296,20 @@ public class TurretPlayer {
         					}
                 			randomDirection = moveRandom(rc, randomDirection);
                 			enemyToGoTo = null;
+                			storedNearestEnemy = null;
                 		}
                 		else {
                 			storedNearestEnemy = enemyToGoTo;
                 			bugging = new Bugging(rc, enemyToGoTo);
-                			rc.setIndicatorString(1, enemyToGoTo+"enemy");
+                		}
+            		} else {
+            			if ((myLoc.distanceSquaredTo(storedNearestEnemy) <= 24) && enemiesWithinRange.length == 0) {
+                			if (randomDirection == null) {
+                        		randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
+        					}
+                			randomDirection = moveRandom(rc, randomDirection);
+                			enemyToGoTo = null;
+                			storedNearestEnemy = null;
                 		}
             		}
             		if (rc.isCoreReady()) {
@@ -306,6 +317,7 @@ public class TurretPlayer {
             		}
             	}
             	else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
+            		rc.setIndicatorString(0, "should not be here");
                 	Set<Integer> archonIDs = archonLocations.keySet();
                 	int closestid = archonIDs.iterator().next();
                 	MapLocation nearestArchon = archonLocations.get(closestid);
@@ -334,6 +346,7 @@ public class TurretPlayer {
                 		buggingAvoid(bugging, enemyTurrets, turnNum);
                 	}
                 } else { // there are no dens or archons to move towards, we want to move in one random direction
+                	rc.setIndicatorString(0, "moving randomly " + rc.getRoundNum());
                 	if (randomDirection == null) {
                 		randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
 					}
