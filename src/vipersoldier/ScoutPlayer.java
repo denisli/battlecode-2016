@@ -7,6 +7,7 @@ import java.util.Set;
 
 import battlecode.common.Clock;
 import battlecode.common.Direction;
+import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
@@ -21,7 +22,7 @@ public class ScoutPlayer {
 	static Direction dir;
 
 	static int sightRange = RobotType.SCOUT.sensorRadiusSquared;
-	static int maxSignal = 50 * 50 * 2;
+	static int maxSignal = 100 * 100 * 2;
 
 	static MapLocation recentlyBroadcastedDenLoc = new MapLocation(1000000, 1000000);
 	
@@ -32,6 +33,7 @@ public class ScoutPlayer {
 		Set<MapLocation> partsList = new HashSet<>();
 		Direction randomDirection = null;
 		Set<MapLocation> enemyTurrets = new HashSet<>();
+		
 		Team enemyTeam = rc.getTeam().opponent();
 		try {
 			rand = new Random(rc.getID());
@@ -46,6 +48,11 @@ public class ScoutPlayer {
 				RobotInfo[] enemies = rc.senseHostileRobots(myLocation, sightRange);
 				int closestNonDenDist = 500;
 				int closestDenDist = 500;
+				int turnNum = rc.getRoundNum();
+				//dangerous directions to enemy turrets
+				Set<Direction> dangerousDirs = new HashSet<>();
+				
+				
 				int messageCount = 0;
 				List<Message> myMessages = Message.readMessageSignals(rc);
 				for (Message m : myMessages) {
@@ -121,12 +128,23 @@ public class ScoutPlayer {
 							messageCount++;
 						}
 						if (enemyTurrets.contains(sq)) {
-							if (rc.senseRobotAtLocation(sq) == null || rc.senseRobotAtLocation(sq).team != enemyTeam) {
+							//if no robot or not enemy turret, remove from enemy turrets list
+							if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
 								enemyTurrets.remove(sq);
+								if (messageCount < 20) {
+									Message.sendMessage(rc, sq, Message.REMOVETURRET, maxSignal);
+									messageCount++;
+								}
 							}
-							if (messageCount < 20) {
-								Message.sendMessage(rc, sq, Message.REMOVETURRET, maxSignal);
-								messageCount++;
+							else {
+								//if before turn 1500, add dangerous dirs
+								if (turnNum <= 2000) {
+									for (Direction d : RobotPlayer.directions) {
+										if (myLocation.add(d).distanceSquaredTo(sq) <= 48) {
+											dangerousDirs.add(d);
+										}
+									}	
+								}
 							}
 						}
 					}
@@ -155,15 +173,11 @@ public class ScoutPlayer {
 						// try to move randomly
 						if (randomDirection == null) {
 							randomDirection = randDir();
-						}
-						if (rc.canMove(randomDirection) && rc.isCoreReady()) {
-							rc.move(randomDirection);
-						} else if (!rc.canMove(randomDirection)) {
-							randomDirection = randDir();
-						}
+						}						
+						randomDirection = moveAvoid(rc, randomDirection, dangerousDirs);
 					}
 					if (closestNonDenEnemy != null && messageCount < 20
-							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 1000) {
+							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && turnNum > 1500) {
 						Message.sendMessage(rc, closestNonDenEnemy.location, Message.ENEMY, maxSignal);
 						//recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
@@ -191,7 +205,33 @@ public class ScoutPlayer {
 			Clock.yield();
 		}
 	}
-
+	
+	//move randomly while avoiding dangerous directions
+	public static Direction moveAvoid(RobotController rc, Direction randomDirection, Set<Direction> dangerousDirs) throws GameActionException {
+		if (rc.isCoreReady()) {
+			int dirsChecked = 0;
+			if (rc.canMove(randomDirection)) {
+				rc.setIndicatorString(0, randomDirection+"cantmove");
+			}
+			if (dangerousDirs.contains(randomDirection) || !rc.canMove(randomDirection)) {
+				randomDirection = randDir();
+				while (dangerousDirs.contains(randomDirection) || !rc.canMove(randomDirection)) {
+					randomDirection = randomDirection.rotateLeft();
+					dirsChecked++;
+					if (dirsChecked > 7) {
+						break;
+					}
+					rc.setIndicatorString(2, randomDirection+"");
+				}
+			}
+			if (rc.canMove(randomDirection)) {
+				rc.setIndicatorString(1, randomDirection+"");
+				rc.move(randomDirection);
+			}
+		}
+		return randomDirection;
+	}
+	
 	private static Direction randDir() {
 		return directions[rand.nextInt(8)];
 	}

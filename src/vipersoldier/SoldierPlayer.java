@@ -18,14 +18,18 @@ public class SoldierPlayer {
 	static MapLocation storedNearestEnemy = null;
 	static MapLocation storedNearestArchon = null;
 	
-	public static void run(RobotController rc) {
+	public static void run(RobotController rc) throws GameActionException {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
+		Team enemyTeam = myTeam.opponent();
 		Set<MapLocation> denLocations = new HashSet<>();
 		Set<MapLocation> enemyLocations = new HashSet<>();
+		Set<MapLocation> enemyTurrets = new HashSet<>();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		Direction randomDirection = null;
-		RobotInfo[] closeAllies = rc.senseNearbyRobots(RobotType.SOLDIER.sensorRadiusSquared, myTeam);
+		int sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
+		RobotInfo[] closeAllies = rc.senseNearbyRobots(sightRadius, myTeam);
+		
 		boolean wasRetreating = false;
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
@@ -44,6 +48,16 @@ public class SoldierPlayer {
 		while (true) {
             // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
             // at the end of it, the loop will iterate once per game round.
+			int turnNum = rc.getRoundNum();
+			MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRadius);
+			for (MapLocation sq : squaresInSight) {
+				if (enemyTurrets.contains(sq)) {
+					if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
+						enemyTurrets.remove(sq);
+					}
+				}
+			}
+			
             try {
             	MapLocation myLoc = rc.getLocation();
             	
@@ -69,7 +83,7 @@ public class SoldierPlayer {
             			}
             		} else {
             			if (rc.isCoreReady()) {
-	            			RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, RobotType.SOLDIER.sensorRadiusSquared);
+	            			RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, sightRadius);
 	            			int closestDist = 1000;
 	            			Direction bestDir = Direction.NONE;
 	            			// Find the closest hostile and move away from him, unless you are viper or zombie infected, then move towards them
@@ -88,8 +102,8 @@ public class SoldierPlayer {
 	            					rc.move(dir);
 	            				} else {
 	            					int dist = myLoc.distanceSquaredTo(storedNearestArchon);
-	            					if (dist > 13) { 
-	            						bugging.move();
+	            					if (dist > 13) {
+	            						buggingAvoid(bugging, enemyTurrets, turnNum);
 	            					} else {
 	            						if (dist <= 5) {
 	            							Direction away = Movement.getBestMoveableDirection(storedNearestArchon.directionTo(myLoc), rc, 2);
@@ -102,7 +116,7 @@ public class SoldierPlayer {
 	            			} else {
 	            				int dist = myLoc.distanceSquaredTo(storedNearestArchon);
             					if (dist > 13) { 
-            						bugging.move();
+            						buggingAvoid(bugging, enemyTurrets, turnNum);
             					} else {
             						if (dist <= 5) {
             							Direction away = Movement.getBestMoveableDirection(storedNearestArchon.directionTo(myLoc), rc, 2);
@@ -319,6 +333,12 @@ public class SoldierPlayer {
 	                    		if (m.type == Message.ENEMY) {
 	                    			enemyLocations.add(m.location);
 	                    		}
+	            				if (m.type == Message.DANGERTURRETS) {
+	            					enemyTurrets.add(m.location);
+	            				}
+	            				if (m.type == Message.REMOVETURRET) {
+	            					enemyTurrets.remove(m.location);
+	            				}
 	                    		if (m.type == Message.ARCHONLOC) {
 	                    			Signal signal = m.signal;
 	                    			archonLocations.put(signal.getID(), m.location);
@@ -359,10 +379,10 @@ public class SoldierPlayer {
 		                    		storedNearestDen = nearestDen;
 		                    	}
 		                    	if (rc.isCoreReady() && bugging != null) {
-		                    		bugging.move();
+		                    		buggingAvoid(bugging, enemyTurrets, turnNum);
 		                    	}
 		                    } else if (storedNearestEnemy != null) {
-		                    	rc.setIndicatorString(0, "moving towards enemy" + rc.getRoundNum());
+		                    	rc.setIndicatorString(0, "moving towards enemy" + turnNum);
 		                    	rc.setIndicatorString(1, storedNearestEnemy.toString());
 		                    	if (rc.canSense(storedNearestEnemy) && (rc.senseRobotAtLocation(storedNearestEnemy) == null || rc.senseRobotAtLocation(storedNearestEnemy).team != rc.getTeam().opponent())) {
 		                    		enemyLocations.clear();
@@ -372,7 +392,7 @@ public class SoldierPlayer {
 		                    		if (bugging == null) {
 		                    			bugging = new Bugging(rc, storedNearestEnemy);
 		                    		}
-		                    		bugging.move();
+		                    		buggingAvoid(bugging, enemyTurrets, turnNum);
 		                    		enemyLocations.clear();
 		                    	}
 		                    }
@@ -397,7 +417,7 @@ public class SoldierPlayer {
 		                    		storedNearestEnemy = nearestEnemy;
 		                    	}
 		                    	if (rc.isCoreReady()) {
-		                    		bugging.move();
+		                    		buggingAvoid(bugging, enemyTurrets, turnNum);
 		                    		enemyLocations.clear();
 		                    	}
 		                    } else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
@@ -414,7 +434,7 @@ public class SoldierPlayer {
 		                    		storedNearestArchon = nearestArchon;
 		                    	}
 		                    	if (rc.isCoreReady()) {
-		                    		bugging.move();
+		                    		buggingAvoid(bugging, enemyTurrets, turnNum);
 		                    	}
 		                    } else { // there are no dens or archons to move towards, we want to move in one random direction
 		                    	rc.setIndicatorString(0, "moving randomly??");
@@ -436,5 +456,15 @@ public class SoldierPlayer {
                 e.printStackTrace();
             }
         }
+	}
+	
+	//if turn before 1500, avoid enemy turrets
+	public static void buggingAvoid(Bugging bugging, Set<MapLocation> enemyTurrets, int turnNum) throws GameActionException {
+		if (turnNum > 2000) {
+			bugging.move();
+		}
+		else {
+			bugging.moveAvoid(enemyTurrets);
+		}
 	}
 }

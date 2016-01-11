@@ -63,6 +63,9 @@ public class ArchonPlayer {
 				if (m.type == Message.DANGERTURRETS) {
 					enemyTurrets.add(m.location);
 				}
+				if (m.type == Message.REMOVETURRET) {
+					enemyTurrets.remove(m.location);
+				}
 				if (!(m.type == Message.ARCHONLOC)) {
 					conseqNoSignal = 0;
 				}
@@ -74,7 +77,7 @@ public class ArchonPlayer {
 					partsList.add(sq);
 				}
 				if (enemyTurrets.contains(sq)) {
-					if (rc.senseRobotAtLocation(sq) == null || rc.senseRobotAtLocation(sq).team != enemyTeam) {
+					if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
 						enemyTurrets.remove(sq);
 					}
 				}

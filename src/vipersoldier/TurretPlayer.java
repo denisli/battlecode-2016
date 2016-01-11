@@ -15,14 +15,22 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.Signal;
 import battlecode.common.Team;
 
 public class TurretPlayer {
-
+	
+	static Random rand;
+	static Direction[] directions = Direction.values();
 	static Bugging bugging = null;
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestArchon = null;
 	static MapLocation storedNearestEnemy = null;
+	static Set<MapLocation> enemyTurrets = new HashSet<>();
+	static MapLocation[] squaresInSight = null;
+	static Team myTeam = null;
+	static Team enemyTeam = null;
+	static int sightRadius;
 	
 	public static void run(RobotController rc) {
 		int myAttackRange = 0;
@@ -30,8 +38,10 @@ public class TurretPlayer {
 		Team enemyTeam = myTeam.opponent();
 		Set<MapLocation> denLocations = new HashSet<>();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
+		int sightRadius = 24;
 		
 		try {
+			rand = new Random(rc.getID());
             myAttackRange = rc.getType().attackRadiusSquared;
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -39,6 +49,8 @@ public class TurretPlayer {
         }
 
         while (true) {
+			squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRadius);
+        	
             // Check which code to run
             try {
                 if (rc.getType() == RobotType.TTM) {
@@ -58,11 +70,11 @@ public class TurretPlayer {
 	public static void TurretCode(RobotController rc) throws GameActionException {
 		MapLocation myLoc = rc.getLocation();
 		int attackRadius = RobotType.TURRET.attackRadiusSquared;
-		int sightRadius = RobotType.TURRET.sensorRadiusSquared;
 		//sight range is less than attack range
         RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, sightRadius);
         List<RobotInfo> robotsCanAttack = new ArrayList<>();
         List<MapLocation> canAttackCantSee = new ArrayList<>();
+        int turnNum = rc.getRoundNum();
         
 		//READ MESSAGES HERE
 		List<Message> messages = Message.readMessageSignals(rc);
@@ -72,7 +84,23 @@ public class TurretPlayer {
 					canAttackCantSee.add(m.location);
 				}
 			}
+			if (m.type == Message.DANGERTURRETS) {
+				enemyTurrets.add(m.location);
+			}
+			if (m.type == Message.REMOVETURRET) {
+				enemyTurrets.remove(m.location);
+			}
 		}
+		
+		for (MapLocation sq : squaresInSight) {
+			if (enemyTurrets.contains(sq)) {
+				if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
+					enemyTurrets.remove(sq);
+				}
+			}
+			//if before turn 1500, add dangerous dirs
+		}
+		
     	for (RobotInfo r : enemiesWithinRange) {
     		if (myLoc.distanceSquaredTo(r.location) > 5) {
     			robotsCanAttack.add(r);
@@ -134,7 +162,6 @@ public class TurretPlayer {
 	}
 	
 	private static void TTMCode(RobotController rc, Set<MapLocation> denLocations, Map<Integer, MapLocation> archonLocations) throws GameActionException {
-		Team myTeam = rc.getTeam();
 		// first check if there are any enemies nearby
 		Random rand = new Random(rc.getID());
 
@@ -145,7 +172,17 @@ public class TurretPlayer {
 		MapLocation enemyToGoTo = null;
         List<MapLocation> canAttackCantSee = new ArrayList<>();
 		int attackRadius = RobotType.TURRET.attackRadiusSquared;
-
+		int turnNum = rc.getRoundNum();
+		RobotInfo[] friendlyInRange = rc.senseNearbyRobots(sightRadius, myTeam);
+		boolean archonNearby = false;
+		rc.setIndicatorString(0, enemyTurrets.size()+"");
+		
+		for (RobotInfo f : friendlyInRange) {
+			if (f.type == RobotType.ARCHON) {
+				archonNearby = true;
+				break;
+			}
+		}
 		for (RobotInfo ally : closeAllies) {
 			if (ally.type == RobotType.ARCHON) {
 				
@@ -166,7 +203,7 @@ public class TurretPlayer {
     		if (m.type == Message.DEN) {
     			denLocations.add(m.location);
     		}
-    		if (m.type == Message.ENEMY) {
+    		else if (m.type == Message.ENEMY) {
     			if (enemyToGoTo==null) {
     				enemyToGoTo = m.location;
     			}
@@ -177,13 +214,38 @@ public class TurretPlayer {
     				}
     			}
     		}
-    		if (m.type == Message.TURRETATTACK) {
+    		else if (m.type == Message.TURRETATTACK) {
 				if (myLoc.distanceSquaredTo(m.location) <= attackRadius && myLoc.distanceSquaredTo(m.location) > 5) {
 					canAttackCantSee.add(m.location);
 				}
     		}
+    		else if (m.type == Message.DANGERTURRETS) {
+				enemyTurrets.add(m.location);
+			}
+    		else if (m.type == Message.REMOVETURRET) {
+				enemyTurrets.remove(m.location);
+			}
+    		else if (m.type == Message.ARCHONLOC) {
+    			Signal signal = m.signal;
+    			archonLocations.put(signal.getID(), m.location);
+    			int closestDist = Integer.MAX_VALUE;
+    			for (MapLocation loc : archonLocations.values()) {
+    				int dist = myLoc.distanceSquaredTo(loc);
+    				if (dist < closestDist) {
+    					storedNearestArchon = loc;
+    					closestDist = dist;
+    				}
+    			}
+    		}
     	}
-        
+		for (MapLocation sq : squaresInSight) {
+			if (enemyTurrets.contains(sq)) {
+				if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
+					enemyTurrets.remove(sq);
+				}
+			}
+		}
+    	
         if (enemiesWithinRange.length > 0 || canAttackCantSee.size() > 0) {
         	// we want to turret up
         	rc.unpack();
@@ -216,47 +278,104 @@ public class TurretPlayer {
                 	}
                 	if (!nearestDen.equals(storedNearestDen)) {
                 		bugging = new Bugging(rc, nearestDen);
+                		rc.setIndicatorString(1, nearestDen+"den");
                 		storedNearestDen = nearestDen;
                 	}
                 	if (rc.isCoreReady()) {
-                		bugging.move();
+                		buggingAvoid(bugging, enemyTurrets, turnNum);
                 	}
                 }
             	else if (enemyToGoTo != null || storedNearestEnemy != null) {
             		if (storedNearestEnemy == null) {
-            			storedNearestEnemy = enemyToGoTo;
-            			bugging = new Bugging(rc, enemyToGoTo);
+            			//if went to enemy loc but no enemy, move randomly
+                		if ((myLoc.distanceSquaredTo(enemyToGoTo) <= 24) && enemiesWithinRange.length == 0) {
+                			if (randomDirection == null) {
+                        		randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
+        					}
+                			randomDirection = moveRandom(rc, randomDirection);
+                			enemyToGoTo = null;
+                		}
+                		else {
+                			storedNearestEnemy = enemyToGoTo;
+                			bugging = new Bugging(rc, enemyToGoTo);
+                			rc.setIndicatorString(1, enemyToGoTo+"enemy");
+                		}
             		}
             		if (rc.isCoreReady()) {
-            			bugging.move();
+            			buggingAvoid(bugging, enemyTurrets, turnNum);
             		}
             	}
             	else if (!archonLocations.isEmpty()) { // there are no dens but we have archon locations, move towards nearest archon
                 	Set<Integer> archonIDs = archonLocations.keySet();
-                	MapLocation nearestArchon = archonLocations.get(archonIDs.iterator().next());
+                	int closestid = archonIDs.iterator().next();
+                	MapLocation nearestArchon = archonLocations.get(closestid);
                 	for (Integer id : archonIDs) {
                 		if (archonLocations.get(id).distanceSquaredTo(rc.getLocation()) < nearestArchon.distanceSquaredTo(rc.getLocation())) {
                 			nearestArchon = archonLocations.get(id);
+                			closestid = id;
                 		}
                 	}
                 	if (!nearestArchon.equals(storedNearestArchon)) {
-                		bugging = new Bugging(rc, nearestArchon);
-                		storedNearestArchon = nearestArchon;
+                		//if went to archon loc but no archon, move randomly
+                		if ((myLoc.distanceSquaredTo(storedNearestArchon) <= 24) && !archonNearby) {
+                			if (randomDirection == null) {
+                        		randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
+        					}
+                			randomDirection = moveRandom(rc, randomDirection);
+        					archonLocations.replace(closestid, null);
+                		}
+                		else {
+                			bugging = new Bugging(rc, nearestArchon);
+                			rc.setIndicatorString(1, nearestArchon+"archon");
+                			storedNearestArchon = nearestArchon;
+                		}
                 	}
                 	if (rc.isCoreReady()) {
-                		bugging.move();
+                		buggingAvoid(bugging, enemyTurrets, turnNum);
                 	}
                 } else { // there are no dens or archons to move towards, we want to move in one random direction
                 	if (randomDirection == null) {
                 		randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
 					}
-					if (rc.canMove(randomDirection) && rc.isCoreReady()) {
-						rc.move(randomDirection);
-					} else if (!rc.canMove(randomDirection)) {
-						randomDirection = RobotPlayer.directions[rand.nextInt(100) % 8];
-					}
+                	randomDirection = moveRandom(rc, randomDirection);
                 }
             }
         }
+	}
+	
+	//if turn before 1500, avoid enemy turrets
+	public static void buggingAvoid(Bugging bugging, Set<MapLocation> enemyTurrets, int turnNum) throws GameActionException {
+		if (turnNum > 2000) {
+			bugging.move();
+		}
+		else {
+			bugging.moveAvoid(enemyTurrets);
+		}
+	}
+	
+	//move randomly while avoiding dangerous directions
+	public static Direction moveRandom(RobotController rc, Direction randomDirection) throws GameActionException {
+		if (rc.isCoreReady()) {
+			if (rc.canMove(randomDirection)) {
+				rc.setIndicatorString(1, randomDirection+"");
+				rc.move(randomDirection);
+			}
+			else {
+				randomDirection = randDir();
+				int dirsChecked = 0;
+				while (!rc.canMove(randomDirection) && dirsChecked < 8) {
+					randomDirection = randomDirection.rotateLeft();
+					dirsChecked++;
+				}
+				if (rc.canMove(randomDirection)) {
+					rc.move(randomDirection);
+				}
+			}
+		}
+		return randomDirection;
+	}
+	
+	private static Direction randDir() {
+		return directions[rand.nextInt(8)];
 	}
 }
