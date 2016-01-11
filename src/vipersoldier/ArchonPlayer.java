@@ -42,7 +42,7 @@ public class ArchonPlayer {
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 				MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(myLoc, sightRadius);
 				RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
-
+				rc.setIndicatorString(0, "turrets size " + enemyTurrets.size());
 				// READ MESSAGES HERE
 				List<Message> messages = Message.readMessageSignals(rc);
 				for (Message m : messages) {
@@ -69,14 +69,16 @@ public class ArchonPlayer {
 						partsBots.add(sq);
 					}
 					if (enemyTurrets.contains(sq)) {
-						if (rc.senseRobotAtLocation(sq) == null
-								|| !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
+						if (rc.canSense(sq) &&  (rc.senseRobotAtLocation(sq) == null
+								|| !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET))) {
 							enemyTurrets.remove(sq);
 						}
 					}
-					if (rc.canSense(sq) && rc.senseRobotAtLocation(sq) != null) {
-						if (rc.senseRobotAtLocation(sq).team == enemyTeam
-								&& rc.senseRobotAtLocation(sq).type == RobotType.TURRET) {
+					if (rc.canSense(sq)) {
+						RobotInfo r = rc.senseRobotAtLocation(sq);
+					if (r != null) {
+						if (r.team == enemyTeam
+								&& r.type == RobotType.TURRET) {
 							enemyTurrets.add(sq);
 							rc.setIndicatorString(0, sq + "");
 						}
@@ -84,6 +86,7 @@ public class ArchonPlayer {
 							bug.turretAvoidMove(enemyTurrets);
 						}
 					}
+				}
 				}
 				for (RobotInfo n : nearbyNeutralRobots) {
 					partsBots.add(n.location);
