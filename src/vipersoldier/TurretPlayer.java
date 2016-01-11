@@ -31,6 +31,8 @@ public class TurretPlayer {
 	static Team myTeam = null;
 	static Team enemyTeam = null;
 	static int sightRadius;
+	static List<MapLocation> canAttackCantSee0 = new ArrayList<>();
+	static List<MapLocation> canAttackCantSee1 = new ArrayList<>();
 	
 	public static void run(RobotController rc) {
 		int myAttackRange = 0;
@@ -71,17 +73,28 @@ public class TurretPlayer {
 		MapLocation myLoc = rc.getLocation();
 		int attackRadius = RobotType.TURRET.attackRadiusSquared;
 		//sight range is less than attack range
-        RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, sightRadius);
+        RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
         List<RobotInfo> robotsCanAttack = new ArrayList<>();
-        List<MapLocation> canAttackCantSee = new ArrayList<>();
         int turnNum = rc.getRoundNum();
+        
+        if (turnNum%2 == 0) {
+        	canAttackCantSee0.clear();
+        }
+        else {
+        	canAttackCantSee1.clear();
+        }
         
 		//READ MESSAGES HERE
 		List<Message> messages = Message.readMessageSignals(rc);
 		for (Message m : messages) {
 			if (m.type == Message.TURRETATTACK) {
 				if (myLoc.distanceSquaredTo(m.location) <= attackRadius && myLoc.distanceSquaredTo(m.location) > 5) {
-					canAttackCantSee.add(m.location);
+					if (turnNum%2 == 0) {
+						canAttackCantSee0.add(m.location);
+					}
+					else {
+						canAttackCantSee1.add(m.location);
+					}
 				}
 			}
 			if (m.type == Message.DANGERTURRETS) {
@@ -91,7 +104,8 @@ public class TurretPlayer {
 				enemyTurrets.remove(m.location);
 			}
 		}
-		
+    	canAttackCantSee0.addAll(canAttackCantSee1);
+
 		for (MapLocation sq : squaresInSight) {
 			if (enemyTurrets.contains(sq)) {
 				if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
@@ -106,11 +120,13 @@ public class TurretPlayer {
     			robotsCanAttack.add(r);
     		}
     	}
+    	rc.setIndicatorString(1, enemiesWithinRange.length+"");
         
-        if (robotsCanAttack.size() != 0) {
+        if (robotsCanAttack.size() > 0) {
         	// we want to get the closest enemy
         	RobotInfo bestEnemy = robotsCanAttack.get(0);
-  
+          	rc.setIndicatorString(0, bestEnemy.location+"");
+          	
             for (RobotInfo r: robotsCanAttack) {
             	if (r.type == RobotType.ARCHON) {
             		//it sees archon
@@ -149,13 +165,13 @@ public class TurretPlayer {
             	rc.attackLocation(bestEnemy.location);
             }
         }
-        else if (canAttackCantSee.size() > 0) {
+        else if (canAttackCantSee0.size() > 0) {
         	if (rc.isWeaponReady()) {
-        		rc.attackLocation(canAttackCantSee.get(0));
+        		rc.attackLocation(canAttackCantSee0.get(0));
         	}
         }
         else {
-        	if (rc.isCoreReady()) {
+        	if (rc.isCoreReady() && canAttackCantSee0.size() == 0 && robotsCanAttack.size() == 0) {
             	rc.pack();
         	}
         }
@@ -170,12 +186,12 @@ public class TurretPlayer {
 		RobotInfo[] closeAllies = rc.senseNearbyRobots(5, myTeam);
 		boolean wasRetreating = false;
 		MapLocation enemyToGoTo = null;
-        List<MapLocation> canAttackCantSee = new ArrayList<>();
 		int attackRadius = RobotType.TURRET.attackRadiusSquared;
 		int turnNum = rc.getRoundNum();
-		RobotInfo[] friendlyInRange = rc.senseNearbyRobots(sightRadius, myTeam);
+		RobotInfo[] friendlyInRange = rc.senseNearbyRobots(24, myTeam);
 		boolean archonNearby = false;
 		rc.setIndicatorString(0, enemyTurrets.size()+"");
+		int sightRadius = 24;
 		
 		for (RobotInfo f : friendlyInRange) {
 			if (f.type == RobotType.ARCHON) {
@@ -196,6 +212,13 @@ public class TurretPlayer {
         
         // take a look at all hostile robots within the sight radius
         RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, rc.getType().sensorRadiusSquared);
+        //takes into account robots that are too close
+        List<RobotInfo> enemiesWithinRange1 = new ArrayList<>();
+        for (RobotInfo e : enemiesWithinRange) {
+        	if (myLoc.distanceSquaredTo(e.location)>5) {
+        		enemiesWithinRange1.add(e);
+        	}
+        }
         
         // first check if there are any new signals from scouts
     	List<Message> messages = Message.readMessageSignals(rc);
@@ -216,7 +239,12 @@ public class TurretPlayer {
     		}
     		else if (m.type == Message.TURRETATTACK) {
 				if (myLoc.distanceSquaredTo(m.location) <= attackRadius && myLoc.distanceSquaredTo(m.location) > 5) {
-					canAttackCantSee.add(m.location);
+					if (turnNum%2 == 0) {
+						canAttackCantSee0.add(m.location);
+					}
+					else {
+						canAttackCantSee1.add(m.location);
+					}
 				}
     		}
     		else if (m.type == Message.DANGERTURRETS) {
@@ -238,6 +266,7 @@ public class TurretPlayer {
     			}
     		}
     	}
+    	canAttackCantSee0.addAll(canAttackCantSee1);
 		for (MapLocation sq : squaresInSight) {
 			if (enemyTurrets.contains(sq)) {
 				if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
@@ -246,7 +275,7 @@ public class TurretPlayer {
 			}
 		}
     	
-        if (enemiesWithinRange.length > 0 || canAttackCantSee.size() > 0) {
+        if (enemiesWithinRange1.size() > 0 || canAttackCantSee0.size() > 0) {
         	// we want to turret up
         	rc.unpack();
         }
@@ -342,7 +371,7 @@ public class TurretPlayer {
                 			storedNearestArchon = nearestArchon;
                 		}
                 	}
-                	if (rc.isCoreReady()) {
+                	if (rc.isCoreReady() && bugging != null) {
                 		buggingAvoid(bugging, enemyTurrets, turnNum);
                 	}
                 } else { // there are no dens or archons to move towards, we want to move in one random direction
