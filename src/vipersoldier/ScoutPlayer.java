@@ -133,7 +133,7 @@ public class ScoutPlayer {
 						}
 					}
 					if (turretCount >= 3 && messageCount < 20) { // if there are more than 3 turrets clustered, warn units to not come near
-						Message.sendMessage(rc, turretLoc, Message.AVOIDTURRET, maxSignal);
+						Message.sendMessage(rc, turretLoc, Message.DANGERTURRETS, maxSignal);
 					}
 					// otherwise if enemy is too far, move closer if not a zombie
 					if (closestNonDenEnemy != null && !closestNonDenEnemy.team.equals(Team.ZOMBIE) && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) > 48
@@ -151,7 +151,7 @@ public class ScoutPlayer {
 						}
 					}
 					if (closestNonDenEnemy != null && messageCount < 20
-							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 600) {
+							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 1000) {
 						Message.sendMessage(rc, closestNonDenEnemy.location, Message.ENEMY, maxSignal);
 						//recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
