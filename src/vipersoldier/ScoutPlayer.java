@@ -44,7 +44,7 @@ public class ScoutPlayer {
 				RobotInfo[] enemies = rc.senseHostileRobots(myLocation, sightRange);
 				int closestNonDenDist = 500;
 				int closestDenDist = 500;
-				
+				int messageCount = 0;
 				List<Message> myMessages = Message.readMessageSignals(rc);
 				for (Message m : myMessages) {
 					if (m.type==Message.PARTS) {
@@ -113,15 +113,17 @@ public class ScoutPlayer {
 					MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRange);
 					RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRange, Team.NEUTRAL);
 					for (MapLocation sq : squaresInSight) {
-						if (rc.senseParts(sq) > 0 && !partsList.contains(sq)) {
+						if (rc.senseParts(sq) > 0 && !partsList.contains(sq) && messageCount < 20) {
 							Message.sendMessage(rc, sq, Message.PARTS, maxSignal);
 							partsList.add(sq);
+							messageCount++;
 						}
 					}
 					for (RobotInfo n : nearbyNeutralRobots) {
-						if (!neutralBots.contains(n.location)) {
+						if (!neutralBots.contains(n.location) && messageCount < 20) {
 							Message.sendMessage(rc, n.location, Message.NEUTRALBOT, maxSignal);
 							neutralBots.add(n.location);
+							messageCount++;
 						}
 					}
 					
@@ -140,21 +142,22 @@ public class ScoutPlayer {
 							randomDirection = randDir();
 						}
 					}
-					if (closestNonDenEnemy != null
+					if (closestNonDenEnemy != null && messageCount < 20
 							&& (closestNonDenEnemy.team.equals(rc.getTeam().opponent()) || closestNonDenEnemy.type == RobotType.ZOMBIEDEN) && rc.getRoundNum() > 600) {
 						Message.sendMessage(rc, closestNonDenEnemy.location, Message.ENEMY, maxSignal);
 						//recentlyBroadcastedDenLoc = closestNonDenEnemy.location;
 						dir = randDir();
-						Clock.yield();
-						continue loop;
-					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1) {
+						messageCount++;
+					} else if (closestDen != null && closestDen.location.distanceSquaredTo(recentlyBroadcastedDenLoc) > 1 && messageCount < 20) {
 						Message.sendMessage(rc, closestDen.location, Message.DEN, maxSignal);
 						recentlyBroadcastedDenLoc = closestDen.location;
 						dir = randDir();
-						Clock.yield();
+						messageCount++;
 					}
 					for (RobotInfo enemy : enemies) {
-						Message.sendMessage(rc, enemy.location, Message.TURRETATTACK, 8);
+						if (messageCount < 20) {
+							Message.sendMessage(rc, enemy.location, Message.TURRETATTACK, 8);
+						}
 					}
 					
 				}
