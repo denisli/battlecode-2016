@@ -270,7 +270,7 @@ public class ArchonPlayer {
 							// chance
 							if (rc.isCoreReady() && !built && rc.hasBuildRequirements(RobotType.TURRET)
 									&& turnNum >= 500) {
-								int buildFate = rand.nextInt(3);
+								int buildFate = rand.nextInt(5);
 								RobotType toBuild = null;
 								if (buildFate == 0) {
 									toBuild = RobotType.TURRET;

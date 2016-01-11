@@ -387,7 +387,7 @@ public class TurretPlayer {
 	
 	//if turn before 1500, avoid enemy turrets
 	public static void buggingAvoid(Bugging bugging, LocationSet enemyTurrets, int turnNum) throws GameActionException {
-		if (turnNum > 2000) {
+		if (turnNum > 1500) {
 			bugging.move();
 		}
 		else {

@@ -22,7 +22,7 @@ public class ScoutPlayer {
 	static Direction dir;
 
 	static int sightRange = RobotType.SCOUT.sensorRadiusSquared;
-	static int maxSignal = 100 * 100 * 2;
+	static int maxSignal = 50 * 50 * 2;
 
 	static MapLocation recentlyBroadcastedDenLoc = new MapLocation(1000000, 1000000);
 	
@@ -138,7 +138,7 @@ public class ScoutPlayer {
 							}
 							else {
 								//if before turn 1500, add dangerous dirs
-								if (turnNum <= 2000) {
+								if (turnNum <= 1500) {
 									for (Direction d : RobotPlayer.directions) {
 										if (myLocation.add(d).distanceSquaredTo(sq) <= 48) {
 											dangerousDirs.add(d);
