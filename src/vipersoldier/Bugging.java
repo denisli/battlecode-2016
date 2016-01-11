@@ -144,11 +144,7 @@ public class Bugging {
 	// Moves the robot according to bugging.
 	// Assume that the robot's core is ready.
 	public void move() throws GameActionException {
-		move(new Predicate<Direction>() {
-			public boolean test(Direction dir) {
-				return true;
-			}
-		});
+		move(tautology);
 	}
 	
 	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {

@@ -17,6 +17,8 @@ public class SoldierPlayer {
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestEnemy = null;
 	static MapLocation storedNearestArchon = null;
+	static Direction[] directions = Direction.values();
+	static Random rand;
 	
 	public static void run(RobotController rc) throws GameActionException {
 		Random rand = new Random(rc.getID());
@@ -29,6 +31,7 @@ public class SoldierPlayer {
 		Direction randomDirection = null;
 		int sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
 		RobotInfo[] closeAllies = rc.senseNearbyRobots(sightRadius, myTeam);
+		double perceivedHealth = rc.getHealth();
 		
 		boolean wasRetreating = false;
 		for (RobotInfo ally : closeAllies) {
@@ -60,20 +63,23 @@ public class SoldierPlayer {
 			
             try {
             	MapLocation myLoc = rc.getLocation();
-            	
-            	boolean isRetreating = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasRetreating && 10 * rc.getHealth() <= 8 * RobotType.SOLDIER.maxHealth);
-            	if (storedNearestArchon != null && rc.getLocation().distanceSquaredTo(storedNearestArchon) < 10) {
+            	if (rc.getRoundNum() > 2500) {
+            		perceivedHealth = RobotType.SOLDIER.maxHealth;
+            	}
+            	else if (storedNearestArchon != null && rc.getLocation().distanceSquaredTo(storedNearestArchon) < 10) {
     				RobotInfo[] nearby = rc.senseNearbyRobots(10, rc.getTeam());
     				boolean archon = false;
     				for (RobotInfo r : nearby) {
     					if (r.type == RobotType.ARCHON) {
-    						archon = true;
+    						perceivedHealth = rc.getHealth();
     					}
     				}
     				if (!archon) {
-    					isRetreating = false;
+    					perceivedHealth = rc.getType().maxHealth;
     				}
     			}
+            	boolean isRetreating = 5 * perceivedHealth <= RobotType.SOLDIER.maxHealth  || (wasRetreating && 10 * perceivedHealth <= 8 * RobotType.SOLDIER.maxHealth);
+            	
             	if (isRetreating) {
             		if (!wasRetreating) {
             			if (storedNearestArchon == null) {
@@ -456,6 +462,32 @@ public class SoldierPlayer {
                 e.printStackTrace();
             }
         }
+	}
+	
+	//move randomly while avoiding dangerous directions
+	public static Direction moveRandom(RobotController rc, Direction randomDirection) throws GameActionException {
+		if (rc.isCoreReady()) {
+			if (rc.canMove(randomDirection)) {
+				rc.setIndicatorString(1, randomDirection+"");
+				rc.move(randomDirection);
+			}
+			else {
+				randomDirection = randDir();
+				int dirsChecked = 0;
+				while (!rc.canMove(randomDirection) && dirsChecked < 8) {
+					randomDirection = randomDirection.rotateLeft();
+					dirsChecked++;
+				}
+				if (rc.canMove(randomDirection)) {
+					rc.move(randomDirection);
+				}
+			}
+		}
+		return randomDirection;
+	}
+	
+	private static Direction randDir() {
+		return directions[rand.nextInt(8)];
 	}
 	
 	//if turn before 1500, avoid enemy turrets
