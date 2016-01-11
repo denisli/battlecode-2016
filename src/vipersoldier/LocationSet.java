@@ -10,8 +10,8 @@ import battlecode.common.MapLocation;
  */
 public class LocationSet implements Iterable<MapLocation> {
 	
-	private final int[][] containsLocation = new int[200][200];
-	private final MapLocation[] mapLocations = new MapLocation[500]; // assume 500 locations max. Otherwise we done goofed.
+	private int[][] containsLocation = new int[200][200];
+	private MapLocation[] mapLocations = new MapLocation[500]; // assume 500 locations max. Otherwise we done goofed.
 	private int index = 0;
 	private int size = 0;
 	
@@ -28,6 +28,14 @@ public class LocationSet implements Iterable<MapLocation> {
 		}
 		
 	};
+	
+	// clears the set
+	public void clear() {
+		containsLocation = new int[200][200];
+		mapLocations = new MapLocation[500];
+		index = 0;
+		size = 0;
+	}
 	
 	public boolean contains(MapLocation location) {
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
