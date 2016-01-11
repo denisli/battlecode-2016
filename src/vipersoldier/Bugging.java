@@ -163,7 +163,7 @@ public class Bugging {
 		if (!predicate.test(Direction.NONE)) {
 			int maxMinDist = 0;
 			Direction bestDir = Direction.NONE;
-			for (Direction dir : Direction.values()) {
+			for (Direction dir : RobotPlayer.directions) {
 				if (rc.canMove(dir)) {
 					MapLocation dirLoc = myLocation.add(dir);
 					int minDist = 1000;

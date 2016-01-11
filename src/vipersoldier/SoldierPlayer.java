@@ -17,7 +17,7 @@ public class SoldierPlayer {
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestEnemy = null;
 	static MapLocation storedNearestArchon = null;
-	static Direction[] directions = Direction.values();
+	static Direction[] directions = RobotPlayer.directions;
 	static Random rand;
 	
 	public static void run(RobotController rc) throws GameActionException {
