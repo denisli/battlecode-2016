@@ -87,7 +87,7 @@ public class ArchonPlayer {
 						rc.setIndicatorString(0, sq+"");
 					}
 					if (bug != null && rc.isCoreReady()) {
-						bug.moveAvoid(enemyTurrets);
+						bug.turretAvoidMove(enemyTurrets);
 					}
 				}
 			}
@@ -299,7 +299,7 @@ public class ArchonPlayer {
 										bug = new Bugging(rc, partsToGoTo);
 										rc.setIndicatorString(1, partsToGoTo+"");
 									}
-									bug.moveAvoid(enemyTurrets);
+									bug.turretAvoidMove(enemyTurrets);
 									moveToParts = true;
 								}
 							}

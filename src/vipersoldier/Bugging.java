@@ -160,6 +160,23 @@ public class Bugging {
 				return true;
 			}
 		};
+		if (!predicate.test(Direction.NONE)) {
+			int maxDist = 0;
+			Direction bestDir = Direction.NONE;
+			for (Direction dir : Direction.values()) {
+				MapLocation dirLoc = myLocation.add(dir);
+				for (MapLocation turret : enemyTurrets) {
+					int dist = dirLoc.distanceSquaredTo(turret);
+					if (dist > maxDist) {
+						bestDir = dir;
+						maxDist = dist;
+					}
+				}
+			}
+			if (bestDir != Direction.NONE) {
+				rc.move(bestDir);
+			}
+		}
 		move(predicate);
 		
 	}
