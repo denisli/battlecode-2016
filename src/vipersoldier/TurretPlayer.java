@@ -22,6 +22,7 @@ public class TurretPlayer {
 	static Bugging bugging = null;
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestArchon = null;
+	static MapLocation storedNearestEnemy = null;
 	
 	public static void run(RobotController rc) {
 		int myAttackRange = 0;
@@ -221,8 +222,11 @@ public class TurretPlayer {
                 		bugging.move();
                 	}
                 }
-            	else if (enemyToGoTo != null) {
-            		bugging = new Bugging(rc, enemyToGoTo);
+            	else if (enemyToGoTo != null || storedNearestEnemy != null) {
+            		if (storedNearestEnemy == null) {
+            			storedNearestEnemy = enemyToGoTo;
+            			bugging = new Bugging(rc, enemyToGoTo);
+            		}
             		if (rc.isCoreReady()) {
             			bugging.move();
             		}
