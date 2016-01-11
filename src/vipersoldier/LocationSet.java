@@ -1,16 +1,33 @@
 package vipersoldier;
 
+import java.util.Iterator;
+
 import battlecode.common.MapLocation;
 
 /**
  * All methods in this class assumes that the map locations passed in are actual locations.
  * None of the data is protected, so be careful.
  */
-public class LocationSet {
+public class LocationSet implements Iterable<MapLocation> {
 	
 	private final int[][] containsLocation = new int[200][200];
 	private final MapLocation[] mapLocations = new MapLocation[500]; // assume 500 locations max. Otherwise we done goofed.
+	private int index = 0;
 	private int size;
+	
+	private final Iterator<MapLocation> iterator = new Iterator<MapLocation>() {
+
+		@Override
+		public boolean hasNext() {
+			return index < size;
+		}
+
+		@Override
+		public MapLocation next() {
+			return mapLocations[index++];
+		}
+		
+	};
 
 	public LocationSet() {
 		// Initialize all values to -1 (represents that location is not in set.
@@ -45,9 +62,10 @@ public class LocationSet {
 	public int size() {
 		return size;
 	}
-	
-	public MapLocation[] locations() {
-		return mapLocations;
+
+	@Override
+	public Iterator<MapLocation> iterator() {
+		return iterator;
 	}
 	
 }
