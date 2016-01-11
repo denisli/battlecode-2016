@@ -57,9 +57,9 @@ public class LocationSet implements Iterable<MapLocation> {
 		if (index == 0) return false; // no location removed
 		MapLocation swapLocation = mapLocations[--size];
 		mapLocations[index-1] = swapLocation;
-		containsLocation[x][y] = 0; // set the index back to 0 for whatever was removed
 		int swapX = swapLocation.x % 100 + 100, swapY = swapLocation.y % 100 + 100;
 		containsLocation[swapX][swapY] = index; // change the swapped location's index
+		containsLocation[x][y] = 0; // set the index back to 0 for whatever was removed
 		return true;
 		
 	}

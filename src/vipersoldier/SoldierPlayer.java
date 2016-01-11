@@ -24,9 +24,9 @@ public class SoldierPlayer {
 		Random rand = new Random(rc.getID());
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
-		Set<MapLocation> denLocations = new HashSet<>();
-		Set<MapLocation> enemyLocations = new HashSet<>();
-		Set<MapLocation> enemyTurrets = new HashSet<>();
+		LocationSet denLocations = new LocationSet();
+		LocationSet enemyLocations = new LocationSet();
+		LocationSet enemyTurrets = new LocationSet();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		Direction randomDirection = null;
 		int sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
@@ -490,7 +490,7 @@ public class SoldierPlayer {
 	}
 	
 	//if turn before 1500, avoid enemy turrets
-	public static void buggingAvoid(Bugging bugging, Set<MapLocation> enemyTurrets, int turnNum) throws GameActionException {
+	public static void buggingAvoid(Bugging bugging, LocationSet enemyTurrets, int turnNum) throws GameActionException {
 		if (turnNum > 2000) {
 			bugging.move();
 		}
