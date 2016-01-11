@@ -25,7 +25,7 @@ public class Movement {
 	}
 	
 	//returns true if the robot moved away
-	public static boolean moveAwayFromEnemy(RobotController rc, Set<MapLocation> enemyTurrets) throws GameActionException {
+	public static boolean moveAwayFromEnemy(RobotController rc) throws GameActionException {
 		int mySightRange = rc.getType().sensorRadiusSquared;
 		MapLocation myLoc = rc.getLocation();
 		RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, mySightRange);

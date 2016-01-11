@@ -25,13 +25,13 @@ public class ArchonPlayer {
 		// number of consecutive turns that it didnt return a signal; used to
 		// determine when to build scouts
 		int conseqNoSignal = 0;
-		Set<MapLocation> partsBots = new HashSet<>();
+		LocationSet partsBots = new LocationSet();
 		// partsToGoTo = parts and neutral bots
 		MapLocation partsToGoTo = null;
 		Bugging bug = null;
 		int signalRange = 50 * 50 * 2;
 		int sightRadius = RobotType.ARCHON.sensorRadiusSquared;
-		Set<MapLocation> enemyTurrets = new HashSet<>();
+		LocationSet enemyTurrets = new LocationSet();
 
 		try {
 			// Any code here gets executed exactly once at the beginning of the
@@ -76,17 +76,17 @@ public class ArchonPlayer {
 					}
 					if (rc.canSense(sq)) {
 						RobotInfo r = rc.senseRobotAtLocation(sq);
-					if (r != null) {
-						if (r.team == enemyTeam
-								&& r.type == RobotType.TURRET) {
-							enemyTurrets.add(sq);
-							rc.setIndicatorString(0, sq + "");
-						}
-						if (bug != null && rc.isCoreReady()) {
-							bug.turretAvoidMove(enemyTurrets);
+						if (r != null) {
+							if (r.team == enemyTeam
+									&& r.type == RobotType.TURRET) {
+								enemyTurrets.add(sq);
+								rc.setIndicatorString(0, sq + "");
+							}
+							if (bug != null && rc.isCoreReady()) {
+								bug.turretAvoidMove(enemyTurrets);
+							}
 						}
 					}
-				}
 				}
 				for (RobotInfo n : nearbyNeutralRobots) {
 					partsBots.add(n.location);
@@ -115,7 +115,7 @@ public class ArchonPlayer {
 
 				boolean escape = false;
 				if (rc.isCoreReady()) {
-					escape = Movement.moveAwayFromEnemy(rc, enemyTurrets);
+					escape = Movement.moveAwayFromEnemy(rc);
 				}
 				if (!escape) {
 					if (adjNeutralRobots.length > 0) {
