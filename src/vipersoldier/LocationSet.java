@@ -46,7 +46,9 @@ public class LocationSet implements Iterable<MapLocation> {
 	public void add(MapLocation location) {
 		mapLocations[size] = location;
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
-		containsLocation[x][y] = size++;
+		if (containsLocation[x][y] == -1) {
+			containsLocation[x][y] = size++;
+		}
 	}
 	
 	// Returns whether or not a location was actually removed.
