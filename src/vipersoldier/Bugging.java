@@ -194,6 +194,53 @@ public class Bugging {
 		
 	}
 	
+	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {
+		rc.setIndicatorString(1, "Core raeady: " + rc.isCoreReady());
+		MapLocation myLocation = rc.getLocation();
+
+		boolean[] directionIsGood = new boolean[10];
+		dirChecking: for (Direction dir : Direction.values()) {
+			for (MapLocation e : enemyTurrets) {
+				if (myLocation.add(dir).distanceSquaredTo(e) <= 53) {
+					directionIsGood[dir.ordinal()] = false;
+					continue dirChecking;
+				}
+			}///////////////////////////////////////////////////''''''////////////////////////
+			directionIsGood[dir.ordinal()] = true;
+		}
+		Predicate<Direction> predicate = new Predicate<Direction>() {
+			@Override
+			public boolean test(Direction t) {
+				return directionIsGood[t.ordinal()];
+			}
+		};
+		
+		if (!predicate.test(Direction.NONE)) {
+			int maxMinDist = 0;
+			Direction bestDir = Direction.NONE;
+			for (Direction dir : RobotPlayer.directions) {
+				if (rc.canMove(dir)) {
+					MapLocation dirLoc = myLocation.add(dir);
+					int minDist = 1000;
+					for (MapLocation turret : enemyTurrets) {
+						int dist = dirLoc.distanceSquaredTo(turret);
+						minDist = Math.min(dist, minDist);
+					}
+					if (maxMinDist < minDist) {
+						maxMinDist = minDist;
+						bestDir = dir;
+					}
+				}
+			}
+			if (bestDir != Direction.NONE) {
+				rc.move(bestDir);
+				return;
+			}
+		}
+		move(predicate);
+		
+	}
+	
 	//avoids list 
 	public void moveAvoid(LocationSet enemyTurrets) throws GameActionException {
 		MapLocation myLocation = rc.getLocation();
