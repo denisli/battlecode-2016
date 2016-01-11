@@ -149,17 +149,24 @@ public class Bugging {
 	
 	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {
 		MapLocation myLocation = rc.getLocation();
+
+		boolean[] directionIsGood = new boolean[10];
+		dirChecking: for (Direction dir : Direction.values()) {
+			for (MapLocation e : enemyTurrets) {
+				if (myLocation.add(dir).distanceSquaredTo(e) <= 53) {
+					directionIsGood[dir.ordinal()] = false;
+					continue dirChecking;
+				}
+			}
+			directionIsGood[dir.ordinal()] = true;
+		}
 		Predicate<Direction> predicate = new Predicate<Direction>() {
 			@Override
 			public boolean test(Direction t) {
-				for (MapLocation e : enemyTurrets) {
-					if (myLocation.add(t).distanceSquaredTo(e) <=53) {
-						return false;
-					}
-				}
-				return true;
+				return directionIsGood[t.ordinal()];
 			}
 		};
+		
 		if (!predicate.test(Direction.NONE)) {
 			int maxMinDist = 0;
 			Direction bestDir = Direction.NONE;
