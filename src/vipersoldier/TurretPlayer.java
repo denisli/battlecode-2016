@@ -391,7 +391,7 @@ public class TurretPlayer {
 			bugging.move();
 		}
 		else {
-			bugging.moveAvoid(enemyTurrets);
+			bugging.turretAvoidMove(enemyTurrets);
 		}
 	}
 	

@@ -495,7 +495,7 @@ public class SoldierPlayer {
 			bugging.move();
 		}
 		else {
-			bugging.moveAvoid(enemyTurrets);
+			bugging.turretAvoidMove(enemyTurrets);
 		}
 	}
 }
