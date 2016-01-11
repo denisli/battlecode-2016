@@ -177,9 +177,7 @@ public class Bugging {
 					int minDist = 1000;
 					for (MapLocation turret : enemyTurrets) {
 						int dist = dirLoc.distanceSquaredTo(turret);
-						if (dist < minDist) {
-							minDist = dist;
-						}
+						minDist = Math.min(dist, minDist);
 					}
 					if (maxMinDist < minDist) {
 						maxMinDist = minDist;
