@@ -24,6 +24,8 @@ public class ScoutPlayer {
 	static int maxSignal = 50 * 50 * 2;
 
 	static MapLocation recentlyBroadcastedDenLoc = new MapLocation(1000000, 1000000);
+	
+	static boolean followingTurret = false;
 
 	public static void run(RobotController rc) {
 		Set<MapLocation> neutralBots = new HashSet<>();
@@ -69,8 +71,36 @@ public class ScoutPlayer {
 				}
 				// If you can move...
 				if (rc.isCoreReady()) {
+					// Follow a turret.
+					RobotInfo[] allies = rc.senseNearbyRobots(sightRange, rc.getTeam());
+					int closestDist = 1000;
+					int lowestId = Integer.MAX_VALUE;
+					MapLocation nearestTurretLoc = null;
+					followingTurret = false;
+					for (RobotInfo ally : allies) {
+						if (ally.type == RobotType.TURRET) {
+							int dist = myLocation.distanceSquaredTo(ally.location);
+							if (dist < closestDist) {
+								closestDist = dist;
+								nearestTurretLoc = ally.location;
+								followingTurret = true;
+							} else if (dist == closestDist) {
+								if (lowestId > ally.ID) {
+									lowestId = ally.ID;
+									nearestTurretLoc = ally.location;
+									followingTurret = true;
+								}
+							}
+						}
+					}
+					if (nearestTurretLoc != null) {
+						Direction dir = Movement.getBestMoveableDirection(myLocation.directionTo(nearestTurretLoc), rc, 2);
+						if (dir != Direction.NONE) {
+							rc.move(dir);
+						}
+					}
 					// Get away from closest non den enemy if it exists and is too close
-					if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) < 45) {
+					else if (closestNonDenEnemy != null && closestNonDenEnemy.location.distanceSquaredTo(rc.getLocation()) < 45) {
 						Direction oppDir = closestNonDenEnemy.location.directionTo(myLocation);
 						Direction getAwayDir = Movement.getBestMoveableDirection(oppDir, rc, 2);
 						if (getAwayDir != Direction.NONE) {
@@ -78,6 +108,7 @@ public class ScoutPlayer {
 							dir = getAwayDir;
 						}
 					}
+					
 					//if sees parts or neutral robots, send message for archons
 					MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRange);
 					RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRange, Team.NEUTRAL);
@@ -122,6 +153,10 @@ public class ScoutPlayer {
 						dir = randDir();
 						Clock.yield();
 					}
+					for (RobotInfo enemy : enemies) {
+						Message.sendMessage(rc, enemy.location, Message.TURRETATTACK, 8);
+					}
+					
 				}
 
 				Clock.yield();
