@@ -57,20 +57,25 @@ public class TurretPlayer {
 		int sightRadius = RobotType.TURRET.sensorRadiusSquared;
 		//sight range is less than attack range
         RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, sightRadius);
-        
         List<RobotInfo> robotsCanAttack = new ArrayList<>();
+        List<MapLocation> canAttackCantSee = new ArrayList<>();
+        
+		//READ MESSAGES HERE
+		List<Message> messages = Message.readMessageSignals(rc);
+		for (Message m : messages) {
+			if (m.type == Message.TURRETATTACK) {
+				if (myLoc.distanceSquaredTo(m.location) <= attackRadius) {
+					canAttackCantSee.add(m.location);
+				}
+			}
+		}
     	for (RobotInfo r : enemiesWithinRange) {
     		if (myLoc.distanceSquaredTo(r.location) > 5) {
     			robotsCanAttack.add(r);
     		}
     	}
         
-        if (robotsCanAttack.size() == 0) {
-        	if (rc.isCoreReady()) {
-            	rc.pack();
-        	}
-        }
-        else {
+        if (robotsCanAttack.size() != 0) {
         	// we want to get the closest enemy
         	RobotInfo bestEnemy = robotsCanAttack.get(0);
   
@@ -111,9 +116,15 @@ public class TurretPlayer {
             if (rc.isWeaponReady()) {
             	rc.attackLocation(bestEnemy.location);
             }
-
         }
-
+        else if (canAttackCantSee.size() > 0){
+        	
+        }
+        else {
+        	if (rc.isCoreReady()) {
+            	rc.pack();
+        	}
+        }
 	}
 	
 	private static void TTMCode(RobotController rc) throws GameActionException {
