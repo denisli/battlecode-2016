@@ -25,8 +25,7 @@ public class ArchonPlayer {
 		// number of consecutive turns that it didnt return a signal; used to
 		// determine when to build scouts
 		int conseqNoSignal = 0;
-		Set<MapLocation> neutralBots = new HashSet<>();
-		Set<MapLocation> partsList = new HashSet<>();
+		Set<MapLocation> partsBots = new HashSet<>();
 		// partsToGoTo = parts and neutral bots
 		MapLocation partsToGoTo = null;
 		Bugging bug = null;
@@ -48,10 +47,10 @@ public class ArchonPlayer {
 				List<Message> messages = Message.readMessageSignals(rc);
 				for (Message m : messages) {
 					if (m.type == Message.NEUTRALBOT) {
-						neutralBots.add(m.location);
+						partsBots.add(m.location);
 					}
 					if (m.type == Message.PARTS) {
-						partsList.add(m.location);
+						partsBots.add(m.location);
 					}
 					if (m.type == Message.DANGERTURRETS) {
 						enemyTurrets.add(m.location);
@@ -67,7 +66,7 @@ public class ArchonPlayer {
 
 				for (MapLocation sq : squaresInSight) {
 					if (rc.senseParts(sq) > 0) {
-						partsList.add(sq);
+						partsBots.add(sq);
 					}
 					if (enemyTurrets.contains(sq)) {
 						if (rc.senseRobotAtLocation(sq) == null
@@ -87,7 +86,7 @@ public class ArchonPlayer {
 					}
 				}
 				for (RobotInfo n : nearbyNeutralRobots) {
-					neutralBots.add(n.location);
+					partsBots.add(n.location);
 				}
 
 				// This is a loop to prevent the run() method from returning.
@@ -96,16 +95,16 @@ public class ArchonPlayer {
 
 				if (partsToGoTo != null && myLoc.distanceSquaredTo(partsToGoTo) <= sightRadius) {
 					if (rc.senseParts(partsToGoTo) <= 0) {
-						partsList.remove(partsToGoTo);
+						partsBots.remove(partsToGoTo);
 						partsToGoTo = null;
 						rc.setIndicatorString(2, "cleared");
 						bug = null;
 					} else if (rc.senseRobotAtLocation(partsToGoTo) == null) {
-						neutralBots.remove(partsToGoTo);
+						partsBots.remove(partsToGoTo);
 						partsToGoTo = null;
 						bug = null;
 					} else if (rc.senseRobotAtLocation(partsToGoTo).team != Team.NEUTRAL) {
-						neutralBots.remove(partsToGoTo);
+						partsBots.remove(partsToGoTo);
 						partsToGoTo = null;
 						bug = null;
 					}
@@ -121,14 +120,14 @@ public class ArchonPlayer {
 						// wait until there's no core delay
 						if (rc.isCoreReady()) {
 							rc.activate(adjNeutralRobots[0].location);
-							neutralBots.remove(adjNeutralRobots[0].location);
+							partsBots.remove(adjNeutralRobots[0].location);
 							partsToGoTo = null;
 						}
 					}
 					if (Movement.getToAdjParts(rc)) {
 						// it moved to parts, now remove parts location from the
 						// list
-						partsList.remove(rc.getLocation());
+						partsBots.remove(rc.getLocation());
 						partsToGoTo = null;
 					} else {
 						boolean toheal = false;
@@ -150,7 +149,7 @@ public class ArchonPlayer {
 								}
 							}
 						}
-						if (toheal == false) {
+						if (toheal == false && rc.isCoreReady()) {
 							// for sensing if there are guards within range 24
 							RobotInfo[] friendlyClose = rc.senseNearbyRobots(24, myTeam);
 							// int numNearbyGuards = 0;
@@ -290,9 +289,6 @@ public class ArchonPlayer {
 							}
 							boolean moveToParts = false;
 							if (rc.isCoreReady() && built == false) {
-								Set<MapLocation> partsBots = new HashSet<>();
-								partsBots.addAll(partsList);
-								partsBots.addAll(neutralBots);
 								// if there are parts/neutralbots to go to
 								if (partsBots.size() > 0) {
 									// if it isnt already going towards a
