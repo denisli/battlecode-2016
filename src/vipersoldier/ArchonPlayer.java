@@ -48,7 +48,7 @@ public class ArchonPlayer {
 		while (true) {
 			MapLocation myLoc = rc.getLocation();
 			RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
-			MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(rc.getLocation(), sightRadius);
+			MapLocation[] squaresInSight = MapLocation.getAllMapLocationsWithinRadiusSq(myLoc, sightRadius);
 			RobotInfo[] nearbyNeutralRobots = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
 
 			//READ MESSAGES HERE
@@ -71,7 +71,7 @@ public class ArchonPlayer {
 				}
 			}
 			conseqNoSignal++;
-			
+
 			for (MapLocation sq : squaresInSight) {
 				if (rc.senseParts(sq) > 0) {
 					partsList.add(sq);
@@ -79,6 +79,15 @@ public class ArchonPlayer {
 				if (enemyTurrets.contains(sq)) {
 					if (rc.senseRobotAtLocation(sq) == null || !(rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET)) {
 						enemyTurrets.remove(sq);
+					}
+				}
+				if (rc.canSense(sq) && rc.senseRobotAtLocation(sq) != null) {
+					if (rc.senseRobotAtLocation(sq).team == enemyTeam && rc.senseRobotAtLocation(sq).type == RobotType.TURRET) {
+						enemyTurrets.add(sq);
+						rc.setIndicatorString(0, sq+"");
+					}
+					if (bug != null && rc.isCoreReady()) {
+						bug.moveAvoid(enemyTurrets);
 					}
 				}
 			}
@@ -94,19 +103,23 @@ public class ArchonPlayer {
 					if (rc.senseParts(partsToGoTo) <= 0) {
 						partsList.remove(partsToGoTo);
 						partsToGoTo = null;
+						rc.setIndicatorString(2, "cleared");
+						bug = null;
 					}
 					else if (rc.senseRobotAtLocation(partsToGoTo) == null) {
 						neutralBots.remove(partsToGoTo);
 						partsToGoTo = null;
+						bug = null;
 					} else if (rc.senseRobotAtLocation(partsToGoTo).team != Team.NEUTRAL) {
-							neutralBots.remove(partsToGoTo);
-							partsToGoTo = null;
+						neutralBots.remove(partsToGoTo);
+						partsToGoTo = null;
+						bug = null;
 					}
 				}
-				
+
 				boolean escape = false;
 				if (rc.isCoreReady()) {
-					escape = Movement.moveAwayFromEnemy(rc);
+					escape = Movement.moveAwayFromEnemy(rc, enemyTurrets);
 				}
 				if (!escape) {
 					if (adjNeutralRobots.length > 0){
@@ -144,12 +157,12 @@ public class ArchonPlayer {
 						if (toheal == false) {
 							//for sensing if there are guards within range 24
 							RobotInfo[] friendlyClose = rc.senseNearbyRobots(24, myTeam);
-//							int numNearbyGuards = 0;
-//							for (RobotInfo f : friendlyClose) {
-//								if (f.type == RobotType.GUARD) {
-//									numNearbyGuards++;
-//								}
-//							}
+							//							int numNearbyGuards = 0;
+							//							for (RobotInfo f : friendlyClose) {
+							//								if (f.type == RobotType.GUARD) {
+							//									numNearbyGuards++;
+							//								}
+							//							}
 							boolean built = false;
 							int turnNum = rc.getRoundNum();
 							if (rc.hasBuildRequirements(RobotType.SCOUT) && rc.isCoreReady() && turnNum == 0) {
@@ -196,20 +209,20 @@ public class ArchonPlayer {
 									}
 								}
 							}
-//							if (rc.hasBuildRequirements(RobotType.GUARD) && rc.isCoreReady() && !built && numNearbyGuards < 1) {
-//								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
-//								for (int i = 0; i < 8; i++) {
-//									// If possible, build in this direction
-//									if (rc.canBuild(dirToBuild, RobotType.GUARD)) {
-//										rc.build(dirToBuild, RobotType.GUARD);
-//										built = true;
-//										break;
-//									} else {
-//										// Rotate the direction to try
-//										dirToBuild = dirToBuild.rotateLeft();
-//									}
-//								}
-//							}
+							//							if (rc.hasBuildRequirements(RobotType.GUARD) && rc.isCoreReady() && !built && numNearbyGuards < 1) {
+							//								Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
+							//								for (int i = 0; i < 8; i++) {
+							//									// If possible, build in this direction
+							//									if (rc.canBuild(dirToBuild, RobotType.GUARD)) {
+							//										rc.build(dirToBuild, RobotType.GUARD);
+							//										built = true;
+							//										break;
+							//									} else {
+							//										// Rotate the direction to try
+							//										dirToBuild = dirToBuild.rotateLeft();
+							//									}
+							//								}
+							//							}
 							//							if (turnNum%300 > 0 && turnNum%300 <100 && turnNum>800) { //turn conditions to build viper
 							//								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 							//									if (rc.isCoreReady() && !built) {

@@ -149,11 +149,11 @@ public class Bugging {
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
 			if (rc.canMove(dir)) {
-				rc.move(dir);
+				findDanger(rc, enemyTurrets, myLocation, dir);
 			} else if (rc.canMove(dir.rotateLeft())) {
-				rc.move(dir.rotateLeft());
+				findDanger(rc, enemyTurrets, myLocation, dir.rotateLeft());
 			} else if (rc.canMove(dir.rotateRight())) {
-				rc.move(dir.rotateRight());
+				findDanger(rc, enemyTurrets, myLocation, dir.rotateRight());
 			} else if (shouldMine(dir)) {
 				rc.clearRubble(dir);
 			} else if (shouldMine(dir.rotateLeft())) { 
@@ -196,15 +196,8 @@ public class Bugging {
 				}
 
 				// Complete the move.
-				// danger: if true then dont move
-				boolean danger = false;
-				for (MapLocation e : enemyTurrets) {
-					if (myLocation.add(dirWhileHugging).distanceSquaredTo(e) <=53) {
-						danger = true;
-					}
-				}
-				if (rc.canMove(dirWhileHugging) && !danger) {
-					rc.move(dirWhileHugging);
+				if (rc.canMove(dirWhileHugging)) {
+					findDanger(rc, enemyTurrets, myLocation, dirWhileHugging);
 				}
 			}
 		} else {
@@ -220,7 +213,7 @@ public class Bugging {
 				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
 					if (rc.canMove(dirToDest)) {
-						rc.move(dirToDest);
+						findDanger(rc, enemyTurrets, myLocation, dirToDest);
 					} else {
 						rc.clearRubble(dirToDest);
 					}
@@ -233,7 +226,7 @@ public class Bugging {
 						numRotates++;
 					}
 					if (rc.canMove(dirWhileHugging)) {
-						rc.move(dirWhileHugging);
+						findDanger(rc, enemyTurrets, myLocation, dirWhileHugging);
 					}
 				}
 			} else { // hugging = Hugging.RIGHT MOSTLY COPY PASTA FROM ABOVE
@@ -248,7 +241,7 @@ public class Bugging {
 				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
 					if (rc.canMove(dirToDest)) {
-						rc.move(dirToDest);
+						findDanger(rc, enemyTurrets, myLocation, dirToDest);
 					} else {
 						rc.clearRubble(dirToDest);
 					}
@@ -261,13 +254,26 @@ public class Bugging {
 						numRotates++;
 					}
 					if (rc.canMove(dirWhileHugging)) {
-						rc.move(dirWhileHugging);
+						findDanger(rc, enemyTurrets, myLocation, dirWhileHugging);
 					}
 				}
 			}
 		}
 	}
 
+	public static void findDanger(RobotController rc, Set<MapLocation> enemyTurrets, MapLocation myLocation, Direction moveDir) throws GameActionException {
+		// danger: if true then dont move
+		boolean danger = false;
+		for (MapLocation e : enemyTurrets) {
+			if (myLocation.add(moveDir).distanceSquaredTo(e) <=53) {
+				danger = true;
+			}
+		}
+		if (rc.canMove(moveDir) && !danger) {
+			rc.move(moveDir);
+		}
+	}
+	
 	private static enum Hugging {
 		LEFT, RIGHT, NONE; // NONE means not bugging
 	}
