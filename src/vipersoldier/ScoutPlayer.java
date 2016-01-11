@@ -31,6 +31,8 @@ public class ScoutPlayer {
 		Set<MapLocation> neutralBots = new HashSet<>();
 		Set<MapLocation> partsList = new HashSet<>();
 		Direction randomDirection = null;
+		Set<MapLocation> enemyTurrets = new HashSet<>();
+		Team enemyTeam = rc.getTeam().opponent();
 		try {
 			rand = new Random(rc.getID());
 			dir = randDir();
@@ -118,6 +120,14 @@ public class ScoutPlayer {
 							partsList.add(sq);
 							messageCount++;
 						}
+						if (enemyTurrets.contains(sq)) {
+							if (rc.senseRobotAtLocation(sq) == null || rc.senseRobotAtLocation(sq).team != enemyTeam) {
+								enemyTurrets.remove(sq);
+							}
+							if (messageCount < 20) {
+								Message.sendMessage(rc, sq, Message.REMOVETURRET, maxSignal);
+							}
+						}
 					}
 					int turretCount = 0;
 					MapLocation turretLoc = null;
@@ -130,6 +140,7 @@ public class ScoutPlayer {
 						if (n.team.equals(rc.getTeam().opponent()) && n.type == RobotType.TURRET) {
 							turretCount++;
 							turretLoc = n.location;
+							enemyTurrets.add(n.location);
 						}
 					}
 					if (turretCount >= 3 && messageCount < 20) { // if there are more than 3 turrets clustered, warn units to not come near
