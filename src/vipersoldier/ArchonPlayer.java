@@ -307,7 +307,9 @@ public class ArchonPlayer {
 										bug = new Bugging(rc, partsToGoTo);
 										rc.setIndicatorString(1, partsToGoTo + "");
 									}
-									bug.turretAvoidMove(enemyTurrets);
+									if (rc.isCoreReady()) {
+										bug.turretAvoidMove(enemyTurrets);
+									}
 									moveToParts = true;
 								}
 							}
