@@ -21,7 +21,7 @@ import battlecode.common.Team;
 public class TurretPlayer {
 	
 	static Random rand;
-	static Direction[] directions = Direction.values();
+	static Direction[] directions = RobotPlayer.directions;
 	static Bugging bugging = null;
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestArchon = null;
