@@ -148,6 +148,7 @@ public class Bugging {
 	}
 	
 	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {
+		rc.setIndicatorString(1, "Core raeady: " + rc.isCoreReady());
 		MapLocation myLocation = rc.getLocation();
 
 		boolean[] directionIsGood = new boolean[10];
@@ -157,7 +158,7 @@ public class Bugging {
 					directionIsGood[dir.ordinal()] = false;
 					continue dirChecking;
 				}
-			}
+			}///////////////////////////////////////////////////''''''////////////////////////
 			directionIsGood[dir.ordinal()] = true;
 		}
 		Predicate<Direction> predicate = new Predicate<Direction>() {
@@ -188,6 +189,7 @@ public class Bugging {
 			}
 			if (bestDir != Direction.NONE) {
 				rc.move(bestDir);
+				return;
 			}
 		}
 		move(predicate);
