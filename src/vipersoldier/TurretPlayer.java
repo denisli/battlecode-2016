@@ -26,7 +26,7 @@ public class TurretPlayer {
 	static MapLocation storedNearestDen = null;
 	static MapLocation storedNearestArchon = null;
 	static MapLocation storedNearestEnemy = null;
-	static Set<MapLocation> enemyTurrets = new HashSet<>();
+	static LocationSet enemyTurrets = new LocationSet();
 	static MapLocation[] squaresInSight = null;
 	static Team myTeam = null;
 	static Team enemyTeam = null;
@@ -38,7 +38,7 @@ public class TurretPlayer {
 		int myAttackRange = 0;
 		Team myTeam = rc.getTeam();
 		Team enemyTeam = myTeam.opponent();
-		Set<MapLocation> denLocations = new HashSet<>();
+		LocationSet denLocations = new LocationSet();
 		Map<Integer, MapLocation> archonLocations = new HashMap<>();
 		int sightRadius = 24;
 		
@@ -177,7 +177,7 @@ public class TurretPlayer {
         }
 	}
 	
-	private static void TTMCode(RobotController rc, Set<MapLocation> denLocations, Map<Integer, MapLocation> archonLocations) throws GameActionException {
+	private static void TTMCode(RobotController rc, LocationSet denLocations, Map<Integer, MapLocation> archonLocations) throws GameActionException {
 		// first check if there are any enemies nearby
 		Random rand = new Random(rc.getID());
 
@@ -386,7 +386,7 @@ public class TurretPlayer {
 	}
 	
 	//if turn before 1500, avoid enemy turrets
-	public static void buggingAvoid(Bugging bugging, Set<MapLocation> enemyTurrets, int turnNum) throws GameActionException {
+	public static void buggingAvoid(Bugging bugging, LocationSet enemyTurrets, int turnNum) throws GameActionException {
 		if (turnNum > 2000) {
 			bugging.move();
 		}
