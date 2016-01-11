@@ -1,6 +1,7 @@
 package vipersoldier;
 
 import java.util.Set;
+import java.util.function.Predicate;
 
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -21,19 +22,17 @@ public class Bugging {
 		this.rc = rc;
 		this.destination = destination;
 	}
-
-	// Moves the robot according to bugging.
-	// Assume that the robot's core is ready.
-	public void move() throws GameActionException {
+	
+	public void move(Predicate<Direction> safePredicate) throws GameActionException {
 		MapLocation myLocation = rc.getLocation();
 		if (myLocation.equals(destination)) return;
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
-			if (rc.canMove(dir)) {
+			if (rc.canMove(dir) && safePredicate.test(dir)) {
 				rc.move(dir);
-			} else if (rc.canMove(dir.rotateLeft())) {
+			} else if (rc.canMove(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
 				rc.move(dir.rotateLeft());
-			} else if (rc.canMove(dir.rotateRight())) {
+			} else if (rc.canMove(dir.rotateRight()) && safePredicate.test(dir.rotateRight())) {
 				rc.move(dir.rotateRight());
 			} else if (shouldMine(dir)) {
 				rc.clearRubble(dir);
@@ -49,7 +48,7 @@ public class Bugging {
 				// Compute the distance assuming hugging right
 				int numRotates = 0;
 				Direction rightHugDir = dir.rotateLeft();
-				while (!rc.canMove(rightHugDir) && numRotates < 8) {
+				while (!(rc.canMove(rightHugDir) && safePredicate.test(rightHugDir)) && numRotates < 8) {
 					rightHugDir = rightHugDir.rotateLeft();
 					numRotates++;
 				}
@@ -59,7 +58,7 @@ public class Bugging {
 				// Compute the distance assuming hugging left
 				numRotates = 0;
 				Direction leftHugDir = dir.rotateRight();
-				while (!rc.canMove(leftHugDir) && numRotates < 8) {
+				while (!(rc.canMove(leftHugDir) && safePredicate.test(leftHugDir)) && numRotates < 8) {
 					leftHugDir = leftHugDir.rotateRight();
 					numRotates++;
 				}
@@ -91,9 +90,9 @@ public class Bugging {
 				Direction cameFromDir = dirWhileHugging.opposite();
 
 				// In this case, break out of bugging
-				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
+				if (getFanDist(dirToDest, cameFromDir) > 1 && ((rc.canMove(dirToDest) && safePredicate.test(dirToDest)) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
-					if (rc.canMove(dirToDest)) {
+					if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
 						rc.move(dirToDest);
 					} else {
 						rc.clearRubble(dirToDest);
@@ -102,11 +101,11 @@ public class Bugging {
 				} else {
 					dirWhileHugging = dirWhileHugging.rotateLeft();
 					int numRotates = 0;
-					while (!rc.canMove(dirWhileHugging) && numRotates < 8) {
+					while (!(rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) && numRotates < 8) {
 						dirWhileHugging = dirWhileHugging.rotateRight();
 						numRotates++;
 					}
-					if (rc.canMove(dirWhileHugging)) {
+					if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
 						rc.move(dirWhileHugging);
 					}
 				}
@@ -119,9 +118,9 @@ public class Bugging {
 				Direction cameFromDir = dirWhileHugging.opposite();
 
 				// In this case, break out of bugging
-				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
+				if (getFanDist(dirToDest, cameFromDir) > 1 && ((rc.canMove(dirToDest) && safePredicate.test(dirToDest))|| shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
-					if (rc.canMove(dirToDest)) {
+					if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
 						rc.move(dirToDest);
 					} else {
 						rc.clearRubble(dirToDest);
@@ -130,16 +129,43 @@ public class Bugging {
 				} else {
 					dirWhileHugging = dirWhileHugging.rotateRight();
 					int numRotates = 0;
-					while (!rc.canMove(dirWhileHugging) && numRotates < 8) {
+					while (!(rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) && numRotates < 8) {
 						dirWhileHugging = dirWhileHugging.rotateLeft();
 						numRotates++;
 					}
-					if (rc.canMove(dirWhileHugging)) {
+					if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
 						rc.move(dirWhileHugging);
 					}
 				}
 			}
 		}
+	}
+
+	// Moves the robot according to bugging.
+	// Assume that the robot's core is ready.
+	public void move() throws GameActionException {
+		move(new Predicate<Direction>() {
+			public boolean test(Direction dir) {
+				return true;
+			}
+		});
+	}
+	
+	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {
+		MapLocation myLocation = rc.getLocation();
+		Predicate<Direction> predicate = new Predicate<Direction>() {
+			@Override
+			public boolean test(Direction t) {
+				for (MapLocation e : enemyTurrets) {
+					if (myLocation.add(t).distanceSquaredTo(e) <=53) {
+						return false;
+					}
+				}
+				return true;
+			}
+		};
+		move(predicate);
+		
 	}
 	
 	//avoids list 
@@ -260,7 +286,7 @@ public class Bugging {
 			}
 		}
 	}
-
+	
 	public static void findDanger(RobotController rc, Set<MapLocation> enemyTurrets, MapLocation myLocation, Direction moveDir) throws GameActionException {
 		// danger: if true then dont move
 		boolean danger = false;
@@ -301,5 +327,14 @@ public class Bugging {
 	private static boolean isMinerType(RobotType r) {
 		return !(r == RobotType.TTM || r == RobotType.TURRET || r == RobotType.SCOUT);
 	}
+	
+	private final Predicate<Direction> tautology = new Predicate<Direction>() {
 
+		@Override
+		public boolean test(Direction t) {
+			return true;
+		}
+		
+	};
+	
 }
