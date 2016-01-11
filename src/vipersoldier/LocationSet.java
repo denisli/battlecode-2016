@@ -12,41 +12,32 @@ public class LocationSet implements Iterable<MapLocation> {
 	
 	private final int[][] containsLocation = new int[200][200];
 	private final MapLocation[] mapLocations = new MapLocation[500]; // assume 500 locations max. Otherwise we done goofed.
-	private int index = 0;
+	private int index = 1;
 	private int size;
 	
 	private final Iterator<MapLocation> iterator = new Iterator<MapLocation>() {
 
 		@Override
 		public boolean hasNext() {
-			return index < size;
+			return index-1 < size;
 		}
 
 		@Override
 		public MapLocation next() {
-			return mapLocations[index++];
+			return mapLocations[index++ - 1];
 		}
 		
 	};
-
-	public LocationSet() {
-		// Initialize all values to -1 (represents that location is not in set.
-		for (int x = 0; x < 200; x++) {
-			for (int y = 0; y < 200; y++) {
-				containsLocation[x][y] = -1;
-			}
-		}
-	}
 	
 	public boolean contains(MapLocation location) {
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
-		return containsLocation[x][y] != -1;
+		return containsLocation[x][y] != 0;
 	}
 	
 	public void add(MapLocation location) {
 		mapLocations[size] = location;
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
-		if (containsLocation[x][y] == -1) {
+		if (containsLocation[x][y] == 0) {
 			containsLocation[x][y] = size++;
 		}
 	}
@@ -55,8 +46,8 @@ public class LocationSet implements Iterable<MapLocation> {
 	public boolean remove(MapLocation location) {
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
 		int index = containsLocation[x][y];
-		if (index == -1) return false; // no location removed
-		mapLocations[index] = mapLocations[--size];
+		if (index == 0) return false; // no location removed
+		mapLocations[index-1] = mapLocations[--size];
 		return true;
 		
 	}
@@ -67,6 +58,7 @@ public class LocationSet implements Iterable<MapLocation> {
 
 	@Override
 	public Iterator<MapLocation> iterator() {
+		index = 1;
 		return iterator;
 	}
 	
