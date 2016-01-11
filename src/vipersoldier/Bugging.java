@@ -147,7 +147,7 @@ public class Bugging {
 		move(tautology);
 	}
 	
-	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {
+	public void turretAvoidMove(LocationSet enemyTurrets) throws GameActionException {
 		rc.setIndicatorString(1, "Core raeady: " + rc.isCoreReady());
 		MapLocation myLocation = rc.getLocation();
 
@@ -195,7 +195,7 @@ public class Bugging {
 	}
 	
 	//avoids list 
-	public void moveAvoid(Set<MapLocation> enemyTurrets) throws GameActionException {
+	public void moveAvoid(LocationSet enemyTurrets) throws GameActionException {
 		MapLocation myLocation = rc.getLocation();
 		if (myLocation.equals(destination)) return;
 		if (hugging == Hugging.NONE) {
@@ -313,7 +313,7 @@ public class Bugging {
 		}
 	}
 	
-	public static void findDanger(RobotController rc, Set<MapLocation> enemyTurrets, MapLocation myLocation, Direction moveDir) throws GameActionException {
+	public static void findDanger(RobotController rc, LocationSet enemyTurrets, MapLocation myLocation, Direction moveDir) throws GameActionException {
 		// danger: if true then dont move
 		boolean danger = false;
 		for (MapLocation e : enemyTurrets) {
