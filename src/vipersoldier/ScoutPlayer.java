@@ -126,6 +126,7 @@ public class ScoutPlayer {
 							}
 							if (messageCount < 20) {
 								Message.sendMessage(rc, sq, Message.REMOVETURRET, maxSignal);
+								messageCount++;
 							}
 						}
 					}
