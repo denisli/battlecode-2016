@@ -134,8 +134,8 @@ public class SoldierPlayer {
 	                	// we want to get the closest enemy
 	                	RobotInfo bestEnemy = enemiesWithinRange[0];
 	                	//turret direction, if it exits
+	                	MapLocation turretLoc = null;
 	                	Direction turretDir = null;
-	          
 	                    for (RobotInfo r: enemiesWithinRange) {
 	                    	if (r.type == RobotType.SOLDIER) {
 	                    		// Use soldier micro
@@ -146,7 +146,8 @@ public class SoldierPlayer {
 	                    	else if (r.type == RobotType.TURRET) {
 	                    		//check if there's a turret in range; if there is, code later prioritizes moving away from turret
 	                    		//later fix so that if there's 1 turret, move towards it and kill it
-	                    		turretDir = myLoc.directionTo(r.location);
+	                    		turretLoc = r.location;
+	                    		turretDir = rc.getLocation().directionTo(turretLoc);
 	                    	}
 	                    	if (r.type == RobotType.ARCHON) {
 	                    		//it sees archon
@@ -184,10 +185,13 @@ public class SoldierPlayer {
 	                    }
 	                    Direction d = myLoc.directionTo(bestEnemy.location);
 	                    
-	                    //if it sees turret, move away from it
-	                    if (turretDir != null && rc.isCoreReady()) {
-	                    	if (rc.canMove(turretDir.opposite())) {
-	                    		rc.move(turretDir.opposite());
+	                    //if it sees turret, attack it instantly
+	                    if (turretLoc != null && rc.isWeaponReady() && bestEnemy.type != RobotType.ARCHON) {
+	                    	if (rc.canAttackLocation(turretLoc)) {
+	                    		rc.attackLocation(turretLoc);
+	                    	} else
+	                    	if (rc.canMove(turretDir) && rc.isCoreReady()) {
+	                    		rc.move(turretDir);
 	                    	}
 	                    }
 	                    if (useSoldierMicro) {
