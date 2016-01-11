@@ -12,19 +12,19 @@ public class LocationSet implements Iterable<MapLocation> {
 	
 	private final int[][] containsLocation = new int[200][200];
 	private final MapLocation[] mapLocations = new MapLocation[500]; // assume 500 locations max. Otherwise we done goofed.
-	private int index = 1;
+	private int index = 0;
 	private int size = 0;
 	
 	private final Iterator<MapLocation> iterator = new Iterator<MapLocation>() {
 
 		@Override
 		public boolean hasNext() {
-			return index-1 < size;
+			return index < size;
 		}
 
 		@Override
 		public MapLocation next() {
-			return mapLocations[index++ - 1];
+			return mapLocations[index++];
 		}
 		
 	};
@@ -62,7 +62,7 @@ public class LocationSet implements Iterable<MapLocation> {
 
 	@Override
 	public Iterator<MapLocation> iterator() {
-		index = 1;
+		index = 0;
 		return iterator;
 	}
 	
