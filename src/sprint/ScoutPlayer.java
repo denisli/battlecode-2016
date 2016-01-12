@@ -187,6 +187,16 @@ public class ScoutPlayer {
 					}
 				}
 				
+				// Every 50 turns, broadcast whether or not I am paired
+				if (rc.getRoundNum() % 50 == 0) {
+					int messageType = isPaired ? Message.PAIRED : Message.UNPAIRED;
+					if (hostiles.length > 0) {
+						Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
+					} else {
+						Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
+					}
+				}
+				
 				// When we have more turrets, broadcast that.
 				if (numOurTurrets > numEnemyTurrets && isPaired && rc.isCoreReady()) {
 					if (closestTurretLoc != null) {
