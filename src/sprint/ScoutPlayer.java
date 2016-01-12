@@ -155,12 +155,14 @@ public class ScoutPlayer {
 								// Find a direction closest to paired turret that is not in attack range.
 								int closestPairedDist = 10000;
 								for (Direction dir : RobotPlayer.directions) {
-									MapLocation dirLoc = myLoc.add(dir);
-									int pairedDist = dirLoc.distanceSquaredTo(pairedTurret);
-									if (dirLoc.distanceSquaredTo(closestEnemy.location) > closestEnemy.type.attackRadiusSquared) {
-										if (closestPairedDist > pairedDist) {
-											closestPairedDist = pairedDist;
-											dodgeEnemyDir = dir;
+									if (rc.canMove(dir)) {
+										MapLocation dirLoc = myLoc.add(dir);
+										int pairedDist = dirLoc.distanceSquaredTo(pairedTurret);
+										if (dirLoc.distanceSquaredTo(closestEnemy.location) > closestEnemy.type.attackRadiusSquared) {
+											if (closestPairedDist > pairedDist) {
+												closestPairedDist = pairedDist;
+												dodgeEnemyDir = dir;
+											}
 										}
 									}
 								}
