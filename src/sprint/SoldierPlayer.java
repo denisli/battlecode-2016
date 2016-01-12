@@ -22,6 +22,7 @@ public class SoldierPlayer {
 	private static int attackRadius;
 	private static RobotInfo[] nearbyEnemies;
 	private static Bugging bugging = null;
+	private static MapLocation newArchonLoc = null;
 	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
@@ -30,8 +31,12 @@ public class SoldierPlayer {
 			try {
 				myLoc = rc.getLocation();
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
+				newArchonLoc = null;
 				// read messages to see what is going on
 				readMessages(rc);
+				if (newArchonLoc != null) {
+					nearestArchonLocation = newArchonLoc;
+				}
 				// if there are enemies in range, we should focus on attack and micro
 				if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
@@ -170,11 +175,11 @@ public class SoldierPlayer {
 			} else
 			// if the message is an archon location, store the nearest current archon location
 			if (m.type == Message.ARCHONLOC) {
-				if (nearestArchonLocation == null) {
-					nearestArchonLocation = m.location;
+				if (newArchonLoc == null) {
+					newArchonLoc = m.location;
 				}
-				else if(myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonLocation)) {
-					nearestArchonLocation = m.location;
+				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(newArchonLoc)) {
+					newArchonLoc= m.location;
 				}
 			} else 
 			// if we get a rush signal, we want to rush towards the nearest turret
