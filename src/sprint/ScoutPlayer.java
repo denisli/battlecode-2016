@@ -39,9 +39,38 @@ public class ScoutPlayer {
 		while (true) {
 			try {
 				myLoc = rc.getLocation();
+				int numOurTurrets = 0;
+				
+				// Move opposite of ally scout. Also keep track of our number of turrets.
+				// Try to pair with ally turret.
+				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
+				isPaired = false;
+				int followedTurretDist = 10000;
+				for (RobotInfo ally : allies) {
+					if (ally.type == RobotType.SCOUT) {
+						mainDir = ally.location.directionTo(myLoc);
+					} else if (ally.type == RobotType.TURRET) {
+						numOurTurrets++;
+						int dist = myLoc.distanceSquaredTo(ally.location);
+						if (dist < followedTurretDist) {
+							// Try to pair with this turret.
+							// Confirm that no other scout allies are nearby.
+							RobotInfo[] otherAllies = rc.senseNearbyRobots(ally.location, dist, team);
+							for (RobotInfo otherAlly : otherAllies) {
+								if (otherAlly.type == RobotType.SCOUT) {
+									int otherDist = ally.location.distanceSquaredTo(otherAlly.location);
+									if (otherDist < dist) break;
+								}
+							}
+							// This is turret we can pair with.
+							isPaired = true;
+							followedTurretDist = dist;
+							pairedTurret = ally.location;
+						}
+					}
+				}
 				
 				int numEnemyTurrets = 0;
-				int numOurTurrets = 0;
 				boolean inEnemyAttackRangeAndPaired = false;
 				Direction dodgeEnemyDir = Direction.NONE;
 				boolean inDanger = false;
@@ -68,8 +97,10 @@ public class ScoutPlayer {
 							else if (hostile.type == RobotType.ZOMBIEDEN) {
 								if (rc.isCoreReady()) {
 									if (!hostile.location.equals(previouslyBroadcastedDen)) {
-										previouslyBroadcastedDen = hostile.location;
-										Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+										if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+											previouslyBroadcastedDen = hostile.location;
+											Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+										}
 									}
 								}
 							}
@@ -182,54 +213,43 @@ public class ScoutPlayer {
 				
 				// Broadcast collectibles
 				if (rc.isCoreReady()) {
-					broadcastCollectibles(rc, hostiles.length > 0);
-				}
-				
-				// Move opposite of ally scout. Also keep track of our number of turrets.
-				// Try to pair with ally turret.
-				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
-				isPaired = false;
-				int followedTurretDist = 10000;
-				for (RobotInfo ally : allies) {
-					if (ally.type == RobotType.SCOUT) {
-						mainDir = ally.location.directionTo(myLoc);
-					} else if (ally.type == RobotType.TURRET) {
-						numOurTurrets++;
-						int dist = myLoc.distanceSquaredTo(ally.location);
-						if (dist < followedTurretDist) {
-							// Try to pair with this turret.
-							// Confirm that no other scout allies are nearby.
-							RobotInfo[] otherAllies = rc.senseNearbyRobots(ally.location, dist, team);
-							for (RobotInfo otherAlly : otherAllies) {
-								if (otherAlly.type == RobotType.SCOUT) {
-									int otherDist = ally.location.distanceSquaredTo(otherAlly.location);
-									if (otherDist < dist) break;
-								}
-							}
-							// This is turret we can pair with.
-							isPaired = true;
-							followedTurretDist = dist;
-							pairedTurret = ally.location;
+					if (isPaired) {
+						if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+							broadcastCollectibles(rc, hostiles.length > 0);
 						}
+					} else {
+						broadcastCollectibles(rc, hostiles.length > 0);
 					}
 				}
 				
 				// Every 50 turns, broadcast whether or not I am paired
 				if (rc.getRoundNum() % 50 == 0) {
 					int messageType = isPaired ? Message.PAIRED : Message.UNPAIRED;
-					if (hostiles.length > 0) {
-						Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
+					if (isPaired) {
+						if (myLoc.distanceSquaredTo(pairedTurret) <= 2) { 
+							if (hostiles.length > 0) {
+								Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
+							} else {
+								Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
+							}
+						}
 					} else {
-						Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
+						if (hostiles.length > 0) {
+							Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
+						} else {
+							Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
+						}
 					}
 				}
 				
 				// When we have more turrets, broadcast that.
 				if (numOurTurrets > numEnemyTurrets && isPaired && rc.isCoreReady()) {
-					if (closestTurretLoc != null) {
-						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
-					} else {
-						Message.sendMessageGivenRange(rc, new MapLocation(0, 0), Message.RUSHNOTURRET, 2 * sightRange);
+					if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+						if (closestTurretLoc != null) {
+							Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
+						} else {
+							Message.sendMessageGivenRange(rc, new MapLocation(0, 0), Message.RUSHNOTURRET, 2 * sightRange);
+						}
 					}
 				}
 				
