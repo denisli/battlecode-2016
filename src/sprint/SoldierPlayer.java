@@ -54,13 +54,13 @@ public class SoldierPlayer {
 				// modify destination based on some factors
 				destinationModifier(rc);
 				// heal if need
-				healIfNeed(rc);
+				healIfNeed(rc, nearbyEnemies);
 				
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
 				// if there are enemies in range, we should focus on attack and micro
-				if (nearbyEnemies.length > 0) {
+				if (nearbyEnemies.length > 0 && !healing) {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
@@ -181,38 +181,38 @@ public class SoldierPlayer {
 		// Prioritize movement
 		Direction d = myLoc.directionTo(bestEnemy.location);
     	if (rc.isCoreReady()) {
-    		// If can back away from soldier hit, then do it!
-    		Direction bestBackAwayDir = Direction.NONE;
-    		int bestBackAwayDist = 1000;
-    		// Pick the direction that gets away from soldier attack, and minimizes that dist.
-    		if (rc.canMove(d.opposite())) {
-    			int backAwayDist = myLoc.add(d.opposite()).distanceSquaredTo(bestEnemy.location);
-    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
-    				if (backAwayDist < bestBackAwayDist) {
-    					bestBackAwayDist = backAwayDist;
-    					bestBackAwayDir = d.opposite();
-    				}
-    			}
-    		} else if (rc.canMove(d.opposite().rotateLeft())) {
-    			int backAwayDist = myLoc.add(d.opposite().rotateLeft()).distanceSquaredTo(bestEnemy.location);
-    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
-    				if (backAwayDist < bestBackAwayDist) {
-    					bestBackAwayDist = backAwayDist;
-    					bestBackAwayDir = d.opposite().rotateLeft();
-    				}
-    			}
-    		} else if (rc.canMove(d.opposite().rotateRight())) {
-    			int backAwayDist = myLoc.add(d.opposite().rotateRight()).distanceSquaredTo(bestEnemy.location);
-    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
-    				if (backAwayDist < bestBackAwayDist) {
-    					bestBackAwayDist = backAwayDist;
-    					bestBackAwayDir = d.opposite().rotateRight();
-    				}
-    			}
-    		}
-    		if (bestBackAwayDir != Direction.NONE) {
-    			rc.move(bestBackAwayDir);
-    		} else {
+//    		// If can back away from soldier hit, then do it!
+//    		Direction bestBackAwayDir = Direction.NONE;
+//    		int bestBackAwayDist = 1000;
+//    		// Pick the direction that gets away from soldier attack, and minimizes that dist.
+//    		if (rc.canMove(d.opposite())) {
+//    			int backAwayDist = myLoc.add(d.opposite()).distanceSquaredTo(bestEnemy.location);
+//    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+//    				if (backAwayDist < bestBackAwayDist) {
+//    					bestBackAwayDist = backAwayDist;
+//    					bestBackAwayDir = d.opposite();
+//    				}
+//    			}
+//    		} else if (rc.canMove(d.opposite().rotateLeft())) {
+//    			int backAwayDist = myLoc.add(d.opposite().rotateLeft()).distanceSquaredTo(bestEnemy.location);
+//    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+//    				if (backAwayDist < bestBackAwayDist) {
+//    					bestBackAwayDist = backAwayDist;
+//    					bestBackAwayDir = d.opposite().rotateLeft();
+//    				}
+//    			}
+//    		} else if (rc.canMove(d.opposite().rotateRight())) {
+//    			int backAwayDist = myLoc.add(d.opposite().rotateRight()).distanceSquaredTo(bestEnemy.location);
+//    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+//    				if (backAwayDist < bestBackAwayDist) {
+//    					bestBackAwayDist = backAwayDist;
+//    					bestBackAwayDir = d.opposite().rotateRight();
+//    				}
+//    			}
+//    		}
+//    		if (falsebestBackAwayDir != Direction.NONE) {
+//    			rc.move(bestBackAwayDir);
+//    		} else {
         		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
         			// If the enemy can be killed but we're not in range, move forward
                 	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower) {
@@ -245,7 +245,7 @@ public class SoldierPlayer {
 		                			rc.move(d.rotateRight());
 		                		}
                 			}
-                		} else if (5 * totalOurSoldierHealth < 6 * totalEnemySoldierHealth) {
+                		} else if (4 * totalOurSoldierHealth < 3 * totalEnemySoldierHealth) {
                 			if (rc.canMove(d.opposite())) {
 	                			rc.move(d.opposite());
 	                		} else if (rc.canMove(d.opposite().rotateLeft())) {
@@ -256,7 +256,7 @@ public class SoldierPlayer {
                 		}
             		}
             	}
-    		}
+    		//}
     	}
     	
     	// Attack whenever you can
@@ -431,7 +431,7 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void healIfNeed(RobotController rc) throws GameActionException {
+	public static void healIfNeed(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		healing = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasHealing && 10 * rc.getHealth() <= 8 * RobotType.SOLDIER.maxHealth);
 		if (!healing) {
 			if (wasHealing) bugging = null;
@@ -448,7 +448,7 @@ public class SoldierPlayer {
     		}
     		wasHealing = true;
     		if (rc.isCoreReady()) {
-    			bugging.move();
+    			bugging.enemyAvoidMove(hostiles);
     		}
     	}
 	}

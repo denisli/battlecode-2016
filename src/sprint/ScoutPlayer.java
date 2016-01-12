@@ -208,6 +208,14 @@ public class ScoutPlayer {
 									previouslyBroadcastedDen = hostile.location;
 									//if (rc.isCoreReady()) {
 										Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+										Direction dir = hostile.location.directionTo(myLoc);
+										if (rc.canMove(dir)) {
+											mainDir = dir;
+										} else if (rc.canMove(dir.rotateLeft())) {
+											mainDir = dir.rotateLeft();
+										} else if (rc.canMove(dir.rotateRight())) {
+											mainDir = dir.rotateRight();
+										}
 									//}
 								}
 							} else {

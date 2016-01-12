@@ -7,6 +7,7 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
+import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
 public class Bugging {
@@ -239,6 +240,52 @@ public class Bugging {
 		}
 		move(predicate);
 		
+	}
+	
+	public void enemyAvoidMove(RobotInfo[] hostiles) throws GameActionException {
+		MapLocation myLocation = rc.getLocation();
+		boolean[] directionIsGood = new boolean[10];
+		dirChecking: for (Direction dir : Direction.values()) {
+			for (RobotInfo hostile : hostiles) {
+				if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= hostile.type.attackRadiusSquared) {
+					directionIsGood[dir.ordinal()] = false;
+					continue dirChecking;
+				}
+			}///////////////////////////////////////////////////''''''////////////////////////
+			directionIsGood[dir.ordinal()] = true;
+		}
+		Predicate<Direction> predicate = new Predicate<Direction>() {
+			@Override
+			public boolean test(Direction t) {
+				return directionIsGood[t.ordinal()];
+			}
+		};
+		
+		// Move away when already in the range
+		if (!predicate.test(Direction.NONE)) {
+			int maxMinDist = 0;
+			Direction bestDir = Direction.NONE;
+			for (Direction dir : RobotPlayer.directions) {
+				if (rc.canMove(dir)) {
+					MapLocation dirLoc = myLocation.add(dir);
+					int minDist = 1000;
+					for (RobotInfo hostile : hostiles) {
+						int dist = dirLoc.distanceSquaredTo(hostile.location);
+						minDist = Math.min(dist, minDist);
+					}
+					if (maxMinDist < minDist) {
+						maxMinDist = minDist;
+						bestDir = dir;
+					}
+				}
+			}
+			if (bestDir != Direction.NONE) {
+				rc.move(bestDir);
+				return;
+			}
+		}
+		
+		move(predicate);
 	}
 	
 	//avoids list 
