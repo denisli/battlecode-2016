@@ -215,7 +215,8 @@ public class ScoutPlayer {
 								}
 								// In danger only if someone can attack me.
 								if (hostile.type != RobotType.ARCHON) {
-									int dist = myLoc.distanceSquaredTo(hostile.location);
+									MapLocation realLoc = myLoc.add(mainDir);
+									int dist = realLoc.distanceSquaredTo(hostile.location);
 									if (hostile.type == RobotType.ZOMBIEDEN) {
 										if (dist <= 5) {
 											inDanger = true;
@@ -353,9 +354,7 @@ public class ScoutPlayer {
 									int minDist = 10000;
 									for (RobotInfo hostile : hostiles) {
 										int dist = dirLoc.distanceSquaredTo(hostile.location);
-										if (dist < minDist) {
-											minDist = dist;
-										}
+										minDist = Math.min(dist, minDist);
 									}
 									if (maxMinDist < minDist) {
 										maxMinDist = minDist;

@@ -29,6 +29,10 @@ public class SoldierPlayer {
 	private static boolean healing = false;
 	private static boolean wasHealing = false;
 	
+	private static int numEnemySoldiers = 0;
+	private static double totalEnemySoldierHealth = 0;
+	private static boolean useSoldierMicro = false;
+	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
 		attackRadius = RobotType.SOLDIER.attackRadiusSquared;
@@ -36,6 +40,9 @@ public class SoldierPlayer {
 		enemyTeam = myTeam.opponent();
 		while (true) {
 			try {
+				numEnemySoldiers = 0;
+				totalEnemySoldierHealth = 0;
+				useSoldierMicro = false;
 				myLoc = rc.getLocation();
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
 				newArchonLoc = null;
@@ -58,7 +65,7 @@ public class SoldierPlayer {
 					RobotInfo bestEnemy = getBestEnemy(rc);
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
 					if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
-						nonrangeMicro(rc, bestEnemy);
+						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
 					} else { // othewise, just attack if it's in range
 						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
 							rc.attackLocation(bestEnemy.location);
@@ -128,7 +135,15 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void nonrangeMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
+	public static void nonrangeMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
+		if (useSoldierMicro) {
+			soldierMicro(rc, hostiles, bestEnemy);
+		} else {
+			nonSoldierMicro(rc, bestEnemy);
+		}
+	}
+	
+	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
 		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
@@ -162,10 +177,107 @@ public class SoldierPlayer {
     	}
 	}
 	
+	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
+		// Prioritize movement
+		Direction d = myLoc.directionTo(bestEnemy.location);
+    	if (rc.isCoreReady()) {
+    		// If can back away from soldier hit, then do it!
+    		Direction bestBackAwayDir = Direction.NONE;
+    		int bestBackAwayDist = 1000;
+    		// Pick the direction that gets away from soldier attack, and minimizes that dist.
+    		if (rc.canMove(d.opposite())) {
+    			int backAwayDist = myLoc.add(d.opposite()).distanceSquaredTo(bestEnemy.location);
+    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+    				if (backAwayDist < bestBackAwayDist) {
+    					bestBackAwayDist = backAwayDist;
+    					bestBackAwayDir = d.opposite();
+    				}
+    			}
+    		} else if (rc.canMove(d.opposite().rotateLeft())) {
+    			int backAwayDist = myLoc.add(d.opposite().rotateLeft()).distanceSquaredTo(bestEnemy.location);
+    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+    				if (backAwayDist < bestBackAwayDist) {
+    					bestBackAwayDist = backAwayDist;
+    					bestBackAwayDir = d.opposite().rotateLeft();
+    				}
+    			}
+    		} else if (rc.canMove(d.opposite().rotateRight())) {
+    			int backAwayDist = myLoc.add(d.opposite().rotateRight()).distanceSquaredTo(bestEnemy.location);
+    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+    				if (backAwayDist < bestBackAwayDist) {
+    					bestBackAwayDist = backAwayDist;
+    					bestBackAwayDir = d.opposite().rotateRight();
+    				}
+    			}
+    		}
+    		if (bestBackAwayDir != Direction.NONE) {
+    			rc.move(bestBackAwayDir);
+    		} else {
+        		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
+        			// If the enemy can be killed but we're not in range, move forward
+                	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower) {
+                		if (rc.canMove(d)) {
+                			rc.move(d);
+                		} else if (rc.canMove(d.rotateLeft())) {
+                			rc.move(d.rotateLeft());
+                		} else if (rc.canMove(d.rotateRight())) {
+                			rc.move(d.rotateRight());
+                		}
+                	// If not in range, see if we should move in by comparing soldier health
+                	} else {
+                		double totalOurSoldierHealth = 0;
+                		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
+                		for (RobotInfo ally : allies) {
+                			if (ally.type == RobotType.SOLDIER) {
+                				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
+                					totalOurSoldierHealth += ally.health;
+                				}
+                			}
+                		}
+                		// If we feel that we are strong enough, rush in.
+                		if (totalOurSoldierHealth > totalEnemySoldierHealth) {
+                			if (!rc.canAttackLocation(bestEnemy.location)) {
+                    			if (rc.canMove(d)) {
+		                			rc.move(d);
+		                		} else if (rc.canMove(d.rotateLeft())) {
+		                			rc.move(d.rotateLeft());
+		                		} else if (rc.canMove(d.rotateRight())) {
+		                			rc.move(d.rotateRight());
+		                		}
+                			}
+                		} else if (5 * totalOurSoldierHealth < 6 * totalEnemySoldierHealth) {
+                			if (rc.canMove(d.opposite())) {
+	                			rc.move(d.opposite());
+	                		} else if (rc.canMove(d.opposite().rotateLeft())) {
+	                			rc.move(d.opposite().rotateLeft());
+	                		} else if (rc.canMove(d.opposite().rotateRight())) {
+	                			rc.move(d.opposite().rotateRight());
+	                		}
+                		}
+            		}
+            	}
+    		}
+    	}
+    	
+    	// Attack whenever you can
+    	if (rc.isWeaponReady()) {
+    		if (rc.canAttackLocation(bestEnemy.location)) {
+    			rc.attackLocation(bestEnemy.location);
+    		}
+    	}
+	}
+	
 	// loops through the nearbyEnemies and gets the one that is closest regardless of everything
 	public static RobotInfo getBestEnemy(RobotController rc) {
 		RobotInfo bestEnemy = nearbyEnemies[0];
 		for (RobotInfo r : nearbyEnemies) {
+			if (r.type == RobotType.SOLDIER) {
+				useSoldierMicro = true;
+				numEnemySoldiers++;
+				if (r.health > RobotType.SOLDIER.attackPower) {
+					totalEnemySoldierHealth += r.health;
+				}
+			}
 			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
 				bestEnemy = r;
 			}
