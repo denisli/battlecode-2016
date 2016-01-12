@@ -58,7 +58,7 @@ public class ArchonPlayer {
 							bug = new Bugging(rc, nearestParts);
 						}
 						else {
-							if (myLoc.distanceSquaredTo(nearestParts) > myLoc.distanceSquaredTo(newPartsLoc)) {
+							if (myLoc.distanceSquaredTo(nearestParts) > myLoc.distanceSquaredTo(newPartsLoc) && nearestParts != startLoc) {
 								nearestParts = newPartsLoc;
 								bug = new Bugging(rc, nearestParts);
 							}
