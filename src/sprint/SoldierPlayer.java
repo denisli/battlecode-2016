@@ -95,6 +95,8 @@ public class SoldierPlayer {
 						if (rc.isCoreReady() && bugging != null) {
 							bugging.move();
 						}
+					} else { // if we literally have nowhere to go
+						bugAroundFriendly(rc);
 					}
 				}
 				
@@ -102,6 +104,26 @@ public class SoldierPlayer {
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+		}
+	}
+	
+	// get the 
+	public static void bugAroundFriendly(RobotController rc) throws GameActionException {
+		RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(sightRadius, myTeam);
+		if (nearbyFriendlyRobots.length > 0) {
+			RobotInfo nearestFriend = null;
+			for (RobotInfo r : nearbyFriendlyRobots) {
+				if (r.type == RobotType.ARCHON) {
+					nearestFriend = r;
+				}
+			}
+			if (nearestFriend != null && !nearestFriend.location.equals(storedDestination) || bugging == null) {
+				bugging = new Bugging(rc, nearestFriend.location);
+				storedDestination = nearestFriend.location;
+			}
+			if (rc.isCoreReady()) {
+				bugging.move();
 			}
 		}
 	}
@@ -242,6 +264,7 @@ public class SoldierPlayer {
 			// if we get a rush signal, we want to rush towards the nearest turret
 			if (m.type == Message.RUSH || m.type == Message.RUSHNOTURRET) {
 				rush = true;
+				doNotMove = false;
 				// if the location contains an actual location, update the nearest turret with that location
 				if (m.type == Message.RUSH) {
 					nearestTurretLocation = m.location;
