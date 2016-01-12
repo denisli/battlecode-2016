@@ -219,8 +219,10 @@ public class ScoutPlayer {
 										if (dist <= 5) {
 											inDanger = true;
 										}
-									} else {
+									} else if (hostile.type == RobotType.TURRET) {
 										inDanger = dist <= hostile.type.attackRadiusSquared;
+									} else {
+										inDanger = dist <= hostile.type.sensorRadiusSquared;
 									}
 								}
 								
