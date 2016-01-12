@@ -23,15 +23,21 @@ public class SoldierPlayer {
 	private static RobotInfo[] nearbyEnemies;
 	private static Bugging bugging = null;
 	private static MapLocation newArchonLoc = null;
+	private static Team myTeam;
+	private static Team enemyTeam;
 	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
 		attackRadius = RobotType.SOLDIER.attackRadiusSquared;
+		myTeam = rc.getTeam();
+		enemyTeam = myTeam.opponent();
 		while (true) {
 			try {
 				myLoc = rc.getLocation();
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
 				newArchonLoc = null;
+				// clear bad locations
+				resetLocations(rc);
 				// read messages to see what is going on
 				readMessages(rc);
 				if (newArchonLoc != null) {
@@ -46,6 +52,7 @@ public class SoldierPlayer {
 					
 				} else { // otherwise, we should always be moving somewhere
 					// if we have a real current destination
+					rc.setIndicatorString(1, "moving somewhere " + rc.getRoundNum());
 					if (currentDestination != null) {
 						// if bugging is never initialized or we are switching destinations, reinitialize bugging
 						if (!currentDestination.equals(storedDestination) || bugging == null) {
@@ -57,6 +64,7 @@ public class SoldierPlayer {
 							bugging.move();
 						}
 					} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
+						rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
 						if (!nearestArchonLocation.equals(storedDestination)) {
 							bugging = new Bugging(rc, nearestArchonLocation);
 							storedDestination = nearestArchonLocation;
@@ -119,6 +127,33 @@ public class SoldierPlayer {
 			}
 		}
 		return bestEnemy;
+	}
+	
+	// if soldier is in range of stuff but doesn't see it, sets it to null
+	public static void resetLocations(RobotController rc) throws GameActionException {
+		if (nearestEnemyArchon != null && rc.canSense(nearestEnemyArchon) && (rc.senseRobotAtLocation(nearestEnemyArchon) == null || rc.senseRobotAtLocation(nearestEnemyArchon).type != RobotType.ARCHON
+				|| !rc.senseRobotAtLocation(nearestEnemyArchon).team.equals(enemyTeam))) {
+			if (nearestEnemyArchon.equals(currentDestination)) currentDestination = null;
+			nearestEnemyArchon = null;
+		}
+		if (nearestTurretLocation != null && rc.canSense(nearestTurretLocation) && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
+				|| !rc.senseRobotAtLocation(nearestTurretLocation).team.equals(enemyTeam))) {
+			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
+			nearestTurretLocation = null;
+		}
+		if (nearestEnemyLocation != null && rc.canSense(nearestEnemyLocation) && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
+			if (nearestEnemyLocation.equals(currentDestination)) currentDestination = null;
+			nearestEnemyLocation = null;
+		}
+		if (nearestZombieLocation != null && rc.canSense(nearestZombieLocation) && (rc.senseRobotAtLocation(nearestZombieLocation) == null
+				|| !rc.senseRobotAtLocation(nearestZombieLocation).team.equals(Team.ZOMBIE))) {
+			if (nearestZombieLocation.equals(currentDestination)) currentDestination = null;
+			nearestZombieLocation = null;
+		}
+		if (nearestDenLocation != null && rc.canSense(nearestDenLocation) && (rc.senseRobotAtLocation(nearestDenLocation) == null || rc.senseRobotAtLocation(nearestDenLocation).type != RobotType.ZOMBIEDEN)) {
+			if (nearestDenLocation.equals(currentDestination)) currentDestination = null;
+			nearestDenLocation = null;
+		}
 	}
 	
 	// reads the message signals and sets the nearestTurretLocation and currentDestination static variables
@@ -201,14 +236,19 @@ public class SoldierPlayer {
 		// if we actually have a destination, set it to currentDestination
 		if (bestDistance < 1000) {
 			if (bestDistance == distanceToArchon) {
+				rc.setIndicatorString(0, "moving to nearest enemy archon " + nearestEnemyArchon + rc.getRoundNum());
 				currentDestination = nearestEnemyArchon;
 			} else if (bestDistance == distanceToTurret) {
+				rc.setIndicatorString(0, "moving to nearest turret " + nearestTurretLocation + rc.getRoundNum());
 				currentDestination = nearestTurretLocation;
 			} else if (bestDistance == distanceToEnemy) {
+				rc.setIndicatorString(0, "moving to nearest enemy " + nearestEnemyLocation + rc.getRoundNum());
 				currentDestination = nearestEnemyLocation;
 			} else if (bestDistance == distanceToZombie) {
+				rc.setIndicatorString(0, "moving to nearest zombie " + nearestZombieLocation + rc.getRoundNum());
 				currentDestination = nearestZombieLocation;
 			} else if (bestDistance == distanceToDen) {
+				rc.setIndicatorString(0, "moving to nearest den " + nearestDenLocation + rc.getRoundNum());
 				currentDestination = nearestDenLocation;
 			}
 		}
