@@ -199,7 +199,7 @@ public class ScoutPlayer {
 					int closestRecordedEnemyDist = 10000;
 					int secondClosestRecordedEnemyDist = 20000;
 					if (hostiles.length > 0) {
-						inDanger = true;
+						int closestAttackingEnemyDist = 10000;
 						for (RobotInfo hostile : hostiles) {
 							if (hostile.type == RobotType.ZOMBIEDEN) {
 								if (!hostile.location.equals(previouslyBroadcastedDen)) {
@@ -212,6 +212,18 @@ public class ScoutPlayer {
 								if (hostile.type == RobotType.TURRET) {
 									numEnemyTurrets++;
 								}
+								// In danger only if someone can attack me.
+								if (hostile.type != RobotType.ARCHON) {
+									int dist = myLoc.distanceSquaredTo(hostile.location);
+									if (hostile.type == RobotType.ZOMBIEDEN) {
+										if (dist <= 5) {
+											inDanger = true;
+										}
+									} else {
+										inDanger = dist <= hostile.type.attackRadiusSquared;
+									}
+								}
+								
 								int dist = myLoc.distanceSquaredTo(hostile.location);
 								if (closestRecordedEnemy == null) {
 									closestRecordedEnemy = hostile;
