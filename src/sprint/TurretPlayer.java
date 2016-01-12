@@ -50,16 +50,17 @@ public class TurretPlayer {
 		MapLocation pairedAttackLoc = null;
 		boolean attacked = false;
 		boolean enemiesTooClose = false;
+		MapLocation newArchonLoc = null;
 
 		//process messages
 		List<Message> messages = Message.readMessageSignals(rc);
 		for (Message m : messages) {
 			if (m.type == Message.ARCHONLOC) {
-				if (nearestArchonLocation == null) {
-					nearestArchonLocation = m.location;
+				if (newArchonLoc == null) {
+					newArchonLoc = m.location;
 				}
-				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonLocation)) {
-					nearestArchonLocation = m.location;
+				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(newArchonLoc)) {
+					newArchonLoc= m.location;
 				}
 			}
 			else if (m.type == Message.ENEMY) {
@@ -110,7 +111,9 @@ public class TurretPlayer {
 				}
 			}
 		}
-
+		if (newArchonLoc != null) {
+			nearestArchonLocation = newArchonLoc;
+		}
 
 		if (rc.isWeaponReady()) {
 			//if enemies within range exists > 5, attack
@@ -165,16 +168,17 @@ public class TurretPlayer {
 		MapLocation myLoc = rc.getLocation();
 		MapLocation enemyTurretScoutLoc = null;
 		MapLocation pairedAttackLoc = null;
-
+		MapLocation newArchonLoc = null;
+		
 		//process messages
 		List<Message> messages = Message.readMessageSignals(rc);
 		for (Message m : messages) {
 			if (m.type == Message.ARCHONLOC) {
-				if (nearestArchonLocation == null) {
-					nearestArchonLocation = m.location;
+				if (newArchonLoc == null) {
+					newArchonLoc = m.location;
 				}
-				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonLocation)) {
-					nearestArchonLocation = m.location;
+				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(newArchonLoc)) {
+					newArchonLoc= m.location;
 				}
 			}
 			else if (m.type == Message.ENEMY) {
@@ -227,6 +231,10 @@ public class TurretPlayer {
 			else if (m.type == Message.ENEMYTURRETSCOUT) {
 				enemyTurretScoutLoc = m.location;
 			}
+		}
+		
+		if (newArchonLoc != null) {
+			nearestArchonLocation = newArchonLoc;
 		}
 
 		//movement

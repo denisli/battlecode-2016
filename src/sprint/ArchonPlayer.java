@@ -38,6 +38,8 @@ public class ArchonPlayer {
 					unpairedScouts = 0;
 				}
 
+				rc.setIndicatorString(2, nearestParts+"");
+				
 				//process messages- for each unpaired scout message, increment unpairedScouts
 				List<Message> messages = Message.readMessageSignals(rc);
 				for (Message m : messages) {
@@ -57,17 +59,20 @@ public class ArchonPlayer {
 							}
 						}
 					}
+					if (m.type == Message.UNPAIRED) {
+						unpairedScouts++;
+					}
 				}
 				
 				//if sees friendly robot in need of repair, repair it
 				if (friendlyRobotsAttackRange.length > 0) {
 					RobotInfo toRepair = friendlyRobotsAttackRange[0];
 					for (RobotInfo f : friendlyRobotsAttackRange) {
-						if (f.type != RobotType.ARCHON) {
+						if (f.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>1) {
 							toRepair = f;
 						}
 					}
-					if (toRepair.type != RobotType.ARCHON) {
+					if (toRepair.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>1) {
 						rc.repair(toRepair.location);
 					}
 				}
@@ -138,6 +143,7 @@ public class ArchonPlayer {
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0) {
 						rc.activate(adjNeutralRobots[0].location);
+						bug = null;
 					}
 					//else if can move to adjacent parts, move to it
 					else if (adjParts.length > 0) {
@@ -152,6 +158,7 @@ public class ArchonPlayer {
 						Direction dirToParts = myLoc.directionTo(adjPartsLoc);
 						if (rc.canMove(dirToParts)) {
 							rc.move(dirToParts);
+							bug = null;
 						}
 					}
 					//else if turn 0 build scout
@@ -193,7 +200,7 @@ public class ArchonPlayer {
 
 					//if core is ready, move to nearest parts
 					if (rc.isCoreReady()) {
-						if (nearestParts != null) {
+						if (nearestParts != null && bug!= null) {
 							bug.move();
 						}
 					}
