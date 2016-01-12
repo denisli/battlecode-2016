@@ -8,6 +8,7 @@ public class SoldierPlayer {
 	
 	// this keeps track of 
 	private static MapLocation nearestTurretLocation = null;
+	private static MapLocation storedTurretLocation = null;
 	private static MapLocation nearestEnemyArchon = null;
 	private static MapLocation nearestEnemyLocation = null;
 	private static MapLocation nearestZombieLocation = null;
@@ -18,6 +19,7 @@ public class SoldierPlayer {
 	private static MapLocation currentDestination = null;
 	private static MapLocation storedDestination = null;
 	private static MapLocation myLoc;
+	private static MapLocation myPrevLoc;
 	private static int sightRadius;
 	private static int attackRadius;
 	private static RobotInfo[] nearbyEnemies;
@@ -28,6 +30,7 @@ public class SoldierPlayer {
 	private static boolean doNotMove = false;
 	private static boolean healing = false;
 	private static boolean wasHealing = false;
+	private static int turnsNotMoved = 0;
 	
 	private static int numEnemySoldiers = 0;
 	private static double totalEnemySoldierHealth = 0;
@@ -64,6 +67,7 @@ public class SoldierPlayer {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
+					
 					if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
 						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
 					} else { // othewise, just attack if it's in range
@@ -103,11 +107,12 @@ public class SoldierPlayer {
 							bugging.move();
 						}
 					} else { // if we literally have nowhere to go
+						rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
 						bugAroundFriendly(rc);
 					}
 				}
 				
-				
+				myPrevLoc = myLoc;
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -395,6 +400,7 @@ public class SoldierPlayer {
 		int distanceToZombie = nearestZombieLocation != null ? myLoc.distanceSquaredTo(nearestZombieLocation) : 1000;
 		int distanceToDen = nearestDenLocation != null ? myLoc.distanceSquaredTo(nearestDenLocation) : 1000;
 		int bestDistance = Math.min(distanceToArchon, Math.min(Math.min(distanceToTurret, distanceToEnemy), Math.min(distanceToZombie, distanceToDen)));
+		
 		// if we actually have a destination, set it to currentDestination
 		if (bestDistance < 1000) {
 			if (bestDistance == distanceToArchon) {
@@ -416,8 +422,23 @@ public class SoldierPlayer {
 		}
 		// prioritize dens
 		if (nearestDenLocation != null) {
+			rc.setIndicatorString(0, "actually moving towards den " + nearestDenLocation + rc.getRoundNum());
 			currentDestination = nearestDenLocation;
+		} else if (nearestZombieLocation != null) {
+			rc.setIndicatorString(0, "actually moving towards zombie " + nearestZombieLocation + rc.getRoundNum());
+			currentDestination = nearestZombieLocation;
 		}
+		// if we are looking at the same turret for too long, go somewhere else
+		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation)) {
+			turnsNotMoved++;
+		} else {
+			turnsNotMoved = 0;
+		}
+		if (turnsNotMoved > 100) {
+			currentDestination = nearestArchonLocation;
+			nearestTurretLocation = null;
+		}
+		storedTurretLocation = nearestTurretLocation;
 		doNotMove = false;
 	}
 	
