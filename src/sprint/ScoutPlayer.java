@@ -110,14 +110,14 @@ public class ScoutPlayer {
 								enemyTurretLoc = hostile.location;
 							}
 							else if (hostile.type == RobotType.ZOMBIEDEN) {
-								if (rc.isCoreReady()) {
+								//if (rc.isCoreReady()) {
 									if (!hostile.location.equals(previouslyBroadcastedDen)) {
 										if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 											previouslyBroadcastedDen = hostile.location;
 											Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
 										}
 									}
-								}
+								//}
 							}
 							
 							// First handle finding the best enemy.
@@ -200,14 +200,15 @@ public class ScoutPlayer {
 					int closestRecordedEnemyDist = 10000;
 					int secondClosestRecordedEnemyDist = 20000;
 					if (hostiles.length > 0) {
+						MapLocation realLoc = myLoc.add(mainDir);
 						int closestAttackingEnemyDist = 10000;
 						for (RobotInfo hostile : hostiles) {
 							if (hostile.type == RobotType.ZOMBIEDEN) {
 								if (!hostile.location.equals(previouslyBroadcastedDen)) {
 									previouslyBroadcastedDen = hostile.location;
-									if (rc.isCoreReady()) {
+									//if (rc.isCoreReady()) {
 										Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
-									}
+									//}
 								}
 							} else {
 								if (hostile.type == RobotType.TURRET) {
@@ -215,16 +216,15 @@ public class ScoutPlayer {
 								}
 								// In danger only if someone can attack me.
 								if (hostile.type != RobotType.ARCHON) {
-									MapLocation realLoc = myLoc.add(mainDir);
 									int dist = realLoc.distanceSquaredTo(hostile.location);
 									if (hostile.type == RobotType.ZOMBIEDEN) {
 										if (dist <= 5) {
 											inDanger = true;
 										}
 									} else if (hostile.type == RobotType.TURRET) {
-										inDanger = dist <= hostile.type.attackRadiusSquared;
+										if (dist <= hostile.type.attackRadiusSquared) inDanger = true;
 									} else {
-										inDanger = dist <= hostile.type.sensorRadiusSquared;
+										if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
 									}
 								}
 								
