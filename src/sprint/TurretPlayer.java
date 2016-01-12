@@ -157,7 +157,7 @@ public class TurretPlayer {
 
 
 		//if enemies within range <=5 and couldnt attack, pack
-		if (rc.isCoreReady() && enemiesTooClose && !attacked) {
+		if (rc.isCoreReady() && enemiesTooClose && !attacked && turnsNoEnemy >=20) {
 			rc.pack();
 		}
 		if (enemiesWithinRange.length==0 && !attacked) {
@@ -167,9 +167,11 @@ public class TurretPlayer {
 		if (rc.isCoreReady() && turnsNoEnemy >=20) {
 			rc.pack();
 		}
-		if (!attacked && rc.isCoreReady() && rushing) {
+		if (!attacked && rc.isCoreReady() && rushing && turnsNoEnemy >=20) {
 			rc.pack();
 		}
+		
+		rc.setIndicatorString(1, turnsNoEnemy+"turns no enemy");
 	}
 
 	private static void TTMCode(RobotController rc) throws GameActionException {
@@ -326,21 +328,27 @@ public class TurretPlayer {
 				else {
 					if (nearestEnemyArchon != null) {
 						destination = nearestEnemyArchon;
+						nearestEnemyArchon = null;
 					}
 					else if (nearestTurretLocation != null) {
 						destination = nearestTurretLocation;
+						nearestTurretLocation = null;
 					}
 					else if (nearestEnemyLocation != null) {
 						destination = nearestEnemyLocation;
+						nearestEnemyLocation = null;
 					}
 					else if (nearestZombieLocation != null) {
 						destination = nearestZombieLocation;
+						nearestZombieLocation = null;
 					}
 					else if (nearestDenLocation != null) {
 						destination = nearestDenLocation;
+						nearestDenLocation = null;
 					}
 					else if (nearestArchonLocation != null) {
 						destination = nearestArchonLocation;
+						nearestArchonLocation = null;
 					}
 
 					if (destination != null) {
