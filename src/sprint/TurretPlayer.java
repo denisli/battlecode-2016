@@ -20,6 +20,7 @@ public class TurretPlayer {
 	private static MapLocation nearestArchonLocation = null;
 	static Bugging bugging = null;
 	public static MapLocation destination = null;
+	public static boolean rushing = false;
 
 	public static void run(RobotController rc) {
 		//rand = new Random(rc.getID());
@@ -78,11 +79,15 @@ public class TurretPlayer {
 				}
 			}
 			if (m.type == Message.PAIREDATTACK) {
-				pairedAttackLoc = m.location;
+				if (myLoc.distanceSquaredTo(m.location) <= 48 && myLoc.distanceSquaredTo(m.location) > 5) {
+					pairedAttackLoc = m.location;
+				}
 			}
 			else if (m.type == Message.RUSH) {
+				rushing = true;
 			}
 			else if (m.type == Message.RUSHNOTURRET) {
+				rushing = true;
 			}
 			else if (m.type == Message.TURRET) {
 				if (nearestTurretLocation == null) {
@@ -162,6 +167,9 @@ public class TurretPlayer {
 		if (rc.isCoreReady() && turnsNoEnemy >=20) {
 			rc.pack();
 		}
+		if (!attacked && rc.isCoreReady() && rushing) {
+			rc.pack();
+		}
 	}
 
 	private static void TTMCode(RobotController rc) throws GameActionException {
@@ -169,6 +177,7 @@ public class TurretPlayer {
 		MapLocation enemyTurretScoutLoc = null;
 		MapLocation pairedAttackLoc = null;
 		MapLocation newArchonLoc = null;
+		rc.setIndicatorString(2, "destination"+destination);
 		
 		//process messages
 		List<Message> messages = Message.readMessageSignals(rc);
@@ -199,8 +208,10 @@ public class TurretPlayer {
 				pairedAttackLoc = m.location;
 			}
 			else if (m.type == Message.RUSH) {
+				rushing = true;
 			}
 			else if (m.type == Message.RUSHNOTURRET) {
+				rushing = true;
 			}
 			else if (m.type == Message.TURRET) {
 				if (nearestTurretLocation == null) {
@@ -232,7 +243,7 @@ public class TurretPlayer {
 				enemyTurretScoutLoc = m.location;
 			}
 		}
-		
+
 		if (newArchonLoc != null) {
 			nearestArchonLocation = newArchonLoc;
 		}
@@ -240,51 +251,64 @@ public class TurretPlayer {
 		//movement
 		if (rc.isCoreReady()) {
 			RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
-			boolean enemiesTooClose = false;
+			boolean existEnemiesNotTooClose = false;
 			for (RobotInfo e : enemiesWithinRange) {
-				if (myLoc.distanceSquaredTo(e.location) <= 5) {
-					enemiesTooClose = true;
+				if (myLoc.distanceSquaredTo(e.location) > 5) {
+					existEnemiesNotTooClose = true;
 					break;
 				}
 			}
-			//if enemy in sight range but outside range >5, unpack
-			if (enemiesWithinRange.length > 0 && !enemiesTooClose) {
+			//if exist enemy in sight range but outside range >5, unpack
+			if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
 				rc.unpack();
 			}
 			//else if enemy in attack range...
 			else if (pairedAttackLoc != null){
-				//if no turret+scout, unpack
-				if (enemyTurretScoutLoc == null) {
-					rc.unpack();
-				}
-				//else...
-				else {
-					//if distance away is > 48 unpack
-					if (myLoc.distanceSquaredTo(enemyTurretScoutLoc) > 48) {
+				if (!rushing) {
+					//if no turret+scout, unpack
+					if (enemyTurretScoutLoc == null) {
 						rc.unpack();
 					}
-					//else move away
+					//else...
 					else {
-						Direction dirToMove = myLoc.directionTo(enemyTurretScoutLoc).opposite();
-						if (rc.canMove(dirToMove)) {
-							rc.move(dirToMove);
-						}
-						else if (rc.canMove(dirToMove.rotateLeft()) && myLoc.add(dirToMove.rotateLeft()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
-							rc.move(dirToMove.rotateLeft());
-						}
-						else if (rc.canMove(dirToMove.rotateRight()) && myLoc.add(dirToMove.rotateRight()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
-							rc.move(dirToMove.rotateRight());
-						}							
-						else if (rc.canMove(dirToMove.rotateLeft().rotateLeft()) && myLoc.add(dirToMove.rotateLeft().rotateLeft()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
-							rc.move(dirToMove.rotateLeft().rotateLeft());
-						}
-						else if (rc.canMove(dirToMove.rotateRight().rotateRight()) && myLoc.add(dirToMove.rotateRight().rotateRight()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
-							rc.move(dirToMove.rotateRight().rotateRight());
-						}
-						else {
-							//no safe directions-- unpack
+						//if distance away is > 48 unpack
+						if (myLoc.distanceSquaredTo(enemyTurretScoutLoc) > 48) {
 							rc.unpack();
 						}
+						//else move away
+						else {
+							Direction dirToMove = myLoc.directionTo(enemyTurretScoutLoc).opposite();
+							if (rc.canMove(dirToMove)) {
+								rc.move(dirToMove);
+							}
+							else if (rc.canMove(dirToMove.rotateLeft()) && myLoc.add(dirToMove.rotateLeft()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
+								rc.move(dirToMove.rotateLeft());
+							}
+							else if (rc.canMove(dirToMove.rotateRight()) && myLoc.add(dirToMove.rotateRight()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
+								rc.move(dirToMove.rotateRight());
+							}							
+							else if (rc.canMove(dirToMove.rotateLeft().rotateLeft()) && myLoc.add(dirToMove.rotateLeft().rotateLeft()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
+								rc.move(dirToMove.rotateLeft().rotateLeft());
+							}
+							else if (rc.canMove(dirToMove.rotateRight().rotateRight()) && myLoc.add(dirToMove.rotateRight().rotateRight()).distanceSquaredTo(enemyTurretScoutLoc) > 48) {
+								rc.move(dirToMove.rotateRight().rotateRight());
+							}
+							else {
+								//no safe directions-- unpack
+								rc.unpack();
+							}
+						}
+					}
+				}
+				else {
+					if (myLoc.distanceSquaredTo(pairedAttackLoc) <= 48) {
+						rushing = false;
+						rc.unpack();
+					}
+					else {
+						destination = pairedAttackLoc;
+						bugging = new Bugging(rc, pairedAttackLoc);
+						bugging.move();
 					}
 				}
 			}
@@ -293,6 +317,7 @@ public class TurretPlayer {
 				//if arrived at destination
 				if (destination != null && myLoc.distanceSquaredTo(destination) <= 24) {
 					destination = null;
+					bugging = null;
 				}
 
 				if (destination != null) {
