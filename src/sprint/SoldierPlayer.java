@@ -170,12 +170,17 @@ public class SoldierPlayer {
 			} else
 			// if the message is an archon location, store the nearest current archon location
 			if (m.type == Message.ARCHONLOC) {
-				nearestArchonLocation = m.location;
+				if (nearestArchonLocation == null) {
+					nearestArchonLocation = m.location;
+				}
+				else if(myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonLocation)) {
+					nearestArchonLocation = m.location;
+				}
 			} else 
 			// if we get a rush signal, we want to rush towards the nearest turret
 			if (m.type == Message.RUSH || m.type == Message.RUSHNOTURRET) {
 				rush = true;
-				// if the location contains an actual location, update the nearest turret with that locaiton
+				// if the location contains an actual location, update the nearest turret with that location
 				if (m.type == Message.RUSH) {
 					nearestTurretLocation = m.location;
 				}

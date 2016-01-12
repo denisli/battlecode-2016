@@ -22,6 +22,7 @@ public class ArchonPlayer {
 		MapLocation previouslyBroadcastedLoc = rc.getLocation();
 		MapLocation nearestParts = null;
 		Bugging bug = null;
+		int numSoldiersBuilt = 0;
 
 		while (true) {
 			//things that change every turn
@@ -60,8 +61,15 @@ public class ArchonPlayer {
 				
 				//if sees friendly robot in need of repair, repair it
 				if (friendlyRobotsAttackRange.length > 0) {
-					//repairs randomly
-					rc.repair(friendlyRobotsAttackRange[0].location);
+					RobotInfo toRepair = friendlyRobotsAttackRange[0];
+					for (RobotInfo f : friendlyRobotsAttackRange) {
+						if (f.type != RobotType.ARCHON) {
+							toRepair = f;
+						}
+					}
+					if (toRepair.type != RobotType.ARCHON) {
+						rc.repair(toRepair.location);
+					}
 				}
 
 				//these are all in the same if else loop because they require core delay
@@ -96,7 +104,7 @@ public class ArchonPlayer {
 							//move away
 							Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
 							Direction safeDir = dangerousDir.opposite();
-							if (rc.canMove( safeDir)) {
+							if (rc.canMove(safeDir)) {
 								rc.move(safeDir);
 							}
 							else if (rc.canMove(safeDir.rotateLeft())) {
@@ -154,23 +162,31 @@ public class ArchonPlayer {
 					}
 					//else build mode
 					else {
-						if (unpairedScouts < 9) {
+						if (unpairedScouts < 9 && numSoldiersBuilt > 9) {
 							//build scouts
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
 							}
 						}
 						else {
-							//build turrets/soldiers in 1/2? ratio
-							if (rc.hasBuildRequirements(RobotType.TURRET)) {
-								int buildFate = rand.nextInt(2);
-								RobotType toBuild = null;
-								if (buildFate == 0) {
-									toBuild = RobotType.TURRET;
-								} else {
-									toBuild = RobotType.SOLDIER;
+							if (numSoldiersBuilt <= 9) {
+								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
+									buildRandomDir(rc, RobotType.SOLDIER, rand);
+									numSoldiersBuilt++;
 								}
-								buildRandomDir(rc, toBuild, rand);
+							}
+							else {
+								//build turrets/soldiers in 1/2? ratio
+								if (rc.hasBuildRequirements(RobotType.TURRET)) {
+									int buildFate = rand.nextInt(2);
+									RobotType toBuild = null;
+									if (buildFate == 0) {
+										toBuild = RobotType.TURRET;
+									} else {
+										toBuild = RobotType.SOLDIER;
+									}
+									buildRandomDir(rc, toBuild, rand);
+								}
 							}
 						}
 					}

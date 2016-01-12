@@ -42,15 +42,24 @@ public class ScoutPlayer {
 					if (hostiles.length > 0) {
 						closestTurretLoc = null;
 						int closestDist = 10000;
-						RobotInfo closestEnemy = null;
+						RobotInfo closestEnemy = hostiles[0];
 						RobotInfo bestEnemy = hostiles[0];
 						// Find the best enemy. 
 						// In the meantime, also find the closest enemy that can hit me and get away.
+						MapLocation enemyTurretLoc = null;
+						MapLocation enemyScoutLoc = null;
 						for (RobotInfo hostile : hostiles) {
 							int dist = myLoc.distanceSquaredTo(hostile.location);
+							if (hostile.type == RobotType.SCOUT) {
+								enemyScoutLoc = hostile.location;
+							}
+							if (hostile.type == RobotType.TURRET) {
+								enemyTurretLoc = hostile.location;
+							}
 							
 							// First handle finding the best enemy.
-							if (hostile.location.distanceSquaredTo(pairedTurret) <= RobotType.TURRET.attackRadiusSquared) {
+							// make sure hostile range is > 5
+							if (hostile.location.distanceSquaredTo(pairedTurret) <= RobotType.TURRET.attackRadiusSquared && hostile.location.distanceSquaredTo(pairedTurret)>5) {
 								if (bestEnemy.type == RobotType.ARCHON) {
 									if (hostile.type == RobotType.ARCHON) {
 										if (hostile.health < bestEnemy.health) {
@@ -68,13 +77,13 @@ public class ScoutPlayer {
 								}
 							}
 							// Then find the closest turret
-							if (closestTurretDist > dist) {
+							if (closestTurretDist > dist && hostile.location.distanceSquaredTo(pairedTurret)>5) {
 								closestTurretDist = dist;
 								closestTurretLoc = hostile.location;
 							}
 							
 							// Find the closest enemy
-							if (closestDist > dist && hostile.type != RobotType.ARCHON) {
+							if (closestDist > dist && hostile.type != RobotType.ARCHON && hostile.location.distanceSquaredTo(pairedTurret)>5) {
 								closestDist = dist;
 								closestEnemy = hostile;
 							}
@@ -86,13 +95,18 @@ public class ScoutPlayer {
 							}
 						}
 						// If there is a best enemy, send a message.
-						if (bestEnemy != null) {
+						if (bestEnemy != null && bestEnemy.location.distanceSquaredTo(pairedTurret)>5 && rc.isCoreReady()) {
 							Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
 						}
 						
 						// If there is a closest turret, send a message.
-						if (closestTurretLoc != null) {
+						if (closestTurretLoc != null && rc.isCoreReady()) {
 							Message.sendMessageGivenDelay(rc, closestTurretLoc, Message.TURRET, 2.25);
+						}
+						
+						//if it sees enemy turret with a scout, signal that
+						if (enemyScoutLoc != null && enemyTurretLoc != null && rc.isCoreReady()) {
+							Message.sendMessageGivenRange(rc, enemyTurretLoc, Message.ENEMYTURRETSCOUT, 8);
 						}
 					}
 					
@@ -174,7 +188,7 @@ public class ScoutPlayer {
 				}
 				
 				// When we have more turrets, broadcast that.
-				if (numOurTurrets > numEnemyTurrets && isPaired) {
+				if (numOurTurrets > numEnemyTurrets && isPaired && rc.isCoreReady()) {
 					if (closestTurretLoc != null) {
 						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
 					} else {
@@ -284,7 +298,7 @@ public class ScoutPlayer {
 				closestCollectible = neutral.location;
 			}
 		}
-		if (closestCollectible != null) {
+		if (closestCollectible != null && rc.isCoreReady()) {
 			if (thereAreEnemies) {
 				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
 			} else {
@@ -294,13 +308,13 @@ public class ScoutPlayer {
 	}
 
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
-		if (enemy.type == RobotType.ARCHON) {
+		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 0.7);
-		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE) {
+		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 0.7);
-		} else if (enemy.type == RobotType.TURRET) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 0.3);
-		} else {
+		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 0.3 );
+		} else if (rc.isCoreReady()){
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, 1);
 		}
 	}

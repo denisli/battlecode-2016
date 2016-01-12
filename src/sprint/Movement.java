@@ -28,34 +28,7 @@ public class Movement {
 	public static boolean moveAwayFromEnemy(RobotController rc) throws GameActionException {
 		int mySightRange = rc.getType().sensorRadiusSquared;
 		MapLocation myLoc = rc.getLocation();
-		RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, mySightRange);
-		
-//		for (MapLocation e : enemyTurrets) {
-//			if (myLoc.distanceSquaredTo(e) <= 53) {
-//				Direction toMove = myLoc.directionTo(e).opposite();
-//				if (rc.canMove(toMove)) {
-//					rc.move(toMove);
-//					return true;
-//				}
-//				if (rc.canMove(toMove.rotateLeft())) {
-//					rc.move(toMove);
-//					return true;
-//				}
-//				if (rc.canMove(toMove.rotateRight())) {
-//					rc.move(toMove);
-//					return true;
-//				}
-//				if (rc.canMove(toMove.rotateRight().rotateRight())) {
-//					rc.move(toMove);
-//					return true;
-//				}
-//				if (rc.canMove(toMove.rotateLeft().rotateLeft())) {
-//					rc.move(toMove);
-//					return true;
-//				}
-//			}
-//		}
-//		
+		RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, mySightRange);	
 		MapLocation closestEnemy = null;
 		int closestEnemyDist = 60;
 		for (RobotInfo e : hostiles) {

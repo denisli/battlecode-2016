@@ -23,6 +23,8 @@ public class Message {
 	public static final int ARCHONLOC = 11; // our archon loc
 	public static final int RUSHNOTURRET = 12;
 	public static final int PAIREDATTACK = 13;
+	//scout sends to turret if it sees enemy turret+scout
+	public static final int ENEMYTURRETSCOUT = 14;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;

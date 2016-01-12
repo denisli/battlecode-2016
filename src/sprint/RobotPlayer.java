@@ -30,6 +30,8 @@ public class RobotPlayer {
 			SoldierPlayer.run(rc);
         } else if (rc.getType() == RobotType.SCOUT) {
         	ScoutPlayer.run(rc);
+        } else if (rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM) {
+        	TurretPlayer.run(rc);
         }
         		
         else {
