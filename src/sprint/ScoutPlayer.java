@@ -324,19 +324,23 @@ public class ScoutPlayer {
 		MapLocation closestCollectible = null;
 		int closestDist = 10000;
 		for (MapLocation part : parts) {
-			if (part.equals(previouslyBroadcastedPartLoc)) continue;
-			int dist = myLoc.distanceSquaredTo(part);
-			if (dist < closestDist) {
-				closestDist = dist;
-				closestCollectible = part;
+			if (previouslyBroadcastedPartLoc != null) {
+				if (part.distanceSquaredTo(previouslyBroadcastedPartLoc) <= 35) continue; 
+				int dist = myLoc.distanceSquaredTo(part);
+				if (dist < closestDist) {
+					closestDist = dist;
+					closestCollectible = part;
+				}
 			}
 		}
 		for (RobotInfo neutral : neutrals) {
-			if (neutral.location.equals(previouslyBroadcastedPartLoc)) continue;
-			int dist = myLoc.distanceSquaredTo(neutral.location);
-			if (dist < closestDist) {
-				closestDist = dist;
-				closestCollectible = neutral.location;
+			if (previouslyBroadcastedPartLoc != null) {
+				if (neutral.location.distanceSquaredTo(previouslyBroadcastedPartLoc) <= 35) continue; 
+				int dist = myLoc.distanceSquaredTo(neutral.location);
+				if (dist < closestDist) {
+					closestDist = dist;
+					closestCollectible = neutral.location;
+				}
 			}
 		}
 		if (closestCollectible != null && rc.isCoreReady()) {
