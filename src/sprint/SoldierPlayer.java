@@ -274,6 +274,10 @@ public class SoldierPlayer {
 				currentDestination = nearestDenLocation;
 			}
 		}
+		// prioritize dens
+		if (nearestDenLocation != null) {
+			currentDestination = nearestDenLocation;
+		}
 		doNotMove = false;
 	}
 	
