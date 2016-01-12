@@ -48,7 +48,14 @@ public class ScoutPlayer {
 				int followedTurretDist = 10000;
 				for (RobotInfo ally : allies) {
 					if (ally.type == RobotType.SCOUT) {
-						mainDir = ally.location.directionTo(myLoc);
+						int randInt = rand.nextInt(3);
+						if (randInt == 0) {
+							mainDir = ally.location.directionTo(myLoc);
+						} else if (randInt == 1) {
+							mainDir = ally.location.directionTo(myLoc).rotateLeft();
+						} else {
+							mainDir = ally.location.directionTo(myLoc).rotateRight();
+						}
 					} else if (ally.type == RobotType.TURRET || ally.type == RobotType.TTM) {
 						numOurTurrets++;
 						int dist = myLoc.distanceSquaredTo(ally.location);
@@ -99,7 +106,7 @@ public class ScoutPlayer {
 							}
 							else if (hostile.type == RobotType.TURRET) {
 								enemyTurretLoc = hostile.location;
-							} 
+							}
 							else if (hostile.type == RobotType.ZOMBIEDEN) {
 								if (rc.isCoreReady()) {
 									if (!hostile.location.equals(previouslyBroadcastedDen)) {
@@ -143,9 +150,20 @@ public class ScoutPlayer {
 							}
 							
 							// If my closest enemy can hit me, get away.
-							if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared + 5) {
+							if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared) {
 								inEnemyAttackRangeAndPaired = true;
-								dodgeEnemyDir = Movement.getBestMoveableDirection(closestEnemy.location.directionTo(myLoc), rc, 2);
+								// Find a direction closest to paired turret that is not in attack range.
+								int closestPairedDist = 10000;
+								for (Direction dir : RobotPlayer.directions) {
+									MapLocation dirLoc = myLoc.add(dir);
+									int pairedDist = dirLoc.distanceSquaredTo(pairedTurret);
+									if (dirLoc.distanceSquaredTo(closestEnemy.location) > closestEnemy.type.attackRadiusSquared) {
+										if (closestPairedDist > pairedDist) {
+											closestPairedDist = pairedDist;
+											dodgeEnemyDir = dir;
+										}
+									}
+								}
 							}
 						}
 						// If there is a best enemy, send a message.
