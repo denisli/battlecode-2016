@@ -259,14 +259,19 @@ public class TurretPlayer {
 		}
 		
 		boolean canUnpack = true;
-		if (numFriendlySoldiers < 3) {
-			canUnpack = false;
-		}
-		if (nearestTurretLocation != null) {
-			if (myLoc.distanceSquaredTo(nearestTurretLocation) < 48) {
-				canUnpack = true;
-			}
-		}
+//		if (numFriendlySoldiers < 3) {
+//			canUnpack = false;
+//		}
+//		if (nearestTurretLocation != null) {
+//			if (myLoc.distanceSquaredTo(nearestTurretLocation) < 48) {
+//				canUnpack = true;
+//			}
+//		}
+//		if (nearestDenLocation != null) {
+//			if (myLoc.distanceSquaredTo(nearestDenLocation) < 48) {
+//				canUnpack = true;
+//			}
+//		}
 		
 		//movement
 		if (rc.isCoreReady()) {
