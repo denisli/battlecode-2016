@@ -26,6 +26,8 @@ public class SoldierPlayer {
 	private static Team myTeam;
 	private static Team enemyTeam;
 	private static boolean doNotMove = false;
+	private static boolean healing = false;
+	private static boolean wasHealing = false;
 	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
@@ -37,10 +39,16 @@ public class SoldierPlayer {
 				myLoc = rc.getLocation();
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
 				newArchonLoc = null;
+				
 				// clear bad locations
 				resetLocations(rc);
-				// read messages to see what is going on
+				// read messages and get destination
 				readMessages(rc);
+				// modify destination based on some factors
+				destinationModifier(rc);
+				// heal if need
+				healIfNeed(rc);
+				
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
@@ -84,7 +92,7 @@ public class SoldierPlayer {
 							storedDestination = nearestArchonLocation;
 						}
 						// if core is ready, try to move
-						if (rc.isCoreReady()) {
+						if (rc.isCoreReady() && bugging != null) {
 							bugging.move();
 						}
 					}
@@ -267,12 +275,38 @@ public class SoldierPlayer {
 			}
 		}
 		doNotMove = false;
+	}
+	
+	// modifies the destination based on stuff
+	public static void destinationModifier(RobotController rc) {
 		// if there is a turret nearby, don't want to move in
 		if (nearestTurretLocation != null && currentDestination != null && currentDestination.distanceSquaredTo(nearestTurretLocation) < 49) {
 			rc.setIndicatorString(0, "don't want to move in because of turret " + nearestTurretLocation + rc.getRoundNum());
 			currentDestination = nearestTurretLocation;
 			doNotMove = true;
 		}
+	}
+	
+	public static void healIfNeed(RobotController rc) throws GameActionException {
+		healing = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasHealing && 10 * rc.getHealth() <= 8 * RobotType.SOLDIER.maxHealth);
+		if (!healing) {
+			if (wasHealing) bugging = null;
+			wasHealing = false;
+		}
+		if (healing) {
+			rc.setIndicatorString(0, "should be retreating " + nearestArchonLocation + rc.getRoundNum());
+    		if (!wasHealing) {
+    			if (nearestArchonLocation == null) {
+    				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));
+    			} else {
+    				bugging = new Bugging(rc, nearestArchonLocation);
+    			}
+    		}
+    		wasHealing = true;
+    		if (rc.isCoreReady()) {
+    			bugging.move();
+    		}
+    	}
 	}
 
 }
