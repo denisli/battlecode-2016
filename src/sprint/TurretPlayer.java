@@ -330,14 +330,6 @@ public class TurretPlayer {
 						destination = nearestEnemyArchon;
 						nearestEnemyArchon = null;
 					}
-					else if (nearestTurretLocation != null) {
-						destination = nearestTurretLocation;
-						nearestTurretLocation = null;
-					}
-					else if (nearestEnemyLocation != null) {
-						destination = nearestEnemyLocation;
-						nearestEnemyLocation = null;
-					}
 					else if (nearestZombieLocation != null) {
 						destination = nearestZombieLocation;
 						nearestZombieLocation = null;
@@ -345,6 +337,14 @@ public class TurretPlayer {
 					else if (nearestDenLocation != null) {
 						destination = nearestDenLocation;
 						nearestDenLocation = null;
+					}
+					else if (nearestTurretLocation != null) {
+						destination = nearestTurretLocation;
+						nearestTurretLocation = null;
+					}
+					else if (nearestEnemyLocation != null) {
+						destination = nearestEnemyLocation;
+						nearestEnemyLocation = null;
 					}
 					else if (nearestArchonLocation != null) {
 						destination = nearestArchonLocation;
