@@ -49,7 +49,7 @@ public class ScoutPlayer {
 				for (RobotInfo ally : allies) {
 					if (ally.type == RobotType.SCOUT) {
 						mainDir = ally.location.directionTo(myLoc);
-					} else if (ally.type == RobotType.TURRET) {
+					} else if (ally.type == RobotType.TURRET || ally.type == RobotType.TTM) {
 						numOurTurrets++;
 						int dist = myLoc.distanceSquaredTo(ally.location);
 						if (dist < followedTurretDist) {
@@ -131,7 +131,7 @@ public class ScoutPlayer {
 								}
 							}
 							// Then find the closest turret
-							if (closestTurretDist > dist && hostile.location.distanceSquaredTo(pairedTurret)>5) {
+							if (closestTurretDist > dist && hostile.type == RobotType.TURRET && hostile.location.distanceSquaredTo(pairedTurret)>5) {
 								closestTurretDist = dist;
 								closestTurretLoc = hostile.location;
 							}
@@ -173,6 +173,7 @@ public class ScoutPlayer {
 					int closestRecordedEnemyDist = 10000;
 					int secondClosestRecordedEnemyDist = 20000;
 					if (hostiles.length > 0) {
+						inDanger = true;
 						for (RobotInfo hostile : hostiles) {
 							if (hostile.type == RobotType.ZOMBIEDEN) {
 								if (!hostile.location.equals(previouslyBroadcastedDen)) {
@@ -210,9 +211,6 @@ public class ScoutPlayer {
 									}
 								}
 							}
-						}
-						if (closestRecordedEnemy != null) {
-							inDanger = (closestRecordedEnemyDist <= 24);
 						}
 					}
 				}
@@ -304,9 +302,10 @@ public class ScoutPlayer {
 							int maxMinDist = 0;
 							for (Direction dir : RobotPlayer.directions) {
 								if (rc.canMove(dir)) {
+									MapLocation dirLoc = myLoc.add(dir);
 									int minDist = 10000;
 									for (RobotInfo hostile : hostiles) {
-										int dist = myLoc.distanceSquaredTo(hostile.location);
+										int dist = dirLoc.distanceSquaredTo(hostile.location);
 										if (dist < minDist) {
 											minDist = dist;
 										}
@@ -317,6 +316,7 @@ public class ScoutPlayer {
 									}
 								}
 							}
+							rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Max min dist: " + maxMinDist + ", Dir: " + mainDir);
 							if (rc.canMove(mainDir)) {
 								rc.move(mainDir);
 							}
