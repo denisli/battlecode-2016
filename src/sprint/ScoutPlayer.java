@@ -20,8 +20,16 @@ public class ScoutPlayer {
 	static MapLocation closestTurretLoc;
 	static int closestTurretDist = 20000;
 	
+	static RobotInfo closestRecordedEnemy = null; // does not include the Den!
+	static RobotInfo secondClosestRecordedEnemy = null; // does not include the Den!
+	static int closestRecordedEnemyDist = 10000;
+	static int secondClosestRecordedEnemyDist = 20000;
+	
 	static Random rand = new Random();
 	static Direction mainDir = RobotPlayer.directions[rand.nextInt(8)];
+	
+	static MapLocation previouslyBroadcastedPartLoc;
+	static MapLocation previouslyBroadcastedDen;
 	
 	static MapLocation pairedTurret;
 	static boolean isPaired = false;
@@ -35,6 +43,7 @@ public class ScoutPlayer {
 				int numEnemyTurrets = 0;
 				int numOurTurrets = 0;
 				boolean inEnemyAttackRangeAndPaired = false;
+				Direction dodgeEnemyDir = Direction.NONE;
 				boolean inDanger = false;
 				
 				RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, sightRange);
@@ -53,8 +62,16 @@ public class ScoutPlayer {
 							if (hostile.type == RobotType.SCOUT) {
 								enemyScoutLoc = hostile.location;
 							}
-							if (hostile.type == RobotType.TURRET) {
+							else if (hostile.type == RobotType.TURRET) {
 								enemyTurretLoc = hostile.location;
+							} 
+							else if (hostile.type == RobotType.ZOMBIEDEN) {
+								if (rc.isCoreReady()) {
+									if (!hostile.location.equals(previouslyBroadcastedDen)) {
+										previouslyBroadcastedDen = hostile.location;
+										Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+									}
+								}
 							}
 							
 							// First handle finding the best enemy.
@@ -89,9 +106,9 @@ public class ScoutPlayer {
 							}
 							
 							// If my closest enemy can hit me, get away.
-							if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared) {
+							if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared + 5) {
 								inEnemyAttackRangeAndPaired = true;
-								mainDir = Movement.getBestMoveableDirection(closestEnemy.location.directionTo(myLoc), rc, 2);
+								dodgeEnemyDir = Movement.getBestMoveableDirection(closestEnemy.location.directionTo(myLoc), rc, 2);
 							}
 						}
 						// If there is a best enemy, send a message.
@@ -114,14 +131,19 @@ public class ScoutPlayer {
 					// If sees an enemy, get away and record the two closest enemies. Then broadcast the location while running away.
 					// If Scout sees Den, then just broadcast immediately.
 					// If Scout sees other enemies, then wait until far enough to broadcast.
-					RobotInfo closestRecordedEnemy = null; // does not include the Den!
-					RobotInfo secondClosestRecordedEnemy = null; // does not include the Den!
+					closestRecordedEnemy = null; // does not include the Den!
+					secondClosestRecordedEnemy = null; // does not include the Den!
 					int closestRecordedEnemyDist = 10000;
 					int secondClosestRecordedEnemyDist = 20000;
 					if (hostiles.length > 0) {
 						for (RobotInfo hostile : hostiles) {
 							if (hostile.type == RobotType.ZOMBIEDEN) {
-								//Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+								if (!hostile.location.equals(previouslyBroadcastedDen)) {
+									previouslyBroadcastedDen = hostile.location;
+									if (rc.isCoreReady()) {
+										Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+									}
+								}
 							} else {
 								if (hostile.type == RobotType.TURRET) {
 									numEnemyTurrets++;
@@ -156,7 +178,9 @@ public class ScoutPlayer {
 				}
 				
 				// Broadcast collectibles
-				broadcastCollectibles(rc, hostiles.length > 0);
+				if (rc.isCoreReady()) {
+					broadcastCollectibles(rc, hostiles.length > 0);
+				}
 				
 				// Move opposite of ally scout. Also keep track of our number of turrets.
 				// Try to pair with ally turret.
@@ -212,7 +236,8 @@ public class ScoutPlayer {
 					if (rc.isCoreReady()) {
 						if (inEnemyAttackRangeAndPaired) {
 							// mainDir already computed above.
-							if (mainDir != Direction.NONE) {
+							if (dodgeEnemyDir != Direction.NONE) {
+								mainDir = dodgeEnemyDir;
 								rc.move(mainDir);
 							}
 						} else {
@@ -281,6 +306,7 @@ public class ScoutPlayer {
 						}
 					}
 				}
+				
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -295,6 +321,7 @@ public class ScoutPlayer {
 		MapLocation closestCollectible = null;
 		int closestDist = 10000;
 		for (MapLocation part : parts) {
+			if (!part.equals(previouslyBroadcastedPartLoc)) continue;
 			int dist = myLoc.distanceSquaredTo(part);
 			if (dist < closestDist) {
 				closestDist = dist;
@@ -302,6 +329,7 @@ public class ScoutPlayer {
 			}
 		}
 		for (RobotInfo neutral : neutrals) {
+			if (!neutral.location.equals(previouslyBroadcastedPartLoc)) continue;
 			int dist = myLoc.distanceSquaredTo(neutral.location);
 			if (dist < closestDist) {
 				closestDist = dist;
@@ -314,18 +342,19 @@ public class ScoutPlayer {
 			} else {
 				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 8.65);
 			}
+			previouslyBroadcastedPartLoc = closestCollectible;
 		}
 	}
 
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
 		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 0.7);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 0.25);
 		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 0.7);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 0.25);
 		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 0.3 );
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 0.25);
 		} else if (rc.isCoreReady()){
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, 1);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, 0.25);
 		}
 	}
 	
