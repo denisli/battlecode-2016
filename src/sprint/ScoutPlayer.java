@@ -35,6 +35,7 @@ public class ScoutPlayer {
 				int numEnemyTurrets = 0;
 				int numOurTurrets = 0;
 				boolean inEnemyAttackRangeAndPaired = false;
+				boolean inDanger = false;
 				
 				RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, sightRange);
 				if (isPaired) {
@@ -106,7 +107,7 @@ public class ScoutPlayer {
 					if (hostiles.length > 0) {
 						for (RobotInfo hostile : hostiles) {
 							if (hostile.type == RobotType.ZOMBIEDEN) {
-								Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+								//Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
 							} else {
 								if (hostile.type == RobotType.TURRET) {
 									numEnemyTurrets++;
@@ -136,9 +137,6 @@ public class ScoutPlayer {
 									}
 								}
 							}
-						}
-						if (closestRecordedEnemy != null) {
-							mainDir = closestRecordedEnemy.location.directionTo(myLoc);
 						}
 					}
 				}
@@ -177,7 +175,11 @@ public class ScoutPlayer {
 				
 				// When we have more turrets, broadcast that.
 				if (numOurTurrets > numEnemyTurrets && isPaired) {
+					if (closestTurretLoc != null) {
 						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
+					} else {
+						Message.sendMessageGivenRange(rc, new MapLocation(0, 0), Message.RUSHNOTURRET, 2 * sightRange);
+					}
 				}
 				
 				// When paired, move along with the turret
@@ -218,21 +220,44 @@ public class ScoutPlayer {
 					}
 				} else {
 					if (rc.isCoreReady()) {
-						if (!rc.canMove(mainDir)) {
-							int[] disps = { 1, -1, 3, -3 };
-							for (int disp : disps) {
-								Direction dir = RobotPlayer.directions[(mainDir.ordinal() + disp) % 8 + 8];
+						if (inDanger) {
+							// Go in direction maximizing the minimum distance
+							int maxMinDist = 0;
+							for (Direction dir : RobotPlayer.directions) {
 								if (rc.canMove(dir)) {
-									mainDir = dir; break;
+									int minDist = 10000;
+									for (RobotInfo hostile : hostiles) {
+										int dist = myLoc.distanceSquaredTo(hostile.location);
+										if (dist < minDist) {
+											minDist = dist;
+										}
+									}
+									if (maxMinDist < minDist) {
+										maxMinDist = minDist;
+										mainDir = dir;
+									}
 								}
 							}
-						}
-						if (rc.canMove(mainDir)) { 
-							rc.move(mainDir);
+							if (rc.canMove(mainDir)) {
+								rc.move(mainDir);
+							}
+						} else {
+							if (!rc.canMove(mainDir)) {
+								int[] disps = { 1, -1, 3, -3 };
+								for (int disp : disps) {
+									Direction dir = RobotPlayer.directions[((mainDir.ordinal() + disp) % 8 + 8) % 8];
+									if (rc.canMove(dir)) {
+										mainDir = dir; break;
+									}
+								}
+							}
+							if (rc.canMove(mainDir)) { 
+								rc.move(mainDir);
+							}
 						}
 					}
 				}
-				
+				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
 				Clock.yield();
@@ -259,12 +284,13 @@ public class ScoutPlayer {
 				closestCollectible = neutral.location;
 			}
 		}
-		if (thereAreEnemies) {
-			Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
-		} else {
-			Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 8.65);
+		if (closestCollectible != null) {
+			if (thereAreEnemies) {
+				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
+			} else {
+				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 8.65);
+			}
 		}
-		
 	}
 
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
