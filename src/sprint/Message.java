@@ -22,6 +22,7 @@ public class Message {
 	public static final int RUSH = 10;
 	public static final int ARCHONLOC = 11; // our archon loc
 	public static final int RUSHNOTURRET = 12;
+	public static final int PAIREDATTACK = 13;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;
