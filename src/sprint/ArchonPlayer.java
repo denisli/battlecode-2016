@@ -144,6 +144,7 @@ public class ArchonPlayer {
 					else if (adjNeutralRobots.length > 0) {
 						rc.activate(adjNeutralRobots[0].location);
 						bug = null;
+						nearestParts = null;
 					}
 					//else if can move to adjacent parts, move to it
 					else if (adjParts.length > 0) {
@@ -159,6 +160,7 @@ public class ArchonPlayer {
 						if (rc.canMove(dirToParts)) {
 							rc.move(dirToParts);
 							bug = null;
+							nearestParts = null;
 						}
 					}
 					//else if turn 0 build scout
