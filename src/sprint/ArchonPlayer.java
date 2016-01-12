@@ -72,12 +72,16 @@ public class ArchonPlayer {
 				//if sees friendly robot in need of repair, repair it
 				if (friendlyRobotsAttackRange.length > 0) {
 					RobotInfo toRepair = friendlyRobotsAttackRange[0];
+					double mostLostHealth = 0;
+					if (toRepair.type != RobotType.ARCHON) {
+						mostLostHealth = toRepair.maxHealth-toRepair.health;
+					}
 					for (RobotInfo f : friendlyRobotsAttackRange) {
-						if (f.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>1) {
+						if (f.type != RobotType.ARCHON && f.maxHealth-f.health>mostLostHealth) {
 							toRepair = f;
 						}
 					}
-					if (toRepair.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>1) {
+					if (toRepair.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>0) {
 						rc.repair(toRepair.location);
 					}
 				}
@@ -214,7 +218,7 @@ public class ArchonPlayer {
 							else {
 								//build turrets/soldiers in 1/2? ratio
 								if (rc.hasBuildRequirements(RobotType.TURRET)) {
-									int buildFate = rand.nextInt(2);
+									int buildFate = rand.nextInt(3);
 									RobotType toBuild = null;
 									if (buildFate == 0) {
 										toBuild = RobotType.TURRET;
