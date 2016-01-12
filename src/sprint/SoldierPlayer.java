@@ -25,6 +25,7 @@ public class SoldierPlayer {
 	private static MapLocation newArchonLoc = null;
 	private static Team myTeam;
 	private static Team enemyTeam;
+	private static boolean doNotMove = false;
 	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
@@ -47,19 +48,32 @@ public class SoldierPlayer {
 				if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
-					// if it's not a soldier, kite it
-					nonrangeMicro(rc, bestEnemy);
+					// if it's not a soldier and we aren't going to move in range of enemy, kite it
+					if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
+						nonrangeMicro(rc, bestEnemy);
+					} else { // othewise, just attack if it's in range
+						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
+							rc.attackLocation(bestEnemy.location);
+						}
+					}
+					
 					
 				} else { // otherwise, we should always be moving somewhere
 					// if we have a real current destination
-					rc.setIndicatorString(1, "moving somewhere " + rc.getRoundNum());
+					rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
 					if (currentDestination != null) {
 						// if bugging is never initialized or we are switching destinations, reinitialize bugging
 						if (!currentDestination.equals(storedDestination) || bugging == null) {
 							bugging = new Bugging(rc, currentDestination);
 							storedDestination = currentDestination;
 						}
-						// if core is ready, then try to move
+						// if we are trying to move towards a turret, stay out of range
+						if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
+							// try to move away from turret
+							bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
+							bugging.move();
+						} else
+						// if core is ready, then try to move towards destination
 						if (rc.isCoreReady()) {
 							bugging.move();
 						}
@@ -251,6 +265,13 @@ public class SoldierPlayer {
 				rc.setIndicatorString(0, "moving to nearest den " + nearestDenLocation + rc.getRoundNum());
 				currentDestination = nearestDenLocation;
 			}
+		}
+		doNotMove = false;
+		// if there is a turret nearby, don't want to move in
+		if (nearestTurretLocation != null && currentDestination != null && currentDestination.distanceSquaredTo(nearestTurretLocation) < 49) {
+			rc.setIndicatorString(0, "don't want to move in because of turret " + nearestTurretLocation + rc.getRoundNum());
+			currentDestination = nearestTurretLocation;
+			doNotMove = true;
 		}
 	}
 
