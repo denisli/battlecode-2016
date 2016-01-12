@@ -174,6 +174,9 @@ public class ScoutPlayer {
 								}
 							}
 						}
+						if (closestRecordedEnemy != null) {
+							inDanger = (closestRecordedEnemyDist <= 24);
+						}
 					}
 				}
 				
@@ -321,7 +324,7 @@ public class ScoutPlayer {
 		MapLocation closestCollectible = null;
 		int closestDist = 10000;
 		for (MapLocation part : parts) {
-			if (!part.equals(previouslyBroadcastedPartLoc)) continue;
+			if (part.equals(previouslyBroadcastedPartLoc)) continue;
 			int dist = myLoc.distanceSquaredTo(part);
 			if (dist < closestDist) {
 				closestDist = dist;
@@ -329,7 +332,7 @@ public class ScoutPlayer {
 			}
 		}
 		for (RobotInfo neutral : neutrals) {
-			if (!neutral.location.equals(previouslyBroadcastedPartLoc)) continue;
+			if (neutral.location.equals(previouslyBroadcastedPartLoc)) continue;
 			int dist = myLoc.distanceSquaredTo(neutral.location);
 			if (dist < closestDist) {
 				closestDist = dist;
