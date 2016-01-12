@@ -23,6 +23,10 @@ public class ArchonPlayer {
 		MapLocation nearestParts = null;
 		Bugging bug = null;
 		int numSoldiersBuilt = 0;
+		MapLocation startLoc = rc.getLocation();
+		double prevHealth = 1000;
+		//consecutive turns where no damage was dealt
+		int consecutiveSafeTurns = 0;
 
 		while (true) {
 			//things that change every turn
@@ -33,6 +37,7 @@ public class ArchonPlayer {
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 				MapLocation[] adjParts = rc.sensePartLocations(2);
 				int roundNum = rc.getRoundNum();
+				double curHealth = rc.getHealth();
 				//reset the unpaired scouts count
 				if (roundNum % 50 == 1) {
 					unpairedScouts = 0;
@@ -79,8 +84,30 @@ public class ArchonPlayer {
 
 				//these are all in the same if else loop because they require core delay
 				if (rc.isCoreReady()) {
+					//if it gets damage probably from turrets, run away 
+					if (prevHealth - curHealth == 0) {
+						consecutiveSafeTurns++;
+					}
+					else {
+						consecutiveSafeTurns = 0;
+					}
+					
+					if (consecutiveSafeTurns > 10) {
+						if (nearestParts == startLoc) {
+							nearestParts = null;
+							bug = null;	
+						}
+					}
+					
+					if (prevHealth - curHealth >= 14) {
+						if (nearestParts != startLoc) {
+							nearestParts = startLoc;
+							bug = new Bugging(rc, startLoc);
+						}
+						bug.move();
+					}
 					//if sees enemies nearby, run away
-					if (hostileSightRange.length > 0) {
+					else if (hostileSightRange.length > 0) {
 						//run away
 						RobotInfo closestEnemy = hostileSightRange[0];
 						MapLocation closestEnemyLoc = closestEnemy.location;
@@ -95,14 +122,14 @@ public class ArchonPlayer {
 							//broadcast location
 							if (closestEnemy.team == Team.ZOMBIE) {
 								if (closestEnemy.type == RobotType.ZOMBIEDEN) {
-									Message.sendMessageGivenDelay(rc, myLoc, Message.ZOMBIEDEN, 2.3);
+									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ZOMBIEDEN, 2.3);
 								}
 								else {
-									Message.sendMessageGivenDelay(rc, myLoc, Message.ENEMY, 2.3);
+									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
 								}
 							}
 							else {
-								Message.sendMessageGivenDelay(rc, myLoc, Message.ENEMY, 2.3);
+								Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
 							}
 						}
 						else {
@@ -207,6 +234,8 @@ public class ArchonPlayer {
 						}
 					}
 				}
+				
+				prevHealth = curHealth;
 				Clock.yield();
 			}
 
