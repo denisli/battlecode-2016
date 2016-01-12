@@ -27,6 +27,8 @@ public class ArchonPlayer {
 		double prevHealth = 1000;
 		//consecutive turns where no damage was dealt
 		int consecutiveSafeTurns = 0;
+		int turnsWithoutMessaging = 0;
+		MapLocation previousBroadcastedEnemy = null;
 
 		while (true) {
 			//things that change every turn
@@ -124,16 +126,19 @@ public class ArchonPlayer {
 						//if it's far, broadcast its location
 						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
 							//broadcast location
-							if (closestEnemy.team == Team.ZOMBIE) {
-								if (closestEnemy.type == RobotType.ZOMBIEDEN) {
-									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ZOMBIEDEN, 2.3);
+							if (closestEnemy.location != previousBroadcastedEnemy) {
+								if (closestEnemy.team == Team.ZOMBIE) {
+									if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ZOMBIEDEN, 2.3);
+									}
+									else {
+										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
+									}
 								}
 								else {
 									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
 								}
-							}
-							else {
-								Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
+								previousBroadcastedEnemy = closestEnemy.location;	
 							}
 						}
 						else {
@@ -167,8 +172,9 @@ public class ArchonPlayer {
 						}
 					}
 					//else if it went far away from its previously broadcasted location
-					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24) {
+					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
 						Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONLOC, 2.8);
+						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
 					}
 					//else if neutralrobot adjacent, activate it
@@ -218,7 +224,7 @@ public class ArchonPlayer {
 							else {
 								//build turrets/soldiers in 1/2? ratio
 								if (rc.hasBuildRequirements(RobotType.TURRET)) {
-									int buildFate = rand.nextInt(3);
+									int buildFate = rand.nextInt(2);
 									RobotType toBuild = null;
 									if (buildFate == 0) {
 										toBuild = RobotType.TURRET;
@@ -238,7 +244,7 @@ public class ArchonPlayer {
 						}
 					}
 				}
-				
+				turnsWithoutMessaging++;
 				prevHealth = curHealth;
 				Clock.yield();
 			}

@@ -34,6 +34,7 @@ public class ScoutPlayer {
 	
 	static MapLocation pairedTurret;
 	static boolean isPaired = false;
+	static int numTurnsStationary = 0;
 	
 	public static void run(RobotController rc) {
 		team = rc.getTeam();
@@ -257,12 +258,14 @@ public class ScoutPlayer {
 				
 				// Broadcast collectibles
 				if (rc.isCoreReady()) {
-					if (isPaired) {
-						if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+					if (numTurnsStationary < 10) {
+						if (isPaired) {
+							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+								broadcastCollectibles(rc, hostiles.length > 0);
+							}
+						} else {
 							broadcastCollectibles(rc, hostiles.length > 0);
 						}
-					} else {
-						broadcastCollectibles(rc, hostiles.length > 0);
 					}
 				}
 				
@@ -306,6 +309,7 @@ public class ScoutPlayer {
 							if (dodgeEnemyDir != Direction.NONE) {
 								mainDir = dodgeEnemyDir;
 								rc.move(mainDir);
+								numTurnsStationary = 0;
 							}
 						} else {
 							// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
@@ -316,11 +320,13 @@ public class ScoutPlayer {
 								if (rc.canMove(left) && !inEnemyAttackRange(myLoc.add(left), hostiles)) {
 									mainDir = left;
 									rc.move(mainDir);
+									numTurnsStationary = 0;
 								} else {
 									Direction right = dirToTurret.rotateRight();
 									if (rc.canMove(right) && !inEnemyAttackRange(myLoc.add(right), hostiles)) {
 										mainDir = right;
 										rc.move(mainDir);
+										numTurnsStationary = 0;
 									}
 								}
 							}
@@ -330,6 +336,7 @@ public class ScoutPlayer {
 								if (closerDir != Direction.NONE && !inEnemyAttackRange(myLoc.add(closerDir), hostiles)) {
 									mainDir = closerDir;
 									rc.move(mainDir);
+									numTurnsStationary = 0;
 								}
 							}
 						}
@@ -359,6 +366,7 @@ public class ScoutPlayer {
 							rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Max min dist: " + maxMinDist + ", Dir: " + mainDir);
 							if (rc.canMove(mainDir)) {
 								rc.move(mainDir);
+								numTurnsStationary = 0;
 							}
 						} else {
 							if (!rc.canMove(mainDir)) {
@@ -372,11 +380,12 @@ public class ScoutPlayer {
 							}
 							if (rc.canMove(mainDir)) { 
 								rc.move(mainDir);
+								numTurnsStationary = 0;
 							}
 						}
 					}
 				}
-				
+				numTurnsStationary++;
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
