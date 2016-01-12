@@ -19,6 +19,7 @@ public class Message {
 	public static final int ENEMY = 7;
 	public static final int COLLECTIBLES = 8;
 	public static final int ENEMYARCHONLOC = 9;
+	public static final int RUSH = 10;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;
