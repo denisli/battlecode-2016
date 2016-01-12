@@ -17,29 +17,23 @@ public class RobotPlayer {
 	
     @SuppressWarnings("unused")
     public static void run(RobotController rc) {
-//        // You can instantiate variables here.
-//
-//        Random rand = new Random(rc.getID());
-//        int myAttackRange = 0;
-//        Team myTeam = rc.getTeam();
-//        Team enemyTeam = myTeam.opponent();
-//
-//        if (rc.getType() == RobotType.ARCHON) {
-//            ArchonPlayer.run(rc);
-//        } else if (rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM) {
-//            TurretPlayer.run(rc);
-//        } else if (rc.getType() == RobotType.GUARD) {
-//            GuardPlayer.run(rc);
-//        } else if (rc.getType() == RobotType.SOLDIER) {
-//			SoldierPlayer.run(rc);
-//        } else if (rc.getType() == RobotType.SCOUT) {
-//        	ScoutPlayer.run(rc);
-//        } else if (rc.getType() == RobotType.VIPER) {
-//        	ViperPlayer.run(rc);
-//        }
-//        		
-//        else {
-//            throw new IllegalArgumentException("No code implemented for type " + rc.getType());
-//        } 
+        // You can instantiate variables here.
+
+        Random rand = new Random(rc.getID());
+        int myAttackRange = 0;
+        Team myTeam = rc.getTeam();
+        Team enemyTeam = myTeam.opponent();
+
+        if (rc.getType() == RobotType.ARCHON) {
+            ArchonPlayer.run(rc);
+        } else if (rc.getType() == RobotType.SOLDIER) {
+			SoldierPlayer.run(rc);
+        } else if (rc.getType() == RobotType.SCOUT) {
+        	ScoutPlayer.run(rc);
+        }
+        		
+        else {
+            throw new IllegalArgumentException("No code implemented for type " + rc.getType());
+        } 
     }
 }
