@@ -105,7 +105,7 @@ public class ArchonPlayer {
 						}
 					}
 					
-					if (prevHealth - curHealth >= 14) {
+					if (prevHealth - curHealth >= 1) {
 						if (nearestParts != startLoc) {
 							nearestParts = startLoc;
 							bug = new Bugging(rc, startLoc);
@@ -224,9 +224,9 @@ public class ArchonPlayer {
 							else {
 								//build turrets/soldiers in 1/2? ratio
 								if (rc.hasBuildRequirements(RobotType.TURRET)) {
-									int buildFate = rand.nextInt(2);
+									int buildFate = rand.nextInt(7);
 									RobotType toBuild = null;
-									if (buildFate == 0) {
+									if (buildFate <= 1) {
 										toBuild = RobotType.TURRET;
 									} else {
 										toBuild = RobotType.SOLDIER;
