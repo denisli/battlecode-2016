@@ -170,6 +170,11 @@ public class SoldierPlayer {
 				bestEnemy = r;
 			}
 		}
+		if (doNotMove) {
+			if (bestEnemy.location.distanceSquaredTo(nearestTurretLocation) > 48) {
+				doNotMove = false;
+			}
+		}
 		return bestEnemy;
 	}
 	
@@ -307,7 +312,7 @@ public class SoldierPlayer {
 	// modifies the destination based on stuff
 	public static void destinationModifier(RobotController rc) {
 		// if there is a turret nearby, don't want to move in
-		if (nearestTurretLocation != null && currentDestination != null && currentDestination.distanceSquaredTo(nearestTurretLocation) < 49) {
+		if (nearestTurretLocation != null && currentDestination != null && currentDestination.distanceSquaredTo(nearestTurretLocation) < 49 && !rush) {
 			rc.setIndicatorString(0, "don't want to move in because of turret " + nearestTurretLocation + rc.getRoundNum());
 			currentDestination = nearestTurretLocation;
 			doNotMove = true;
