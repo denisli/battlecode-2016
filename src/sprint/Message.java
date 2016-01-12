@@ -10,15 +10,14 @@ import battlecode.common.Signal;
 
 public class Message {
 	
-	public static final int DEN = 0;
-	public static final int SWARM = 1;
-	public static final int ENEMY = 2;
-	public static final int PARTS = 3;
-	public static final int NEUTRALBOT = 4;
-	public static final int TURRETATTACK = 5;
-	public static final int ARCHONLOC = 6;
-	public static final int DANGERTURRETS = 7;
-	public static final int REMOVETURRET = 8;
+	public static final int UNPAIRED = 1;
+	public static final int PAIRED = 2;
+	public static final int ZOMBIEDEN = 3;
+	public static final int ZOMBIE = 4;
+	public static final int TURRET = 5;
+	public static final int TURRETKILLED = 6;
+	public static final int ENEMY = 7;
+	public static final int COLLECTIBLES = 8;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;
@@ -33,10 +32,15 @@ public class Message {
 		this.type = type;
 	}
 	
-	public static void sendMessage(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
+	public static void sendMessageGivenRange(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
 		int x = location.x + D + type * AYY;
 		int y = location.y + D + type * AYY;
 		rc.broadcastMessageSignal(x, y, range);
+	}
+	
+	public static void sendMessageGivenDelay(RobotController rc, MapLocation location, int type, double delay) throws GameActionException {
+		int range = getRangeGivenDelay(rc, delay);
+		sendMessageGivenRange(rc, location, type, range);
 	}
 	
 	public static List<Message> readMessageSignals(RobotController rc) {
@@ -66,6 +70,10 @@ public class Message {
 	
 	public int hashCode() {
 		return location.hashCode() + type;
+	}
+	
+	private static int getRangeGivenDelay(RobotController rc, double delay) {
+		return (int) ((delay - 0.05) / 0.03 + 2) * rc.getType().sensorRadiusSquared;
 	}
 	
 }
