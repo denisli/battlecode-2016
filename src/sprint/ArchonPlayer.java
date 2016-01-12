@@ -105,7 +105,7 @@ public class ArchonPlayer {
 						}
 					}
 					
-					if (prevHealth - curHealth >= 1) {
+					if (prevHealth - curHealth >= 1 && myLoc != startLoc) {
 						if (nearestParts != startLoc) {
 							nearestParts = startLoc;
 							bug = new Bugging(rc, startLoc);
@@ -208,7 +208,7 @@ public class ArchonPlayer {
 					}
 					//else build mode
 					else {
-						if (unpairedScouts < 9 && numSoldiersBuilt > 9) {
+						if (unpairedScouts < 5 && numSoldiersBuilt > 9) {
 							//build scouts
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
