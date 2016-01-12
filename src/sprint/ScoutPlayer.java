@@ -17,6 +17,7 @@ public class ScoutPlayer {
 	static Team team;
 	static MapLocation myLoc;
 	
+	static MapLocation previouslyBroadcastedClosestTurretLoc;
 	static MapLocation closestTurretLoc;
 	static int closestTurretDist = 20000;
 	
@@ -176,6 +177,11 @@ public class ScoutPlayer {
 						// If there is a closest turret, send a message.
 						if (closestTurretLoc != null && rc.isCoreReady()) {
 							Message.sendMessageGivenDelay(rc, closestTurretLoc, Message.TURRET, 2.25);
+							previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
+						}
+						
+						if (previouslyBroadcastedClosestTurretLoc != null && closestTurretLoc == null && rc.isCoreReady()) {
+							Message.sendMessageGivenDelay(rc, previouslyBroadcastedClosestTurretLoc, Message.TURRETKILLED, 2.25);
 						}
 						
 						//if it sees enemy turret with a scout, signal that
