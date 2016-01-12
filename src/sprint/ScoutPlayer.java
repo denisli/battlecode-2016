@@ -56,19 +56,25 @@ public class ScoutPlayer {
 							// Try to pair with this turret.
 							// Confirm that no other scout allies are nearby.
 							RobotInfo[] otherAllies = rc.senseNearbyRobots(ally.location, dist, team);
+							boolean canPairWith = true;
 							for (RobotInfo otherAlly : otherAllies) {
 								if (otherAlly.type == RobotType.SCOUT) {
 									int otherDist = ally.location.distanceSquaredTo(otherAlly.location);
-									if (otherDist < dist) break;
+									if (otherDist < dist) {
+										canPairWith = false; break;
+									}
 								}
 							}
-							// This is turret we can pair with.
-							isPaired = true;
-							followedTurretDist = dist;
-							pairedTurret = ally.location;
+							if (canPairWith) {
+								// This is turret we can pair with.
+								isPaired = true;
+								followedTurretDist = dist;
+								pairedTurret = ally.location;
+							}
 						}
 					}
 				}
+				rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Is paired: " + isPaired);
 				
 				int numEnemyTurrets = 0;
 				boolean inEnemyAttackRangeAndPaired = false;
@@ -291,6 +297,7 @@ public class ScoutPlayer {
 						}
 					}
 				} else {
+					rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", In Danger: " + inDanger);
 					if (rc.isCoreReady()) {
 						if (inDanger) {
 							// Go in direction maximizing the minimum distance
@@ -345,22 +352,22 @@ public class ScoutPlayer {
 		int closestDist = 10000;
 		for (MapLocation part : parts) {
 			if (previouslyBroadcastedPartLoc != null) {
-				if (part.distanceSquaredTo(previouslyBroadcastedPartLoc) <= 35) continue; 
-				int dist = myLoc.distanceSquaredTo(part);
-				if (dist < closestDist) {
-					closestDist = dist;
-					closestCollectible = part;
-				}
+				if (part.distanceSquaredTo(previouslyBroadcastedPartLoc) <= 35) continue;
+			}
+			int dist = myLoc.distanceSquaredTo(part);
+			if (dist < closestDist) {
+				closestDist = dist;
+				closestCollectible = part;
 			}
 		}
 		for (RobotInfo neutral : neutrals) {
 			if (previouslyBroadcastedPartLoc != null) {
 				if (neutral.location.distanceSquaredTo(previouslyBroadcastedPartLoc) <= 35) continue; 
-				int dist = myLoc.distanceSquaredTo(neutral.location);
-				if (dist < closestDist) {
-					closestDist = dist;
-					closestCollectible = neutral.location;
-				}
+			}
+			int dist = myLoc.distanceSquaredTo(neutral.location);
+			if (dist < closestDist) {
+				closestDist = dist;
+				closestCollectible = neutral.location;
 			}
 		}
 		if (closestCollectible != null && rc.isCoreReady()) {
