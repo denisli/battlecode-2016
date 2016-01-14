@@ -253,11 +253,11 @@ public class ScoutPlayer {
 						if (rc.isCoreReady()) {
 							if (closestRecordedEnemy != null) {
 								if (closestRecordedEnemyDist <= closestRecordedEnemy.type.attackRadiusSquared) {
-									// Send a message of the closest enemy
-									broadcastRecordedEnemy(rc, closestRecordedEnemy);
+									// Send a message of the closest enemy, should broadcast further if not in danger
+									broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
 									if (secondClosestRecordedEnemy != null) {
 										// Send a message of the second closest enemy.
-										broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
+										broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
 									}
 								}
 							}
@@ -436,15 +436,19 @@ public class ScoutPlayer {
 		}
 	}
 
-	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
+	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy, boolean inDanger) throws GameActionException {
+		double coreDelay = 0.25;
+		if (!inDanger) {
+			coreDelay = 4;
+		}
 		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 0.25);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, coreDelay);
 		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 0.25);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, coreDelay);
 		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 0.25);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, coreDelay);
 		} else if (rc.isCoreReady()){
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, 0.25);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, coreDelay);
 		}
 	}
 	
