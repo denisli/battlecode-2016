@@ -62,55 +62,53 @@ public class SoldierPlayer {
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
-				if (!healing) {
-					// if there are enemies in range, we should focus on attack and micro
-					if (nearbyEnemies.length > 0) {
-						// get the best enemy and do stuff based on this
-						RobotInfo bestEnemy = getBestEnemy(rc);
-						// if it's not a soldier and we aren't going to move in range of enemy, kite it
-						
-						if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
-							nonrangeMicro(rc, nearbyEnemies, bestEnemy);
-						} else { // othewise, just attack if it's in range
-							if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
-								rc.attackLocation(bestEnemy.location);
-							}
+				// if there are enemies in range, we should focus on attack and micro
+				if (nearbyEnemies.length > 0 && !healing) {
+					// get the best enemy and do stuff based on this
+					RobotInfo bestEnemy = getBestEnemy(rc);
+					// if it's not a soldier and we aren't going to move in range of enemy, kite it
+					
+					if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
+						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
+					} else { // othewise, just attack if it's in range
+						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
+							rc.attackLocation(bestEnemy.location);
 						}
-						
-						
-					} else { // otherwise, we should always be moving somewhere
-						// if we have a real current destination
-						rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
-						if (currentDestination != null) {
-							// if bugging is never initialized or we are switching destinations, reinitialize bugging
-							if (!currentDestination.equals(storedDestination) || bugging == null) {
-								bugging = new Bugging(rc, currentDestination);
-								storedDestination = currentDestination;
-							}
-							// if we are trying to move towards a turret, stay out of range
-							if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
-								// try to move away from turret
-								bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
-								bugging.move();
-							} else
-							// if core is ready, then try to move towards destination
-							if (rc.isCoreReady()) {
-								bugging.move();
-							}
-						} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
-							rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
-							if (!nearestArchonLocation.equals(storedDestination)) {
-								bugging = new Bugging(rc, nearestArchonLocation);
-								storedDestination = nearestArchonLocation;
-							}
-							// if core is ready, try to move
-							if (rc.isCoreReady() && bugging != null) {
-								bugging.move();
-							}
-						} else { // if we literally have nowhere to go
-							rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
-							bugAroundFriendly(rc);
+					}
+					
+					
+				} else { // otherwise, we should always be moving somewhere
+					// if we have a real current destination
+					rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
+					if (currentDestination != null) {
+						// if bugging is never initialized or we are switching destinations, reinitialize bugging
+						if (!currentDestination.equals(storedDestination) || bugging == null) {
+							bugging = new Bugging(rc, currentDestination);
+							storedDestination = currentDestination;
 						}
+						// if we are trying to move towards a turret, stay out of range
+						if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
+							// try to move away from turret
+							bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
+							bugging.move();
+						} else
+						// if core is ready, then try to move towards destination
+						if (rc.isCoreReady()) {
+							bugging.move();
+						}
+					} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
+						rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
+						if (!nearestArchonLocation.equals(storedDestination)) {
+							bugging = new Bugging(rc, nearestArchonLocation);
+							storedDestination = nearestArchonLocation;
+						}
+						// if core is ready, try to move
+						if (rc.isCoreReady() && bugging != null) {
+							bugging.move();
+						}
+					} else { // if we literally have nowhere to go
+						rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
+						bugAroundFriendly(rc);
 					}
 				}
 				
