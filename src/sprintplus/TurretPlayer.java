@@ -18,6 +18,7 @@ public class TurretPlayer {
 	private static MapLocation nearestZombieLocation = null;
 	private static MapLocation nearestDenLocation = null;
 	private static MapLocation nearestArchonLocation = null;
+	private static MapLocation nearestArchonDangerLocation = null;
 	static Bugging bugging = null;
 	public static MapLocation destination = null;
 	public static boolean rushing = false;
@@ -113,6 +114,13 @@ public class TurretPlayer {
 					nearestDenLocation = m.location;
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
 					nearestDenLocation = m.location;
+				}
+			}
+			else if (m.type == Message.ARCHONINDANGER) {
+				if (nearestArchonDangerLocation == null) {
+					nearestArchonDangerLocation = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonDangerLocation)) {
+					nearestArchonDangerLocation = m.location;
 				}
 			}
 		}
@@ -247,6 +255,13 @@ public class TurretPlayer {
 					nearestDenLocation = m.location;
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
 					nearestDenLocation = m.location;
+				}
+			}
+			else if (m.type == Message.ARCHONINDANGER) {
+				if (nearestArchonDangerLocation == null) {
+					nearestArchonDangerLocation = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonDangerLocation)) {
+					nearestArchonDangerLocation = m.location;
 				}
 			}
 			else if (m.type == Message.ENEMYTURRETSCOUT) {

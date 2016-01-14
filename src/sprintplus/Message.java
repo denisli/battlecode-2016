@@ -25,6 +25,7 @@ public class Message {
 	public static final int PAIREDATTACK = 13;
 	//scout sends to turret if it sees enemy turret+scout
 	public static final int ENEMYTURRETSCOUT = 14;
+	public static final int ARCHONINDANGER = 15;
 	
 	private static final int D = 20000;
 	private static final int AYY = 50000;

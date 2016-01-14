@@ -133,14 +133,14 @@ public class ArchonPlayer {
 							if (closestEnemy.location != previousBroadcastedEnemy) {
 								if (closestEnemy.team == Team.ZOMBIE) {
 									if (closestEnemy.type == RobotType.ZOMBIEDEN) {
-										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ZOMBIEDEN, 2.3);
+										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ARCHONINDANGER, 2.3);
 									}
 									else {
-										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
+										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ARCHONINDANGER, 2.3);
 									}
 								}
 								else {
-									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ENEMY, 2.3);
+									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ARCHONINDANGER, 2.3);
 								}
 								previousBroadcastedEnemy = closestEnemy.location;	
 							}
