@@ -238,7 +238,7 @@ public class ScoutPlayer {
 							if (!hostile.location.equals(previouslyBroadcastedDen)) {
 								if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 									previouslyBroadcastedDen = hostile.location;
-									Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
+									Message.sendMessageGivenRange(rc, hostile.location, Message.ZOMBIEDEN, Message.FULL_MAP_RANGE);
 								}
 							}
 						//}
@@ -301,7 +301,7 @@ public class ScoutPlayer {
 				
 				// If there is a closest turret, send a message.
 				if (closestTurretLoc != null && rc.isCoreReady()) {
-					Message.sendMessageGivenDelay(rc, closestTurretLoc, Message.TURRET, 2.25);
+					Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
 					previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
 				}
 				
@@ -325,22 +325,19 @@ public class ScoutPlayer {
 			int secondClosestRecordedEnemyDist = 20000;
 			if (hostiles.length > 0) {
 				MapLocation realLoc = myLoc.add(mainDir);
-				int closestAttackingEnemyDist = 10000;
 				for (RobotInfo hostile : hostiles) {
 					if (hostile.type == RobotType.ZOMBIEDEN) {
 						if (!hostile.location.equals(previouslyBroadcastedDen)) {
 							previouslyBroadcastedDen = hostile.location;
-							//if (rc.isCoreReady()) {
-								Message.sendMessageGivenDelay(rc, hostile.location, Message.ZOMBIEDEN, 10);
-								Direction dir = hostile.location.directionTo(myLoc);
-								if (rc.canMove(dir)) {
-									mainDir = dir;
-								} else if (rc.canMove(dir.rotateLeft())) {
-									mainDir = dir.rotateLeft();
-								} else if (rc.canMove(dir.rotateRight())) {
-									mainDir = dir.rotateRight();
-								}
-							//}
+							Message.sendMessageGivenRange(rc, hostile.location, Message.ZOMBIEDEN, Message.FULL_MAP_RANGE);
+							Direction dir = hostile.location.directionTo(myLoc);
+							if (rc.canMove(dir)) {
+								mainDir = dir;
+							} else if (rc.canMove(dir.rotateLeft())) {
+								mainDir = dir.rotateLeft();
+							} else if (rc.canMove(dir.rotateRight())) {
+								mainDir = dir.rotateRight();
+							}
 						}
 					} else {
 						if (hostile.type == RobotType.TURRET) {
@@ -476,7 +473,7 @@ public class ScoutPlayer {
 		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, coreDelay);
 		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, coreDelay);
+			Message.sendMessageGivenRange(rc, enemy.location, Message.TURRET, Message.FULL_MAP_RANGE);
 		} else if (rc.isCoreReady()){
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, coreDelay);
 		}

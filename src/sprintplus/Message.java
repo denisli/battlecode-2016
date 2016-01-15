@@ -30,6 +30,8 @@ public class Message {
 	private static final int D = 20000;
 	private static final int AYY = 50000;
 	
+	public static final int FULL_MAP_RANGE = 80 * 80 * 2;
+	
 	public final Signal signal;
 	public final MapLocation location;
 	public final int type;
