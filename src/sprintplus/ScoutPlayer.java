@@ -474,7 +474,7 @@ public class ScoutPlayer {
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, coreDelay);
 		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
 			Message.sendMessageGivenRange(rc, enemy.location, Message.TURRET, Message.FULL_MAP_RANGE);
-		} else if (rc.isCoreReady()){
+		} else if (enemy.type != RobotType.SCOUT && rc.isCoreReady()){
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, coreDelay);
 		}
 	}
