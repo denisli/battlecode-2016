@@ -73,13 +73,19 @@ public class ScoutPlayer {
 								broadcastCollectibles(rc, hostiles.length > 0);
 							}
 						} else {
-							broadcastCollectibles(rc, hostiles.length > 0);
+							if (!inDanger) {
+								broadcastCollectibles(rc, hostiles.length > 0);
+							}
 						}
 					}
 				}
 				
 				// Broadcast whether or not to rush.
-				broadcastRushSignals(rc);
+				if (isPaired) {
+					broadcastRushSignals(rc);
+				} else if (!inDanger) {
+					broadcastRushSignals(rc);
+				}
 				
 				// Decide how to move the scout.
 				moveScout(rc, hostiles);
@@ -378,13 +384,15 @@ public class ScoutPlayer {
 					}
 				}
 				if (rc.isCoreReady()) {
-					if (closestRecordedEnemy != null) {
-						if (closestRecordedEnemyDist <= closestRecordedEnemy.type.attackRadiusSquared) {
-							// Send a message of the closest enemy, should broadcast further if not in danger
-							broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
-							if (secondClosestRecordedEnemy != null) {
-								// Send a message of the second closest enemy.
-								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
+					if (!inDanger) {
+						if (closestRecordedEnemy != null) {
+							if (closestRecordedEnemyDist <= closestRecordedEnemy.type.attackRadiusSquared) {
+								// Send a message of the closest enemy, should broadcast further if not in danger
+								broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
+								if (secondClosestRecordedEnemy != null) {
+									// Send a message of the second closest enemy.
+									broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
+								}
 							}
 						}
 					}
