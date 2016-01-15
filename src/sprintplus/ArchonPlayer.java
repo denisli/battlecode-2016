@@ -122,7 +122,7 @@ public class ArchonPlayer {
 						RobotInfo closestEnemy = hostileSightRange[0];
 						MapLocation closestEnemyLoc = closestEnemy.location;
 						for (RobotInfo h : hostileSightRange) {
-							if (myLoc.distanceSquaredTo(h.location) < myLoc.distanceSquaredTo(closestEnemyLoc)) {
+							if (myLoc.distanceSquaredTo(h.location) < myLoc.distanceSquaredTo(closestEnemyLoc) && closestEnemy.type != RobotType.ZOMBIEDEN) {
 								closestEnemy = h;
 								closestEnemyLoc = h.location;
 							}
@@ -145,7 +145,7 @@ public class ArchonPlayer {
 								previousBroadcastedEnemy = closestEnemy.location;	
 							}
 						}
-						else {
+						else if (closestEnemy.type != RobotType.ZOMBIEDEN){
 							//move away
 							Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
 							Direction safeDir = dangerousDir.opposite();
