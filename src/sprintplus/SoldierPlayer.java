@@ -36,6 +36,7 @@ public class SoldierPlayer {
 	private static int numEnemySoldiers = 0;
 	private static double totalEnemySoldierHealth = 0;
 	private static boolean useSoldierMicro = false;
+	private static boolean wentGreedy = false;
 	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
@@ -186,51 +187,62 @@ public class SoldierPlayer {
 	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
 		// Prioritize movement
 		Direction d = myLoc.directionTo(bestEnemy.location);
-	if (rc.isCoreReady()) {
-    		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
-    			// If the enemy can be killed but we're not in range, move forward
-            	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower) {
-            		if (rc.canMove(d)) {
-            			rc.move(d);
-            		} else if (rc.canMove(d.rotateLeft())) {
-            			rc.move(d.rotateLeft());
-            		} else if (rc.canMove(d.rotateRight())) {
-            			rc.move(d.rotateRight());
-            		}
-            	// If not in range, see if we should move in by comparing soldier health
-            	} else {
-            		double totalOurSoldierHealth = 0;
-            		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
-            		for (RobotInfo ally : allies) {
-            			if (ally.type == RobotType.SOLDIER) {
-            				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
-            					totalOurSoldierHealth += ally.health;
-            				}
-            			}
-            		}
-            		// If we feel that we are strong enough, rush in.
-            		if (totalOurSoldierHealth > totalEnemySoldierHealth) {
-            			if (!rc.canAttackLocation(bestEnemy.location)) {
-                			if (rc.canMove(d)) {
-	                			rc.move(d);
-	                		} else if (rc.canMove(d.rotateLeft())) {
-	                			rc.move(d.rotateLeft());
-	                		} else if (rc.canMove(d.rotateRight())) {
-	                			rc.move(d.rotateRight());
-	                		}
-            			}
-            		} else if (4 * totalOurSoldierHealth < 3 * totalEnemySoldierHealth) {
-            			if (rc.canMove(d.opposite())) {
-                			rc.move(d.opposite());
-                		} else if (rc.canMove(d.opposite().rotateLeft())) {
-                			rc.move(d.opposite().rotateLeft());
-                		} else if (rc.canMove(d.opposite().rotateRight())) {
-                			rc.move(d.opposite().rotateRight());
+		
+		if (rc.isCoreReady()) {
+			boolean canBeBold = rc.getHealth() > numEnemySoldiers * RobotType.SOLDIER.attackPower;
+			
+			// If the enemy can be killed but we're not in range, move forward
+        	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower && canBeBold) {
+        		if (rc.canMove(d)) {
+        			rc.move(d);
+        		} else if (rc.canMove(d.rotateLeft())) {
+        			rc.move(d.rotateLeft());
+        		} else if (rc.canMove(d.rotateRight())) {
+        			rc.move(d.rotateRight());
+        		}
+        		wentGreedy = true;
+        	// If not in range, see if we should move in by comparing soldier health
+        	} else {
+        		double totalOurSoldierHealth = 0;
+        		int numOurSoldiers = 0;
+        		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
+        		for (RobotInfo ally : allies) {
+        			if (ally.type == RobotType.SOLDIER) {
+        				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
+        					totalOurSoldierHealth += ally.health;
+        					numOurSoldiers++;
+        				}
+        			}
+        		}
+        		// We are weak...
+        		if (numOurSoldiers < numEnemySoldiers) {
+        			Direction awayDir = Movement.getBestMoveableDirection(d.opposite(), rc, 2);
+        			if (awayDir != Direction.NONE) {
+        				rc.move(awayDir);
+        			}
+        		}
+        		// If we feel that we are strong enough, rush in.
+        		else if (totalOurSoldierHealth - RobotType.SOLDIER.attackPower * numEnemySoldiers  > totalEnemySoldierHealth) {
+        			if (!rc.canAttackLocation(bestEnemy.location)) {
+            			if (rc.canMove(d)) {
+                			rc.move(d);
+                		} else if (rc.canMove(d.rotateLeft())) {
+                			rc.move(d.rotateLeft());
+                		} else if (rc.canMove(d.rotateRight())) {
+                			rc.move(d.rotateRight());
                 		}
-            		}
+        			}
         		}
         	}
-		//}
+        	if (rc.isCoreReady()) {
+	        	if (wentGreedy) {
+	        		Direction dir = getMinDirectionAwayFromHostileAttacks(rc, hostiles);
+	        		if (dir != Direction.NONE) {
+	        			wentGreedy = false;
+	        			rc.move(dir);
+	        		}
+	        	}
+        	}
     	}
     	
     	// Attack whenever you can
@@ -456,6 +468,61 @@ public class SoldierPlayer {
     			bugging.enemyAvoidMove(hostiles);
     		}
     	}
+	}
+	
+	// Finds a safe direction that is minimum distance from enemy. If no direction is safe, finds the maximum distance from enemy.
+	// Distance from enemy is the minimum distance from all enemy.
+	public static Direction getMinDirectionAwayFromHostileAttacks(RobotController rc, RobotInfo[] hostiles) {
+		Direction bestDir = Direction.NONE;
+		boolean bestDirInDanger = false;
+		// Compute the minimum distance from hostiles at current location.
+		// Also preset whether or not the best direction is a dangerous location.
+		int originalDistFromEnemy = 10000;
+		for (RobotInfo hostile : hostiles) {
+			int dist = myLoc.distanceSquaredTo(hostile.location);
+			originalDistFromEnemy = Math.min(originalDistFromEnemy, dist);
+			if (hostile.type.attackRadiusSquared >= dist) {
+				bestDirInDanger = true;
+			}
+		}
+		int minDistFromEnemy = originalDistFromEnemy;
+		int maxDistFromEnemy = originalDistFromEnemy;
+		
+		// Loop through the rest of the directions.
+		// When in danger, update the direction for max dist from enemy.
+		// When not in danger, update the direction for min dist from enemy. Also ignore directions in danger.
+		searchDir: for (Direction dir : RobotPlayer.directions) {
+			if (rc.canMove(dir)) {
+				int distFromEnemyForDir = 10000;
+				MapLocation dirLoc = myLoc.add(dir);
+				boolean dirInDanger = false;
+				for (RobotInfo hostile : hostiles) {
+					int dist = dirLoc.distanceSquaredTo(hostile.location);
+					if (hostile.type.attackRadiusSquared >= dist) {
+						// If our best direction is not in danger, don't bother checking this direction.
+						if (!bestDirInDanger) {
+							continue searchDir;
+						}
+						dirInDanger = true;
+					}
+					distFromEnemyForDir = Math.min(distFromEnemyForDir, dist);
+				}
+				bestDirInDanger = dirInDanger;
+				if (bestDirInDanger) {
+					if (maxDistFromEnemy < distFromEnemyForDir) {
+						bestDir = dir;
+						maxDistFromEnemy = distFromEnemyForDir;
+					}
+				} else {
+					if (minDistFromEnemy > distFromEnemyForDir) {
+						bestDir = dir;
+						minDistFromEnemy = distFromEnemyForDir;
+					}
+				}
+			}
+		}
+		
+		return bestDir;
 	}
 
 }
