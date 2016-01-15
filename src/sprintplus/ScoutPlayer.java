@@ -43,10 +43,13 @@ public class ScoutPlayer {
 	static boolean isPaired = false;
 	static int numTurnsStationary = 0;
 	
+	static int numTurnsSincePreviousCollectiblesBroadcast = 0;
+	
 	public static void run(RobotController rc) {
 		team = rc.getTeam();
 		while (true) {
 			try {
+				numTurnsSincePreviousCollectiblesBroadcast++;
 				myLoc = rc.getLocation();
 				
 				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
@@ -64,7 +67,7 @@ public class ScoutPlayer {
 				
 				// Broadcast collectibles.
 				if (rc.isCoreReady()) {
-					if (numTurnsStationary < 10) {
+					if (numTurnsStationary < 15 && numTurnsSincePreviousCollectiblesBroadcast >= 15) {
 						if (isPaired) {
 							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 								broadcastCollectibles(rc, hostiles.length > 0);
@@ -352,6 +355,9 @@ public class ScoutPlayer {
 								}
 							} else if (hostile.type == RobotType.TURRET) {
 								if (dist <= hostile.type.attackRadiusSquared) inDanger = true;
+							} else if (hostile.team == Team.ZOMBIE) {
+								// Just pretend zombie sight radius is 24
+								if (dist <= 24) inDanger = true;
 							} else {
 								if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
 							}
@@ -461,6 +467,7 @@ public class ScoutPlayer {
 			}
 			previouslyBroadcastedPartLoc = closestCollectible;
 		}
+		numTurnsSincePreviousCollectiblesBroadcast = 0;
 	}
 
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy, boolean inDanger) throws GameActionException {
