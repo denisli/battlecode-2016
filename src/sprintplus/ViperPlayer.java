@@ -35,6 +35,8 @@ public class ViperPlayer {
 	private static int numEnemySoldiers = 0;
 	private static double totalEnemySoldierHealth = 0;
 	private static boolean useSoldierMicro = false;
+	private static int numFriendlyUnits = 0;
+	private static int numHostileUnits = 0;
 	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.VIPER.sensorRadiusSquared;
@@ -47,8 +49,10 @@ public class ViperPlayer {
 				totalEnemySoldierHealth = 0;
 				useSoldierMicro = false;
 				myLoc = rc.getLocation();
-				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
+				nearbyEnemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
 				newArchonLoc = null;
+				numFriendlyUnits = 0;
+				numHostileUnits = 0;
 				
 				// clear bad locations
 				resetLocations(rc);
@@ -62,6 +66,13 @@ public class ViperPlayer {
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
+				
+				RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
+				for (RobotInfo r : nearbyRobots) {
+					if (r.team.equals(enemyTeam)) numHostileUnits++;
+					if (r.team.equals(myTeam) && r.type != RobotType.ARCHON && r.type != RobotType.VIPER) numFriendlyUnits++;
+				}
+				rc.setIndicatorString(2, numHostileUnits + " " + numFriendlyUnits);
 				// if there are enemies in range, we should focus on attack and micro
 				if (nearbyEnemies.length > 0 && !healing) {
 					// get the best enemy and do stuff based on this
@@ -71,7 +82,7 @@ public class ViperPlayer {
 					if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
 						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
 					} else { // othewise, just attack if it's in range
-						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
+						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady() && rc.getRoundNum() < 2000 && numHostileUnits > numFriendlyUnits) {
 							rc.attackLocation(bestEnemy.location);
 						}
 					}
@@ -176,7 +187,7 @@ public class ViperPlayer {
     			rc.move(d.rotateRight().rotateRight());
     		}
     	} else { // otherwise we want to try to attack
-    		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
+    		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location) && rc.getRoundNum() < 2000 && numHostileUnits > numFriendlyUnits) {
     			rc.attackLocation(bestEnemy.location);
     		}
     	}
@@ -234,7 +245,7 @@ public class ViperPlayer {
     	
     	// Attack whenever you can
     	if (rc.isWeaponReady()) {
-    		if (rc.canAttackLocation(bestEnemy.location)) {
+    		if (rc.canAttackLocation(bestEnemy.location) && rc.getRoundNum() < 2000 && numHostileUnits > numFriendlyUnits) {
     			rc.attackLocation(bestEnemy.location);
     		}
     	}
@@ -324,22 +335,8 @@ public class ViperPlayer {
 					nearestEnemyLocation = m.location;
 				}
 			} else
-			// if the message is a zombie, get the closest one
-			if (m.type == Message.ZOMBIE) {
-				if (nearestZombieLocation == null) {
-					nearestZombieLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestZombieLocation)) {
-					nearestZombieLocation = m.location;
-				}
-			} else
-			// if the message is a den, get the closest one
-			if (m.type == Message.ZOMBIEDEN) {
-				if (nearestDenLocation == null) {
-					nearestDenLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
-					nearestDenLocation = m.location;
-				}
-			} else
+			// if the message is a zombie, ignore it, vipers are useless
+			// if the message is a den, ignore it, vipers are useless
 			// if the message is to remove a turret, and if it's our nearestTurret, remove it
 			if (m.type == Message.TURRETKILLED) {
 				if (m.location.equals(nearestTurretLocation)) {
