@@ -65,52 +65,54 @@ public class SoldierPlayer {
 					nearestArchonLocation = newArchonLoc;
 				}
 				// if there are enemies in range, we should focus on attack and micro
-				if (nearbyEnemies.length > 0 && !healing) {
-					// get the best enemy and do stuff based on this
-					RobotInfo bestEnemy = getBestEnemy(rc);
-					// if it's not a soldier and we aren't going to move in range of enemy, kite it
-					
-					if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
-						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
-					} else { // othewise, just attack if it's in range
-						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
-							rc.attackLocation(bestEnemy.location);
+				if (!healing) {
+					if (nearbyEnemies.length > 0) {
+						// get the best enemy and do stuff based on this
+						RobotInfo bestEnemy = getBestEnemy(rc);
+						// if it's not a soldier and we aren't going to move in range of enemy, kite it
+						
+						if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
+							nonrangeMicro(rc, nearbyEnemies, bestEnemy);
+						} else { // othewise, just attack if it's in range
+							if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
+								rc.attackLocation(bestEnemy.location);
+							}
 						}
-					}
-					
-					
-				} else { // otherwise, we should always be moving somewhere
-					// if we have a real current destination
-					rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
-					if (currentDestination != null) {
-						// if bugging is never initialized or we are switching destinations, reinitialize bugging
-						if (!currentDestination.equals(storedDestination) || bugging == null) {
-							bugging = new Bugging(rc, currentDestination);
-							storedDestination = currentDestination;
+						
+						
+					} else { // otherwise, we should always be moving somewhere
+						// if we have a real current destination
+						rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
+						if (currentDestination != null) {
+							// if bugging is never initialized or we are switching destinations, reinitialize bugging
+							if (!currentDestination.equals(storedDestination) || bugging == null) {
+								bugging = new Bugging(rc, currentDestination);
+								storedDestination = currentDestination;
+							}
+							// if we are trying to move towards a turret, stay out of range
+							if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
+								// try to move away from turret
+								bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
+								bugging.move();
+							} else
+							// if core is ready, then try to move towards destination
+							if (rc.isCoreReady()) {
+								bugging.move();
+							}
+						} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
+							rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
+							if (!nearestArchonLocation.equals(storedDestination)) {
+								bugging = new Bugging(rc, nearestArchonLocation);
+								storedDestination = nearestArchonLocation;
+							}
+							// if core is ready, try to move
+							if (rc.isCoreReady() && bugging != null) {
+								bugging.move();
+							}
+						} else { // if we literally have nowhere to go
+							rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
+							bugAroundFriendly(rc);
 						}
-						// if we are trying to move towards a turret, stay out of range
-						if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
-							// try to move away from turret
-							bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
-							bugging.move();
-						} else
-						// if core is ready, then try to move towards destination
-						if (rc.isCoreReady()) {
-							bugging.move();
-						}
-					} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
-						rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
-						if (!nearestArchonLocation.equals(storedDestination)) {
-							bugging = new Bugging(rc, nearestArchonLocation);
-							storedDestination = nearestArchonLocation;
-						}
-						// if core is ready, try to move
-						if (rc.isCoreReady() && bugging != null) {
-							bugging.move();
-						}
-					} else { // if we literally have nowhere to go
-						rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
-						bugAroundFriendly(rc);
 					}
 				}
 				
@@ -189,60 +191,22 @@ public class SoldierPlayer {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		
 		if (rc.isCoreReady()) {
-			boolean canBeBold = rc.getHealth() > numEnemySoldiers * RobotType.SOLDIER.attackPower;
-			
-			// If the enemy can be killed but we're not in range, move forward
-        	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower && canBeBold) {
-        		if (rc.canMove(d)) {
-        			rc.move(d);
-        		} else if (rc.canMove(d.rotateLeft())) {
-        			rc.move(d.rotateLeft());
-        		} else if (rc.canMove(d.rotateRight())) {
-        			rc.move(d.rotateRight());
-        		}
-        		wentGreedy = true;
-        	// If not in range, see if we should move in by comparing soldier health
-        	} else {
-        		double totalOurSoldierHealth = 0;
-        		int numOurSoldiers = 0;
-        		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
-        		for (RobotInfo ally : allies) {
-        			if (ally.type == RobotType.SOLDIER) {
-        				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
-        					totalOurSoldierHealth += ally.health;
-        					numOurSoldiers++;
-        				}
-        			}
-        		}
-        		// We are weak...
-        		if (numOurSoldiers < numEnemySoldiers) {
-        			Direction awayDir = Movement.getBestMoveableDirection(d.opposite(), rc, 2);
-        			if (awayDir != Direction.NONE) {
-        				rc.move(awayDir);
-        			}
-        		}
-        		// If we feel that we are strong enough, rush in.
-        		else if (totalOurSoldierHealth - RobotType.SOLDIER.attackPower * numEnemySoldiers  > totalEnemySoldierHealth) {
-        			if (!rc.canAttackLocation(bestEnemy.location)) {
-            			if (rc.canMove(d)) {
-                			rc.move(d);
-                		} else if (rc.canMove(d.rotateLeft())) {
-                			rc.move(d.rotateLeft());
-                		} else if (rc.canMove(d.rotateRight())) {
-                			rc.move(d.rotateRight());
-                		}
-        			}
-        		}
-        	}
-        	if (rc.isCoreReady()) {
-	        	if (wentGreedy) {
-	        		Direction dir = getMinDirectionAwayFromHostileAttacks(rc, hostiles);
-	        		if (dir != Direction.NONE) {
-	        			wentGreedy = false;
-	        			rc.move(dir);
-	        		}
-	        	}
-        	}
+			int dist = myLoc.distanceSquaredTo(bestEnemy.location);
+			if (dist > RobotType.SOLDIER.attackRadiusSquared) {
+				Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
+				if (dir != Direction.NONE) {
+					rc.move(dir);
+				}
+			} else {
+				Direction awayDir = d.opposite();
+				MapLocation awayLoc = myLoc.add(awayDir);
+				if (awayLoc.distanceSquaredTo(bestEnemy.location) < RobotType.SOLDIER.attackRadiusSquared) {
+					Direction bestAwayDir = Movement.getBestMoveableDirection(awayDir, rc, 2);
+					if (bestAwayDir != Direction.NONE) {
+						rc.move(bestAwayDir);
+					}
+				}
+			}
     	}
     	
     	// Attack whenever you can
@@ -449,7 +413,7 @@ public class SoldierPlayer {
 	}
 	
 	public static void healIfNeed(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		healing = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasHealing && 10 * rc.getHealth() <= 8 * RobotType.SOLDIER.maxHealth);
+		healing = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() <= RobotType.SOLDIER.maxHealth);
 		if (!healing) {
 			if (wasHealing) bugging = null;
 			wasHealing = false;
