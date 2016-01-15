@@ -264,7 +264,13 @@ public class SoldierPlayer {
 					totalEnemySoldierHealth += r.health;
 				}
 			}
-			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
+			if (r.type == RobotType.ARCHON) {
+				if (bestEnemy.type == RobotType.ARCHON && r.health < bestEnemy.health) {
+					bestEnemy = r;
+				} else {
+					bestEnemy = r;
+				}
+			} else if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
 				bestEnemy = r;
 			}
 		}
