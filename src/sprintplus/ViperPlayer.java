@@ -162,7 +162,7 @@ public class ViperPlayer {
 	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
-		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
+		if (myLoc.distanceSquaredTo(bestEnemy.location) < 15 && rc.isCoreReady()) {
     		if (rc.canMove(d.opposite())) {
     			rc.move(d.opposite());
     		} else if (rc.canMove(d.opposite().rotateLeft())) {
@@ -174,7 +174,7 @@ public class ViperPlayer {
     		} else if (rc.canMove(d.opposite().rotateRight().rotateRight())) {
     			rc.move(d.opposite().rotateRight().rotateRight());
     		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
+    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 20 && rc.isCoreReady()) { // if we are too far, we want to move closer
     		if (rc.canMove(d)) {
     			rc.move(d);
     		} else if (rc.canMove(d.rotateLeft())) {
