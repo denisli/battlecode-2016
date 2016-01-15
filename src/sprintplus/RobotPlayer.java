@@ -33,9 +33,9 @@ public class RobotPlayer {
         } else if (rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM) {
         	TurretPlayer.run(rc);
         } else if (rc.getType() == RobotType.GUARD) {
-        	
+        	GuardPlayer.run(rc);
         } else if (rc.getType() == RobotType.VIPER) {
-        	
+        	ViperPlayer.run(rc);
         }
         else {
             throw new IllegalArgumentException("No code implemented for type " + rc.getType());
