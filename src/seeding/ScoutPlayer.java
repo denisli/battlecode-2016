@@ -328,6 +328,7 @@ public class ScoutPlayer {
 			secondClosestRecordedEnemy = null; // does not include the Den!
 			int closestRecordedEnemyDist = 10000;
 			int secondClosestRecordedEnemyDist = 20000;
+			boolean sawTurret = false;
 			if (hostiles.length > 0) {
 				MapLocation realLoc = myLoc.add(mainDir);
 				for (RobotInfo hostile : hostiles) {
@@ -346,6 +347,7 @@ public class ScoutPlayer {
 						}
 					} else {
 						if (hostile.type == RobotType.TURRET) {
+							sawTurret = true;
 							numEnemyTurrets++;
 						}
 						// In danger only if someone can attack me.
