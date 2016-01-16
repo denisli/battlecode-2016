@@ -371,13 +371,17 @@ public class ScoutPlayer {
 						if (closestRecordedEnemy == null) {
 							closestRecordedEnemy = hostile;
 						} else if (dist < closestRecordedEnemyDist) { // update the two closest stored locations.
-							secondClosestRecordedEnemyDist = closestRecordedEnemyDist;
-							secondClosestRecordedEnemy = closestRecordedEnemy;
-							closestRecordedEnemyDist = dist;
-							closestRecordedEnemy = hostile;
+							if ((closestRecordedEnemy.type == RobotType.TURRET && hostile.type == RobotType.TURRET) || closestRecordedEnemy.type != RobotType.TURRET) {
+								secondClosestRecordedEnemyDist = closestRecordedEnemyDist;
+								secondClosestRecordedEnemy = closestRecordedEnemy;
+								closestRecordedEnemyDist = dist;
+								closestRecordedEnemy = hostile;
+							}
 						} else if (dist < secondClosestRecordedEnemyDist) { // update the second closest stored location only.
-							secondClosestRecordedEnemyDist = dist;
-							secondClosestRecordedEnemy = hostile;
+							if ((secondClosestRecordedEnemy.type == RobotType.TURRET && hostile.type == RobotType.TURRET) || secondClosestRecordedEnemy.type != RobotType.TURRET) {
+								secondClosestRecordedEnemyDist = dist;
+								secondClosestRecordedEnemy = hostile;
+							}
 						}
 					}
 				}
