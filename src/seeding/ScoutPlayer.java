@@ -384,10 +384,10 @@ public class ScoutPlayer {
 						if (closestRecordedEnemy != null) {
 							if (closestRecordedEnemyDist <= closestRecordedEnemy.type.attackRadiusSquared) {
 								// Send a message of the closest enemy, should broadcast further if not in danger
-								broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
+								broadcastRecordedEnemy(rc, closestRecordedEnemy);
 								if (secondClosestRecordedEnemy != null) {
 									// Send a message of the second closest enemy.
-									broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
+									broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
 								}
 							}
 						}
@@ -474,19 +474,15 @@ public class ScoutPlayer {
 		numTurnsSincePreviousCollectiblesBroadcast = 0;
 	}
 
-	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy, boolean inDanger) throws GameActionException {
-		double coreDelay = 0.25;
-		if (!inDanger) {
-			coreDelay = 4;
-		}
+	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
 		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, coreDelay);
+			Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMYARCHONLOC, Message.FULL_MAP_RANGE);
 		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, coreDelay);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, Message.FULL_MAP_RANGE);
 		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
 			Message.sendMessageGivenRange(rc, enemy.location, Message.TURRET, Message.FULL_MAP_RANGE);
 		} else if (enemy.type != RobotType.SCOUT && rc.isCoreReady()){
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, coreDelay);
+			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
 		}
 	}
 	
