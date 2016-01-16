@@ -393,9 +393,15 @@ public class SoldierPlayer {
 		} else if (nearestZombieLocation != null) {
 			rc.setIndicatorString(0, "actually moving towards zombie " + nearestZombieLocation + rc.getRoundNum());
 			currentDestination = nearestZombieLocation;
+		} else if (nearestEnemyLocation != null) {
+			rc.setIndicatorString(0, "actually moving towards enemy " + nearestEnemyLocation + rc.getRoundNum());
+			currentDestination = nearestEnemyLocation;
+		} else if (nearestTurretLocation != null) {
+			rc.setIndicatorString(0, "actually moving towards turret " + nearestTurretLocation + rc.getRoundNum());
+			currentDestination = nearestTurretLocation;
 		}
 		// if we are looking at the same turret for too long, go somewhere else
-		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation)) {
+		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 30) {
 			turnsNotMoved++;
 		} else {
 			turnsNotMoved = 0;
@@ -403,6 +409,7 @@ public class SoldierPlayer {
 		if (turnsNotMoved > 100) {
 			currentDestination = nearestArchonLocation;
 			nearestTurretLocation = null;
+			turnsNotMoved = 0;
 		}
 		storedTurretLocation = nearestTurretLocation;
 		doNotMove = false;
