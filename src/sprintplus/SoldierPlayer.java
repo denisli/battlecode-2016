@@ -419,7 +419,7 @@ public class SoldierPlayer {
 	}
 	
 	public static void healIfNeed(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		healing = 5 * rc.getHealth() <= RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() <= RobotType.SOLDIER.maxHealth);
+		healing = 3 * rc.getHealth() < RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.SOLDIER.maxHealth);
 		if (!healing) {
 			if (wasHealing) bugging = null;
 			wasHealing = false;
