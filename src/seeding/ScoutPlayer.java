@@ -26,6 +26,7 @@ public class ScoutPlayer {
 	static MapLocation previouslyBroadcastedClosestTurretLoc;
 	static MapLocation closestTurretLoc;
 	static int closestTurretDist = 20000;
+	static MapLocation turretEncountered;
 	
 	static RobotInfo closestRecordedEnemy = null; // does not include the Den!
 	static RobotInfo secondClosestRecordedEnemy = null; // does not include the Den!
@@ -88,6 +89,11 @@ public class ScoutPlayer {
 				
 				// Decide how to move the scout.
 				moveScout(rc, hostiles);
+				
+				// If encountered turret, broadcast it
+				if (inDanger) {
+					Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
+				}
 				
 				Clock.yield();
 			} catch (Exception e) {
@@ -221,6 +227,7 @@ public class ScoutPlayer {
 		numEnemyTurrets = 0;
 		dodgeEnemyDir = Direction.NONE;
 		inDanger = false;
+		turretEncountered = null;
 		
 		if (isPaired) {
 			if (hostiles.length > 0) {
@@ -239,6 +246,7 @@ public class ScoutPlayer {
 					}
 					else if (hostile.type == RobotType.TURRET) {
 						enemyTurretLoc = hostile.location;
+						turretEncountered = hostile.location;
 					}
 					else if (hostile.type == RobotType.ZOMBIEDEN) {
 						if (!hostile.location.equals(previouslyBroadcastedDen)) {
@@ -328,7 +336,6 @@ public class ScoutPlayer {
 			secondClosestRecordedEnemy = null; // does not include the Den!
 			int closestRecordedEnemyDist = 10000;
 			int secondClosestRecordedEnemyDist = 20000;
-			boolean sawTurret = false;
 			if (hostiles.length > 0) {
 				MapLocation realLoc = myLoc.add(mainDir);
 				for (RobotInfo hostile : hostiles) {
@@ -347,7 +354,6 @@ public class ScoutPlayer {
 						}
 					} else {
 						if (hostile.type == RobotType.TURRET) {
-							sawTurret = true;
 							numEnemyTurrets++;
 						}
 						// In danger only if someone can attack me.
@@ -358,7 +364,9 @@ public class ScoutPlayer {
 									inDanger = true;
 								}
 							} else if (hostile.type == RobotType.TURRET) {
-								if (dist <= hostile.type.attackRadiusSquared) inDanger = true;
+								if (dist <= hostile.type.attackRadiusSquared) {
+									inDanger = true;
+								}
 							} else if (hostile.team == Team.ZOMBIE) {
 								// Just pretend zombie sight radius is 24
 								if (dist <= 24) inDanger = true;
@@ -389,11 +397,11 @@ public class ScoutPlayer {
 					if (!inDanger) {
 						if (closestRecordedEnemy != null) {
 							// Send a message of the closest enemy, should broadcast further if not in danger
-							rc.setIndicatorString(0, "Broadcasting closest enemy " + closestRecordedEnemy);
+							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting closest enemy " + closestRecordedEnemy.location);
 							broadcastRecordedEnemy(rc, closestRecordedEnemy);
 							if (secondClosestRecordedEnemy != null) {
 								// Send a message of the second closest enemy.
-								rc.setIndicatorString(1, "Broadcasting second closest enemy " + secondClosestRecordedEnemy);
+								rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", Broadcasting second closest enemy " + secondClosestRecordedEnemy.location);
 								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
 							}
 						}
