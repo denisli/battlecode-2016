@@ -389,10 +389,12 @@ public class ScoutPlayer {
 					if (!inDanger) {
 						if (closestRecordedEnemy != null) {
 							// Send a message of the closest enemy, should broadcast further if not in danger
-							broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
+							rc.setIndicatorString(0, "Broadcasting closest enemy " + closestRecordedEnemy);
+							broadcastRecordedEnemy(rc, closestRecordedEnemy);
 							if (secondClosestRecordedEnemy != null) {
 								// Send a message of the second closest enemy.
-								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
+								rc.setIndicatorString(1, "Broadcasting second closest enemy " + secondClosestRecordedEnemy);
+								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
 							}
 						}
 					}
@@ -478,11 +480,8 @@ public class ScoutPlayer {
 		numTurnsSincePreviousCollectiblesBroadcast = 0;
 	}
 
-	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy, boolean inDanger) throws GameActionException {
-		double coreDelay = 0.25;
-		if (!inDanger) {
-			coreDelay = 4;
-		}
+	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
+		int coreDelay = 4;
 		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
 			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, coreDelay);
 		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
