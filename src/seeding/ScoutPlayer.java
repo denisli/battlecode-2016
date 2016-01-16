@@ -204,16 +204,16 @@ public class ScoutPlayer {
 		if (isPaired) {
 			if (myLoc.distanceSquaredTo(pairedTurret) <= 2) { 
 				if (hostiles.length > 0) {
-					Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
-				} else {
 					Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
+				} else {
+					Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
 				}
 			}
 		} else {
 			if (hostiles.length > 0) {
-				Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
-			} else {
 				Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
+			} else {
+				Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
 			}
 		}
 	}
