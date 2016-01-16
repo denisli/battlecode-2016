@@ -40,7 +40,7 @@ public class ArchonPlayer {
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 				MapLocation[] adjParts = rc.sensePartLocations(2);
 				int roundNum = rc.getRoundNum();
-				int numParts = rc.getTeamParts();
+				double numParts = rc.getTeamParts();
 				double curHealth = rc.getHealth();
 				//reset the unpaired scouts count
 				if (roundNum % 50 == 1) {
