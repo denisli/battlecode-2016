@@ -481,15 +481,14 @@ public class ScoutPlayer {
 	}
 
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
-		int coreDelay = 4;
-		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, coreDelay);
-		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, coreDelay);
-		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
+		if (enemy.type == RobotType.ARCHON) {
+			Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMYARCHONLOC, Message.FULL_MAP_RANGE);
+		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE) {
+			Message.sendMessageGivenRange(rc, enemy.location, Message.ZOMBIE, Message.FULL_MAP_RANGE);
+		} else if (enemy.type == RobotType.TURRET) {
 			Message.sendMessageGivenRange(rc, enemy.location, Message.TURRET, Message.FULL_MAP_RANGE);
-		} else if (enemy.type != RobotType.SCOUT && rc.isCoreReady()){
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, coreDelay);
+		} else if (enemy.type != RobotType.SCOUT){
+			Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
 		}
 	}
 	
