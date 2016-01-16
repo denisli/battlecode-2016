@@ -1,8 +1,8 @@
 package seeding;
 
 import battlecode.common.*;
-import sprintplus.Bugging;
-import sprintplus.Message;
+import seeding.Bugging;
+import seeding.Message;
 
 import java.util.Arrays;
 import java.util.List;
