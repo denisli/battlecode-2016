@@ -205,14 +205,14 @@ public class ScoutPlayer {
 				if (hostiles.length > 0) {
 					Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
 				} else {
-					Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
+					Message.sendMessageGivenRange(rc, myLoc, messageType, Message.FULL_MAP_RANGE);
 				}
 			}
 		} else {
 			if (hostiles.length > 0) {
 				Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
 			} else {
-				Message.sendMessageGivenDelay(rc, myLoc, messageType, 8);
+				Message.sendMessageGivenRange(rc, myLoc, messageType, Message.FULL_MAP_RANGE);
 			}
 		}
 	}
@@ -382,13 +382,11 @@ public class ScoutPlayer {
 				if (rc.isCoreReady()) {
 					if (!inDanger) {
 						if (closestRecordedEnemy != null) {
-							if (closestRecordedEnemyDist <= closestRecordedEnemy.type.attackRadiusSquared) {
-								// Send a message of the closest enemy, should broadcast further if not in danger
-								broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
-								if (secondClosestRecordedEnemy != null) {
-									// Send a message of the second closest enemy.
-									broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
-								}
+							// Send a message of the closest enemy, should broadcast further if not in danger
+							broadcastRecordedEnemy(rc, closestRecordedEnemy, inDanger);
+							if (secondClosestRecordedEnemy != null) {
+								// Send a message of the second closest enemy.
+								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy, inDanger);
 							}
 						}
 					}
