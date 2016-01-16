@@ -20,7 +20,6 @@ public class ScoutPlayer {
 	static int numOurTurrets = 0;
 	static int numEnemyTurrets = 0;
 	
-	static boolean inEnemyAttackRangeAndPaired = false;
 	static boolean inDanger = false;
 	static Direction dodgeEnemyDir = Direction.NONE;
 	
@@ -103,7 +102,7 @@ public class ScoutPlayer {
 		// Otherwise move in your main direction, and change it accordingly if you cannot move.
 		if (isPaired) {
 			if (rc.isCoreReady()) {
-				if (inEnemyAttackRangeAndPaired) {
+				if (inDanger) {
 					// mainDir already computed above.
 					if (dodgeEnemyDir != Direction.NONE) {
 						mainDir = dodgeEnemyDir;
@@ -220,7 +219,6 @@ public class ScoutPlayer {
 
 	private static void loopThroughHostiles(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		numEnemyTurrets = 0;
-		inEnemyAttackRangeAndPaired = false;
 		dodgeEnemyDir = Direction.NONE;
 		inDanger = false;
 		
@@ -243,14 +241,12 @@ public class ScoutPlayer {
 						enemyTurretLoc = hostile.location;
 					}
 					else if (hostile.type == RobotType.ZOMBIEDEN) {
-						//if (rc.isCoreReady()) {
-							if (!hostile.location.equals(previouslyBroadcastedDen)) {
-								if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
-									previouslyBroadcastedDen = hostile.location;
-									Message.sendMessageGivenRange(rc, hostile.location, Message.ZOMBIEDEN, Message.FULL_MAP_RANGE);
-								}
+						if (!hostile.location.equals(previouslyBroadcastedDen)) {
+							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+								previouslyBroadcastedDen = hostile.location;
+								Message.sendMessageGivenRange(rc, hostile.location, Message.ZOMBIEDEN, Message.FULL_MAP_RANGE);
 							}
-						//}
+						}
 					}
 					
 					// First handle finding the best enemy.
@@ -286,7 +282,7 @@ public class ScoutPlayer {
 					
 					// If my closest enemy can hit me, get away.
 					if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared) {
-						inEnemyAttackRangeAndPaired = true;
+						inDanger = true;
 						// Find a direction closest to paired turret that is not in attack range.
 						int closestPairedDist = 10000;
 						for (Direction dir : RobotPlayer.directions) {
