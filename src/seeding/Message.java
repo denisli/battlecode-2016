@@ -27,8 +27,7 @@ public class Message {
 	public static final int ENEMYTURRETSCOUT = 14;
 	public static final int ARCHONINDANGER = 15;
 	
-	private static final int D = 20000;
-	private static final int AYY = 50000;
+	private static final int AYY = 2000;
 	
 	public static final int FULL_MAP_RANGE = 80 * 80 * 2;
 	
@@ -43,8 +42,8 @@ public class Message {
 	}
 	
 	public static void sendMessageGivenRange(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
-		int x = location.x + D + type * AYY;
-		int y = location.y + D + type * AYY;
+		int x = location.x + type * AYY;
+		int y = location.y + type * AYY;
 		rc.broadcastMessageSignal(x, y, range);
 	}
 	
@@ -62,7 +61,7 @@ public class Message {
 				int[] signalMessage = signal.getMessage();
 				int x = signalMessage[0], y = signalMessage[1];
 				int type = x / AYY;
-				messages.add(new Message(signal, new MapLocation(x - D - type * AYY, y - D - type * AYY), type));
+				messages.add(new Message(signal, new MapLocation(x - type * AYY, y - type * AYY), type));
 			}
 			signal = rc.readSignal();
 		}
