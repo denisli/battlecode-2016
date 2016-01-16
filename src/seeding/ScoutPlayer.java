@@ -382,13 +382,11 @@ public class ScoutPlayer {
 				if (rc.isCoreReady()) {
 					if (!inDanger) {
 						if (closestRecordedEnemy != null) {
-							if (closestRecordedEnemyDist <= closestRecordedEnemy.type.attackRadiusSquared) {
-								// Send a message of the closest enemy, should broadcast further if not in danger
-								broadcastRecordedEnemy(rc, closestRecordedEnemy);
-								if (secondClosestRecordedEnemy != null) {
-									// Send a message of the second closest enemy.
-									broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
-								}
+							// Send a message of the closest enemy, should broadcast further if not in danger
+							broadcastRecordedEnemy(rc, closestRecordedEnemy);
+							if (secondClosestRecordedEnemy != null) {
+								// Send a message of the second closest enemy.
+								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
 							}
 						}
 					}
@@ -476,13 +474,17 @@ public class ScoutPlayer {
 
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
 		if (enemy.type == RobotType.ARCHON && rc.isCoreReady()) {
+			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", broadcasting archon");
 			Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMYARCHONLOC, Message.FULL_MAP_RANGE);
 		} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE && rc.isCoreReady()) {
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, Message.FULL_MAP_RANGE);
+			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", broadcasting zombie");
+			Message.sendMessageGivenRange(rc, enemy.location, Message.ZOMBIE, Message.FULL_MAP_RANGE);
 		} else if (enemy.type == RobotType.TURRET && rc.isCoreReady()) {
+			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", broadcasting turret");
 			Message.sendMessageGivenRange(rc, enemy.location, Message.TURRET, Message.FULL_MAP_RANGE);
 		} else if (enemy.type != RobotType.SCOUT && rc.isCoreReady()){
-			Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
+			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", broadcasting enemy");
+			Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
 		}
 	}
 	
