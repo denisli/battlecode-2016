@@ -15,7 +15,7 @@ public class Bugging {
 	private static final int FIFTY_TURN_MINE = 3049;
 
 	private final RobotController rc;
-	private final MapLocation destination;
+	final MapLocation destination;
 	private Hugging hugging = Hugging.NONE;
 	private Direction dirWhileHugging = Direction.NONE;
 

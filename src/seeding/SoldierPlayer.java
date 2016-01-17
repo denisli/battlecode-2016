@@ -393,9 +393,15 @@ public class SoldierPlayer {
 		} else if (nearestZombieLocation != null) {
 			rc.setIndicatorString(0, "actually moving towards zombie " + nearestZombieLocation + rc.getRoundNum());
 			currentDestination = nearestZombieLocation;
+		} else if (nearestEnemyLocation != null) {
+			rc.setIndicatorString(0, "actually moving towards enemy " + nearestEnemyLocation + rc.getRoundNum());
+			currentDestination = nearestEnemyLocation;
+		} else if (nearestTurretLocation != null) {
+			rc.setIndicatorString(0, "actually moving towards turret " + nearestTurretLocation + rc.getRoundNum());
+			currentDestination = nearestTurretLocation;
 		}
 		// if we are looking at the same turret for too long, go somewhere else
-		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation)) {
+		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 30) {
 			turnsNotMoved++;
 		} else {
 			turnsNotMoved = 0;
@@ -403,6 +409,7 @@ public class SoldierPlayer {
 		if (turnsNotMoved > 100) {
 			currentDestination = nearestArchonLocation;
 			nearestTurretLocation = null;
+			turnsNotMoved = 0;
 		}
 		storedTurretLocation = nearestTurretLocation;
 		doNotMove = false;
@@ -425,8 +432,12 @@ public class SoldierPlayer {
 			wasHealing = false;
 		}
 		if (healing) {
+			RobotInfo[] nearbyRobots = rc.senseNearbyRobots(sightRadius, myTeam);
+			for (RobotInfo r : nearbyRobots) {
+				if (r.type == RobotType.ARCHON) nearestArchonLocation = r.location;
+			}
 			rc.setIndicatorString(0, "should be retreating " + nearestArchonLocation + rc.getRoundNum());
-    		if (!wasHealing) {
+    		if (!wasHealing || !bugging.destination.equals(nearestArchonLocation)) {
     			if (nearestArchonLocation == null) {
     				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));
     			} else {
@@ -434,7 +445,9 @@ public class SoldierPlayer {
     			}
     		}
     		wasHealing = true;
-    		if (rc.isCoreReady()) {
+    		if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
+    			bugging.enemyAvoidMove(hostiles);
+    		} else if (rc.isCoreReady()) {
     			bugging.enemyAvoidMove(hostiles);
     		}
     	}
