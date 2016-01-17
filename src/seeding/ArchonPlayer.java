@@ -183,13 +183,13 @@ public class ArchonPlayer {
 						previouslyBroadcastedLoc = myLoc;
 					}
 					//else if neutralrobot adjacent, activate it
-					else if (adjNeutralRobots.length > 0 && numParts<30) {
+					else if (adjNeutralRobots.length > 0 && (roundNum>600 || numParts<30)) {
 						rc.activate(adjNeutralRobots[0].location);
 						bug = null;
 						nearestParts = null;
 					}
 					//else if can move to adjacent parts, move to it
-					else if (adjParts.length > 0 && numParts<30) {
+					else if (adjParts.length > 0 && (roundNum>600 || numParts<30)) {
 						MapLocation adjPartsLoc = adjParts[0];
 						if (adjParts.length > 1) {
 							int i = 1;
