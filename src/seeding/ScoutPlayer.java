@@ -91,7 +91,7 @@ public class ScoutPlayer {
 				moveScout(rc, hostiles);
 				
 				// If encountered turret, broadcast it
-				if (inDanger) {
+				if (inDanger && turretEncountered != null) {
 					Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
 				}
 				
