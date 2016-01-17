@@ -432,8 +432,12 @@ public class SoldierPlayer {
 			wasHealing = false;
 		}
 		if (healing) {
+			RobotInfo[] nearbyRobots = rc.senseNearbyRobots(sightRadius, myTeam);
+			for (RobotInfo r : nearbyRobots) {
+				if (r.type == RobotType.ARCHON) nearestArchonLocation = r.location;
+			}
 			rc.setIndicatorString(0, "should be retreating " + nearestArchonLocation + rc.getRoundNum());
-    		if (!wasHealing) {
+    		if (!wasHealing || !bugging.destination.equals(nearestArchonLocation)) {
     			if (nearestArchonLocation == null) {
     				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));
     			} else {
@@ -441,7 +445,9 @@ public class SoldierPlayer {
     			}
     		}
     		wasHealing = true;
-    		if (rc.isCoreReady()) {
+    		if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
+    			bugging.enemyAvoidMove(hostiles);
+    		} else if (rc.isCoreReady()) {
     			bugging.enemyAvoidMove(hostiles);
     		}
     	}
