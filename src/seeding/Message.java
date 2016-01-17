@@ -26,6 +26,7 @@ public class Message {
 	//scout sends to turret if it sees enemy turret+scout
 	public static final int ENEMYTURRETSCOUT = 14;
 	public static final int ARCHONINDANGER = 15;
+	public static final int SOLDIERATTACK = 16;
 	
 	private static final int AYY = 2000;
 	
@@ -58,10 +59,14 @@ public class Message {
 		while (signal != null) {
 			boolean isOurMessage = signal.getTeam().equals(rc.getTeam());
 			if (isOurMessage) {
-				int[] signalMessage = signal.getMessage();
-				int x = signalMessage[0], y = signalMessage[1];
-				int type = x / AYY;
-				messages.add(new Message(signal, new MapLocation(x - type * AYY, y - type * AYY), type));
+				if (signal.getMessage() != null) { // if it's a message signal
+					int[] signalMessage = signal.getMessage();
+					int x = signalMessage[0], y = signalMessage[1];
+					int type = x / AYY;
+					messages.add(new Message(signal, new MapLocation(x - type * AYY, y - type * AYY), type));
+				} else { // it's a soldier signal
+					messages.add(new Message(signal, signal.getLocation(), SOLDIERATTACK));
+				}
 			}
 			signal = rc.readSignal();
 		}

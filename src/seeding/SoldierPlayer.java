@@ -15,6 +15,7 @@ public class SoldierPlayer {
 	private static MapLocation nearestDenLocation = null;
 	private static MapLocation nearestArchonLocation = null;
 	private static MapLocation nearestDistressedArchon = null;
+	private static MapLocation nearestSoldierAttacking = null;
 	private static boolean rush = false;
 	private static int turretCount = 0;
 	private static MapLocation currentDestination = null;
@@ -76,6 +77,7 @@ public class SoldierPlayer {
 						} else { // othewise, just attack if it's in range
 							if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
 								rc.attackLocation(bestEnemy.location);
+								// rc.broadcastSignal(24);
 							}
 						}
 						
@@ -124,7 +126,6 @@ public class SoldierPlayer {
 		}
 	}
 	
-	// get the 
 	public static void bugAroundFriendly(RobotController rc) throws GameActionException {
 		RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(sightRadius, myTeam);
 		if (nearbyFriendlyRobots.length > 0) {
@@ -182,6 +183,7 @@ public class SoldierPlayer {
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
     			rc.attackLocation(bestEnemy.location);
+    			// rc.broadcastSignal(24);
     		}
     	}
 	}
@@ -213,6 +215,7 @@ public class SoldierPlayer {
     	if (rc.isWeaponReady()) {
     		if (rc.canAttackLocation(bestEnemy.location)) {
     			rc.attackLocation(bestEnemy.location);
+    			// rc.broadcastSignal(24);
     		}
     	}
 	}
@@ -274,6 +277,10 @@ public class SoldierPlayer {
 		if (nearestDistressedArchon != null && rc.canSense(nearestDistressedArchon) && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))) {
 			if (nearestDistressedArchon.equals(currentDestination)) currentDestination = null;
 			nearestDistressedArchon = null;
+		}
+		if (nearestSoldierAttacking != null && rc.canSense(nearestSoldierAttacking) && rc.senseRobotAtLocation(nearestSoldierAttacking) == null) {
+			if (nearestSoldierAttacking.equals(currentDestination)) currentDestination = null;
+			nearestSoldierAttacking = null;
 		}
 	}
 	
@@ -354,6 +361,14 @@ public class SoldierPlayer {
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDistressedArchon)) {
 					nearestDistressedArchon = m.location;
 				}
+			} else 
+			// if we get a soldier signaling attacking, should go assist the soldier
+			if (m.type == Message.SOLDIERATTACK) {
+				if (nearestSoldierAttacking == null) {
+					nearestSoldierAttacking = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestSoldierAttacking)) {
+					nearestSoldierAttacking = m.location;
+				}
 			}
 		}
 		// once we get all the messages, check to make sure which one is the best
@@ -387,6 +402,9 @@ public class SoldierPlayer {
 		if (nearestDistressedArchon != null) {
 			rc.setIndicatorString(0, "moving to protect archon " + nearestDistressedArchon + rc.getRoundNum());
 			currentDestination = nearestDistressedArchon;
+		} else if (nearestSoldierAttacking != null) {
+			rc.setIndicatorString(0, "moving towards nearest attacking soldier " + nearestSoldierAttacking + rc.getRoundNum());
+			currentDestination = nearestSoldierAttacking;
 		} else if (nearestDenLocation != null) {
 			rc.setIndicatorString(0, "actually moving towards den " + nearestDenLocation + rc.getRoundNum());
 			currentDestination = nearestDenLocation;
