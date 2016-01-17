@@ -29,6 +29,7 @@ public class Message {
 	public static final int SOLDIERATTACK = 16;
 	//archons send DENTOATTACK to tell soldiers to go there
 	public static final int DENTOATTACK = 17;
+	public static final int NEUTRALARCHON = 18;
 	
 	private static final int AYY = 2000;
 	
