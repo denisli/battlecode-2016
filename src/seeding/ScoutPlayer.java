@@ -40,6 +40,7 @@ public class ScoutPlayer {
 	static MapLocation previouslyBroadcastedDen;
 	
 	static MapLocation pairedTurret;
+	static MapLocation pairedArchon;
 	static boolean isPaired = false;
 	static int numTurnsStationary = 0;
 	
@@ -417,11 +418,12 @@ public class ScoutPlayer {
 		isPaired = false;
 		ourPower = 0;
 		int followedTurretDist = 10000;
+		int followedArchonDist = 10000;
 		for (RobotInfo ally : allies) {
 			// Add to power
 			RobotType type = ally.type;
 			ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
-			// The rest of this stuff...
+			// Try to figure out which to pair with...
 			if (ally.type == RobotType.SCOUT) {
 				int randInt = rand.nextInt(3);
 				if (randInt == 0) {
@@ -451,6 +453,28 @@ public class ScoutPlayer {
 						isPaired = true;
 						followedTurretDist = dist;
 						pairedTurret = ally.location;
+					}
+				}
+			} else if (pairedTurret == null && ally.type == RobotType.ARCHON) {
+				int dist = myLoc.distanceSquaredTo(ally.location);
+				if (dist < followedArchonDist) {
+					// Try to pair with this turret.
+					// Confirm that no other scout allies are nearby.
+					RobotInfo[] otherAllies = rc.senseNearbyRobots(ally.location, dist, team);
+					boolean canPairWith = true;
+					for (RobotInfo otherAlly : otherAllies) {
+						if (otherAlly.type == RobotType.SCOUT) {
+							int otherDist = ally.location.distanceSquaredTo(otherAlly.location);
+							if (otherDist < dist) {
+								canPairWith = false; break;
+							}
+						}
+					}
+					if (canPairWith) {
+						// This is turret we can pair with.
+						isPaired = true;
+						followedTurretDist = dist;
+						pairedArchon = ally.location;
 					}
 				}
 			}
