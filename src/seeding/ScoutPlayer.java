@@ -17,8 +17,8 @@ public class ScoutPlayer {
 	static Team team;
 	static MapLocation myLoc;
 	
-	static int numOurTurrets = 0;
-	static int numEnemyTurrets = 0;
+	static double ourPower = 0;
+	static double enemyPower = 0;
 	
 	static boolean inDanger = false;
 	static Direction dodgeEnemyDir = Direction.NONE;
@@ -193,7 +193,7 @@ public class ScoutPlayer {
 
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		// When we have more turrets, broadcast that.
-		if (numOurTurrets > numEnemyTurrets && isPaired && rc.isCoreReady()) {
+		if (2 * ourPower > 3 * enemyPower && isPaired && rc.isCoreReady()) {
 			if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 				if (closestTurretLoc != null) {
 					Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
@@ -224,7 +224,7 @@ public class ScoutPlayer {
 	}
 
 	private static void loopThroughHostiles(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		numEnemyTurrets = 0;
+		enemyPower = 0;
 		dodgeEnemyDir = Direction.NONE;
 		inDanger = false;
 		turretEncountered = null;
@@ -353,9 +353,9 @@ public class ScoutPlayer {
 							}
 						}
 					} else {
-						if (hostile.type == RobotType.TURRET) {
-							numEnemyTurrets++;
-						}
+						// Add to enemy power
+						RobotType type = hostile.type;
+						enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * hostile.health) / type.attackDelay;
 						// In danger only if someone can attack me.
 						if (hostile.type != RobotType.ARCHON) {
 							int dist = realLoc.distanceSquaredTo(hostile.location);
@@ -415,9 +415,13 @@ public class ScoutPlayer {
 
 	private static void loopThroughAllies(RobotController rc, RobotInfo[] allies) {
 		isPaired = false;
-		numOurTurrets = 0;
+		ourPower = 0;
 		int followedTurretDist = 10000;
 		for (RobotInfo ally : allies) {
+			// Add to power
+			RobotType type = ally.type;
+			ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
+			// The rest of this stuff...
 			if (ally.type == RobotType.SCOUT) {
 				int randInt = rand.nextInt(3);
 				if (randInt == 0) {
@@ -428,7 +432,6 @@ public class ScoutPlayer {
 					mainDir = ally.location.directionTo(myLoc).rotateRight();
 				}
 			} else if (ally.type == RobotType.TURRET || ally.type == RobotType.TTM) {
-				numOurTurrets++;
 				int dist = myLoc.distanceSquaredTo(ally.location);
 				if (dist < followedTurretDist) {
 					// Try to pair with this turret.
