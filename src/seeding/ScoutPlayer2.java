@@ -175,7 +175,7 @@ public class ScoutPlayer2 {
 								}
 							} else if (hostile.team == Team.ZOMBIE) {
 								// Just pretend zombie sight radius is 24
-								if (dist <= 24) inDanger = true;
+								if (dist <= 35) inDanger = true;
 							} else if (hostile.type == RobotType.SCOUT) { 
 								if (dist <= 24) inDanger = true;
 							} else {
@@ -310,7 +310,7 @@ public class ScoutPlayer2 {
 		if (rc.isCoreReady()) {
 			if (enemy.type == RobotType.ARCHON) {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 4);
-			} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE) {
+			} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.ZOMBIEDEN) {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 2);
 			} else if (enemy.type == RobotType.TURRET) {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 4);
