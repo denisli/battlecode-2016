@@ -73,17 +73,15 @@ public class ScoutPlayer2 {
 				}
 				
 				// Broadcast collectibles
-				if (rc.isCoreReady()) {
-						}
+				if (!inDanger && rc.isCoreReady()) {
 					if (numTurnsStationary < 15 && numTurnsSincePreviousCollectiblesBroadcast >= 15) {
 						if (isPaired) {
 							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 								broadcastCollectibles(rc, hostiles.length > 0);
 							}
 						} else {
-							if (!inDanger) {
-								broadcastCollectibles(rc, hostiles.length > 0);
-							}
+							broadcastCollectibles(rc, hostiles.length > 0);
+						}
 					}
 				}
 				
@@ -396,7 +394,7 @@ public class ScoutPlayer2 {
 			if (thereAreEnemies) {
 				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
 			} else {
-				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 8.65);
+				Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, Message.FULL_MAP_RANGE);
 			}
 			previouslyBroadcastedPartLoc = closestCollectible;
 		}
