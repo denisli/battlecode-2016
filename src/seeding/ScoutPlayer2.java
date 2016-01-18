@@ -190,7 +190,6 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastEnemies(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		inDanger = false;
 		turretEncountered = null;
 		
 		if (isPaired) {
