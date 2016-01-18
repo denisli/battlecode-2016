@@ -519,6 +519,7 @@ public class ScoutPlayer2 {
 	private static void pairedDodgeEnemy(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		int closestDist = 10000;
 		RobotInfo closestEnemy = hostiles[0];
+		Direction dodgeEnemyDir = Direction.NONE;
 		// Find the closest enemy that can hit me and get away.
 		for (RobotInfo hostile : hostiles) {
 			int dist = myLoc.distanceSquaredTo(hostile.location);
@@ -532,7 +533,6 @@ public class ScoutPlayer2 {
 			if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared) {
 				// Find a direction closest to paired turret that is not in attack range.
 				int closestPairedDist = 10000;
-				Direction dodgeEnemyDir = Direction.NONE;
 				for (Direction dir : RobotPlayer.directions) {
 					if (rc.canMove(dir)) {
 						MapLocation dirLoc = myLoc.add(dir);
@@ -545,14 +545,12 @@ public class ScoutPlayer2 {
 						}
 					}
 				}
-				
-				if (dodgeEnemyDir != Direction.NONE) {
-					mainDir = dodgeEnemyDir;
-					rc.move(mainDir);
-					numTurnsStationary = 0;
-					break;
-				}
 			}
+		}
+		if (dodgeEnemyDir != Direction.NONE) {
+			mainDir = dodgeEnemyDir;
+			rc.move(mainDir);
+			numTurnsStationary = 0;
 		}
 	}
 
@@ -569,8 +567,9 @@ public class ScoutPlayer2 {
 	
 	private static void finishBroadcastingEnemy(RobotController rc) throws GameActionException {
 		// If encountered turret, broadcast it
-		if (inDanger && turretEncountered != null) {
+		if (inDanger && turretEncountered != null && rc.isCoreReady()) {
 			Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
+			turretEncountered = null;
 		}
 	}
 	

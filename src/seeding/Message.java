@@ -43,18 +43,14 @@ public class Message {
 	}
 	
 	public static void sendMessageGivenRange(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
-		if (rc.isCoreReady()) {
 		int x = location.x + type * AYY;
 		int y = location.y + type * AYY;
 		rc.broadcastMessageSignal(x, y, range);
-		}
 	}
 	
 	public static void sendMessageGivenDelay(RobotController rc, MapLocation location, int type, double delay) throws GameActionException {
-		if (rc.isCoreReady()) {
 		int range = getRangeGivenDelay(rc, delay);
 		sendMessageGivenRange(rc, location, type, range);
-		}
 	}
 	
 	public static List<Message> readMessageSignals(RobotController rc) {
