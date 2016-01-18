@@ -72,9 +72,9 @@ public class LocationSet implements Iterable<MapLocation> {
 	// output: location in the set that is closest, null if set is empty
 	public MapLocation closestElement(MapLocation m) {
 		MapLocation closest = null;
-		if (mapLocations.length == 0) return closest;
-		closest = mapLocations[0];
-		for (MapLocation map : mapLocations) {
+		if (this.size == 0) return closest;
+		closest = this.iterator().next();
+		for (MapLocation map : this) {
 			if (m.distanceSquaredTo(map) < m.distanceSquaredTo(closest)) closest = m; 
 		}
 		if (closest.distanceSquaredTo(m) < 25) {
