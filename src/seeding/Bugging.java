@@ -3,6 +3,7 @@ package seeding;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import sprintplus.Bugging.Hugging;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -93,10 +94,10 @@ public class Bugging {
 				// In this case, break out of bugging
 				if (getFanDist(dirToDest, cameFromDir) > 1 && ((rc.canMove(dirToDest) && safePredicate.test(dirToDest)) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
-					if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
-						rc.move(dirToDest);
-					} else {
+					if (shouldMine(dirToDest)) {
 						rc.clearRubble(dirToDest);
+					} else if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
+						rc.move(dirToDest);
 					}
 				// Continue to bug...
 				} else {
