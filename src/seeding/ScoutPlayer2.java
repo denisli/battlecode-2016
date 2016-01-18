@@ -58,6 +58,9 @@ public class ScoutPlayer2 {
 				// Compute in danger.
 				computeInDanger(rc, hostiles);
 				
+				// Completes turret broadcasts from the previous encounters.
+				finishBroadcastingEnemy(rc);
+				
 				// Broadcast enemies.
 				broadcastEnemies(rc, hostiles);
 				
@@ -189,8 +192,6 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastEnemies(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		turretEncountered = null;
-		
 		if (isPaired) {
 			if (hostiles.length > 0) {
 				closestTurretLoc = null;
@@ -275,6 +276,7 @@ public class ScoutPlayer2 {
 			int closestRecordedEnemyDist = 10000;
 			if (hostiles.length > 0) {
 				for (RobotInfo hostile : hostiles) {
+					if (hostile.type == RobotType.TURRET) turretEncountered = hostile.location;
 					if (hostile.type == RobotType.ZOMBIEDEN) {
 						if (!inDanger && turnsSincePreviousDenBroadcast > 30 && rc.isCoreReady()) {
 							previouslyBroadcastedDen = hostile.location;
@@ -403,13 +405,17 @@ public class ScoutPlayer2 {
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		// When we have more turrets, broadcast that.
-		if (2 * ourPower > 3 * enemyPower && isPaired && rc.isCoreReady()) {
-			if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+		if (ourPower > 4 * enemyPower && rc.isCoreReady()) {
+			if (isPaired) {
 				if (closestTurretLoc != null) {
-					Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
-				} else {
-					Message.sendMessageGivenRange(rc, new MapLocation(0, 0), Message.RUSHNOTURRET, 2 * sightRange);
+					if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 4 * sightRange);
+					} else {
+						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
+					}
 				}
+			} else {
+				Message.sendMessageGivenRange(rc, new MapLocation(0, 0), Message.RUSHNOTURRET, 2 * sightRange);
 			}
 		}
 	}
