@@ -245,25 +245,27 @@ public class ScoutPlayer2 {
 						closestTurretLoc = hostile.location;
 					}
 				}
-				// If there is a best enemy, send a message.
-				if (bestEnemy != null && bestEnemy.location.distanceSquaredTo(pairedTurret)>5 && rc.isCoreReady()) {
-					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
-				}
-				
-				// If there is a closest turret, send a message.
-				if (closestTurretLoc != null && rc.isCoreReady()) {
-					Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
-					previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
-				}
-				
-				// When can't see turret anymore, broadcast turret killed message.
-				if (previouslyBroadcastedClosestTurretLoc != null && closestTurretLoc == null && rc.isCoreReady()) {
-					Message.sendMessageGivenDelay(rc, previouslyBroadcastedClosestTurretLoc, Message.TURRETKILLED, 2.25);
-				}
-				
-				//if it sees enemy turret with a scout, signal that
-				if (enemyScoutLoc != null && enemyTurretLoc != null && rc.isCoreReady()) {
-					Message.sendMessageGivenRange(rc, enemyTurretLoc, Message.ENEMYTURRETSCOUT, 8);
+				if (!inDanger) {
+					// If there is a best enemy, send a message.
+					if (bestEnemy != null && bestEnemy.location.distanceSquaredTo(pairedTurret)>5 && rc.isCoreReady()) {
+						Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
+					}
+					
+					// If there is a closest turret, send a message.
+					if (closestTurretLoc != null && rc.isCoreReady()) {
+						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
+						previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
+					}
+					
+					// When can't see turret anymore, broadcast turret killed message.
+					if (previouslyBroadcastedClosestTurretLoc != null && closestTurretLoc == null && rc.isCoreReady()) {
+						Message.sendMessageGivenDelay(rc, previouslyBroadcastedClosestTurretLoc, Message.TURRETKILLED, 2.25);
+					}
+					
+					//if it sees enemy turret with a scout, signal that
+					if (enemyScoutLoc != null && enemyTurretLoc != null && rc.isCoreReady()) {
+						Message.sendMessageGivenRange(rc, enemyTurretLoc, Message.ENEMYTURRETSCOUT, 8);
+					}
 				}
 			}
 			
@@ -323,13 +325,13 @@ public class ScoutPlayer2 {
 	private static void broadcastRecordedEnemy(RobotController rc, RobotInfo enemy) throws GameActionException {
 		if (rc.isCoreReady()) {
 			if (enemy.type == RobotType.ARCHON) {
-				Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMYARCHONLOC, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 4);
 			} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.RANGEDZOMBIE) {
-				Message.sendMessageGivenRange(rc, enemy.location, Message.ZOMBIE, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 2);
 			} else if (enemy.type == RobotType.TURRET) {
-				Message.sendMessageGivenRange(rc, enemy.location, Message.TURRET, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 4);
 			} else if (enemy.type != RobotType.SCOUT){
-				Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMY, 4);
 			}
 		}
 	}
