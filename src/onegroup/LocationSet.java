@@ -77,7 +77,10 @@ public class LocationSet implements Iterable<MapLocation> {
 		for (MapLocation map : mapLocations) {
 			if (m.distanceSquaredTo(map) < m.distanceSquaredTo(closest)) closest = m; 
 		}
-		return closest;
+		if (closest.distanceSquaredTo(m) < 25) {
+			return closest;
+		}
+		return null;
 	}
 
 	@Override
