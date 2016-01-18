@@ -1,8 +1,8 @@
 package onegroup;
 
 import battlecode.common.*;
-import seeding.Bugging;
-import seeding.Message;
+import onegroup.Bugging;
+import onegroup.Message;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +31,12 @@ public class ArchonPlayer {
 		int turnsWithoutMessaging = 0;
 		MapLocation previousBroadcastedEnemy = null;
 		MapLocation destination = null;
+		
+		LocationSet denLocs = new LocationSet();
+		MapLocation targetEnemy = null;
+		MapLocation targetZombie = null;
+		MapLocation targetTurret = null;
+		MapLocation prevBroadcast = null;
 
 		while (true) {
 			//things that change every turn
@@ -45,6 +51,8 @@ public class ArchonPlayer {
 				int roundNum = rc.getRoundNum();
 				double numParts = rc.getTeamParts();
 				double curHealth = rc.getHealth();
+				boolean broadcastTarget = true;
+				
 				//reset the unpaired scouts count
 				if (roundNum % 50 == 1) {
 					unpairedScouts = 0;
@@ -74,51 +82,96 @@ public class ArchonPlayer {
 							}
 						}
 					}
-					if (m.type == Message.UNPAIRED) {
-						unpairedScouts++;
-					}
 					if (m.type==Message.ZOMBIEDEN) {
-						if (destination == null) {
-							destination = m.location;
+						denLocs.add(m.location);
+					}
+					if (m.type==Message.DENKILLED) {
+						if (denLocs.contains(m.location)) {
+							denLocs.remove(m.location);							
 						}
 						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
-							}
+							denLocs.remove(denLocs.closestElement(m.location));
 						}
 					}
+					
 					if (m.type==Message.ENEMY) {
-						if (destination == null) {
-							destination = m.location;
+						if (targetEnemy == null) {
+							targetEnemy = m.location;
 						}
 						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(targetEnemy)) {
+								targetEnemy = m.location;
 							}
 						}
 					}
 					if (m.type==Message.ZOMBIE) {
-						if (destination == null) {
-							destination = m.location;
+						if (targetZombie == null) {
+							targetZombie = m.location;
 						}
 						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(targetZombie)) {
+								targetZombie = m.location;
 							}
 						}
 					}
 					if (m.type==Message.TURRET) {
-						if (destination == null) {
-							destination = m.location;
+						if (targetTurret == null) {
+							targetTurret = m.location;
 						}
 						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(targetTurret)) {
+								targetTurret = m.location;
 							}
 						}
 					}
+					if (m.type==Message.TURRETKILLED) {
+						if (targetTurret==m.location) {
+							targetTurret = null;
+						}
+					}
+					if (m.type==Message.TARGET) {
+						broadcastTarget = false;
+						destination = m.location;
+					}
+					
 				}
-				//destination is nearest enemy
+				
+				//if broadcastTarget==true
+				if (broadcastTarget = true) {
+					MapLocation toBroadcast = null;
+					//find what to broadcast
+					if (denLocs != null) {
+						toBroadcast = denLocs.closestElement(myLoc);
+					}
+					else if (targetEnemy!=null) {
+						toBroadcast = targetEnemy;
+					}
+					else if (targetZombie!=null) {
+						toBroadcast = targetZombie;
+					}
+					else if (targetTurret!=null) {
+						toBroadcast = targetTurret;
+					}
+					//broadcast it
+					//set destination to whatever broadcasted
+					if (toBroadcast != prevBroadcast) {
+						Message.sendMessageGivenRange(rc, toBroadcast, Message.TARGET, Message.FULL_MAP_RANGE);
+						prevBroadcast = toBroadcast;
+						destination = toBroadcast;
+					}
+				}
+				
+				
+				//check if target is still there
+				if (targetEnemy!=null && myLoc.distanceSquaredTo(targetEnemy) <= 35 && hostileSightRange.length==0) {
+					targetEnemy = null;
+				}
+				if (targetZombie!=null && myLoc.distanceSquaredTo(targetZombie) <= 35 && hostileSightRange.length==0) {
+					targetZombie = null;
+				}
+				if (targetTurret!=null && myLoc.distanceSquaredTo(targetTurret) <= 35 && hostileSightRange.length==0) {
+					targetTurret = null;
+				}
 				if (destination!=null && myLoc.distanceSquaredTo(destination) <= 35 && hostileSightRange.length==0) {
 					destination = null;
 				}
