@@ -121,6 +121,7 @@ public class ArchonPlayer {
 				//destination is nearest enemy
 				if (destination!=null && myLoc.distanceSquaredTo(destination) <= 35 && hostileSightRange.length==0) {
 					destination = null;
+					bug = null;
 				}
 				
 				//if no adjacent parts or neutral robots, set nearestParts=null
@@ -155,22 +156,22 @@ public class ArchonPlayer {
 						consecutiveSafeTurns = 0;
 					}
 					
-					if (consecutiveSafeTurns > 10) {
-						if (nearestParts == startLoc) {
-							nearestParts = null;
-							bug = null;	
-						}
-					}
-					
-					if (prevHealth - curHealth >= 1 && myLoc != startLoc) {
-						if (nearestParts != startLoc) {
-							nearestParts = startLoc;
-							bug = new Bugging(rc, startLoc);
-						}
-						bug.move();
-					}
+//					if (consecutiveSafeTurns > 10) {
+//						if (nearestParts == startLoc) {
+//							nearestParts = null;
+//							bug = null;	
+//						}
+//					}
+//					
+//					if (prevHealth - curHealth >= 1 && myLoc != startLoc) {
+//						if (nearestParts != startLoc) {
+//							nearestParts = startLoc;
+//							bug = new Bugging(rc, startLoc);
+//						}
+//						bug.move();
+//					}
 					//if sees enemies nearby, run away
-					else if (hostileSightRange.length > 0) {
+					/*else*/ if (hostileSightRange.length > 0) {
 						//run away
 						RobotInfo closestEnemy = hostileSightRange[0];
 						MapLocation closestEnemyLoc = closestEnemy.location;
@@ -181,7 +182,7 @@ public class ArchonPlayer {
 							}
 						}
 						//if it's far, broadcast its location
-						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
+/*						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
 							//broadcast location
 							if (closestEnemy.location != previousBroadcastedEnemy) {
 								if (closestEnemy.team == Team.ZOMBIE) {
@@ -198,7 +199,7 @@ public class ArchonPlayer {
 								previousBroadcastedEnemy = closestEnemy.location;	
 							}
 						}
-						else if (closestEnemy.type != RobotType.ZOMBIEDEN){
+						else */if (closestEnemy.type != RobotType.ZOMBIEDEN){
 							//move away
 							Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
 							Direction safeDir = dangerousDir.opposite();
@@ -236,13 +237,13 @@ public class ArchonPlayer {
 					}
 					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
-					else if (adjNeutralRobots.length > 0 && (roundNum>600 || numParts<30)) {
+					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
 						rc.activate(adjNeutralRobots[0].location);
 						bug = null;
 						nearestParts = null;
 					}
 					//else if can move to adjacent parts, move to it
-					else if (adjParts.length > 0 && (roundNum>600 || numParts<30)) {
+					else if (adjParts.length > 0 && (roundNum>300 || numParts<30)) {
 						MapLocation adjPartsLoc = adjParts[0];
 						if (adjParts.length > 1) {
 							int i = 1;
@@ -295,7 +296,7 @@ public class ArchonPlayer {
 						}
 					}
 
-					//if core is ready, move to nearest parts
+					//if core is ready, find nearest parts
 					if (rc.isCoreReady()) {
 						//go to parts nearby if they exist
 						if (partsInSight.length>0) {
@@ -321,23 +322,36 @@ public class ArchonPlayer {
 									}
 								}
 							}
-						}
-						if (nearestParts != null && bug!= null) {
-							bug.move();
-						}
-						
+						}					
+					}
+					
+					String bugNull = "yes";
+					if (bug != null) {
+						bugNull = "no";
 					}
 					//if nothing else to do, then go towards army
 					rc.setIndicatorString(0, "destination"+destination);
-					rc.setIndicatorString(1, "parts"+nearestParts);
+					rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 					rc.setIndicatorString(2, partsInSight.length+" "+neutralRobotsInSight.length);
 					if (rc.isCoreReady()) {
-						if (nearestParts == null && destination != null) {
-							if (bug != null) {
+						if (nearestParts == null) {
+							if (bug == null) {
+								if (destination != null) {
+									bug = new Bugging(rc, destination);
+									bug.move();
+								}
+							}
+							else {
+								bug.move();
+							}
+						}
+						else {
+							if (bug == null) {
+								bug = new Bugging(rc, nearestParts);
 								bug.move();
 							}
 							else {
-								bug = new Bugging(rc, destination);
+								bug.move();
 							}
 						}
 					}
