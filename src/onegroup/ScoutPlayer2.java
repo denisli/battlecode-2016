@@ -333,26 +333,23 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void computePower(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) {
-		// Compute ally power
-		ourPower = 0;
-		for (RobotInfo ally : allies) {
-			// Add to power
-			RobotType type = ally.type;
-			ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
-		}
-		
-		// Compute enemy power
-		enemyPower = 0;
 		if (isPaired) {
-		} else {
-			if (hostiles.length > 0) {
-				for (RobotInfo hostile : hostiles) {
-					if (hostile.type == RobotType.ZOMBIEDEN) {
-					} else {
-						// Add to enemy power
-						RobotType type = hostile.type;
-						enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * hostile.health) / type.attackDelay;
-					}
+			// Compute ally power
+			ourPower = 0;
+			for (RobotInfo ally : allies) {
+				// Add to power
+				RobotType type = ally.type;
+				ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
+			}
+			
+			// Compute enemy power
+			enemyPower = 0;
+			for (RobotInfo hostile : hostiles) {
+				if (hostile.type == RobotType.ZOMBIEDEN) {
+				} else {
+					// Add to enemy power
+					RobotType type = hostile.type;
+					enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * hostile.health) / type.attackDelay;
 				}
 			}
 		}
