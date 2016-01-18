@@ -27,7 +27,6 @@ public class ScoutPlayer2 {
 	private static MapLocation turretEncountered;
 	
 	private static RobotInfo closestRecordedEnemy = null; // does not include the Den!
-	private static RobotInfo secondClosestRecordedEnemy = null; // does not include the Den!
 	
 	private static Random rand = new Random();
 	private static Direction mainDir = RobotPlayer.directions[rand.nextInt(8)];
@@ -273,9 +272,7 @@ public class ScoutPlayer2 {
 			// If Scout sees Den, then just broadcast immediately.
 			// If Scout sees other enemies, then wait until far enough to broadcast.
 			closestRecordedEnemy = null; // does not include the Den!
-			secondClosestRecordedEnemy = null; // does not include the Den!
 			int closestRecordedEnemyDist = 10000;
-			int secondClosestRecordedEnemyDist = 20000;
 			if (hostiles.length > 0) {
 				for (RobotInfo hostile : hostiles) {
 					if (hostile.type == RobotType.ZOMBIEDEN) {
@@ -290,15 +287,8 @@ public class ScoutPlayer2 {
 							closestRecordedEnemy = hostile;
 						} else if (dist < closestRecordedEnemyDist) { // update the two closest stored locations.
 							if ((closestRecordedEnemy.type == RobotType.TURRET && hostile.type == RobotType.TURRET) || closestRecordedEnemy.type != RobotType.TURRET) {
-								secondClosestRecordedEnemyDist = closestRecordedEnemyDist;
-								secondClosestRecordedEnemy = closestRecordedEnemy;
 								closestRecordedEnemyDist = dist;
 								closestRecordedEnemy = hostile;
-							}
-						} else if (dist < secondClosestRecordedEnemyDist) { // update the second closest stored location only.
-							if ((secondClosestRecordedEnemy.type == RobotType.TURRET && hostile.type == RobotType.TURRET) || secondClosestRecordedEnemy.type != RobotType.TURRET) {
-								secondClosestRecordedEnemyDist = dist;
-								secondClosestRecordedEnemy = hostile;
 							}
 						}
 					}
@@ -309,11 +299,6 @@ public class ScoutPlayer2 {
 							// Send a message of the closest enemy, should broadcast further if not in danger
 							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting closest enemy " + closestRecordedEnemy.location);
 							broadcastRecordedEnemy(rc, closestRecordedEnemy);
-							if (secondClosestRecordedEnemy != null) {
-								// Send a message of the second closest enemy.
-								rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", Broadcasting second closest enemy " + secondClosestRecordedEnemy.location);
-								broadcastRecordedEnemy(rc, secondClosestRecordedEnemy);
-							}
 						}
 					}
 				}
