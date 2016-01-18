@@ -30,6 +30,7 @@ public class ArchonPlayer {
 		int consecutiveSafeTurns = 0;
 		int turnsWithoutMessaging = 0;
 		MapLocation previousBroadcastedEnemy = null;
+		MapLocation destination = null;
 
 		while (true) {
 			//things that change every turn
@@ -74,6 +75,50 @@ public class ArchonPlayer {
 					if (m.type == Message.UNPAIRED) {
 						unpairedScouts++;
 					}
+					if (m.type==Message.ZOMBIEDEN) {
+						if (destination == null) {
+							destination = m.location;
+						}
+						else {
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
+								destination = m.location;
+							}
+						}
+					}
+					if (m.type==Message.ENEMY) {
+						if (destination == null) {
+							destination = m.location;
+						}
+						else {
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
+								destination = m.location;
+							}
+						}
+					}
+					if (m.type==Message.ZOMBIE) {
+						if (destination == null) {
+							destination = m.location;
+						}
+						else {
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
+								destination = m.location;
+							}
+						}
+					}
+					if (m.type==Message.TURRET) {
+						if (destination == null) {
+							destination = m.location;
+						}
+						else {
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
+								destination = m.location;
+							}
+						}
+					}
+				}
+				
+				if (destination!=null && myLoc.distanceSquaredTo(destination) <= 35 && hostileSightRange.length==0) {
+					destination = null;
 				}
 				
 				//if sees friendly robot in need of repair, repair it
@@ -182,6 +227,7 @@ public class ArchonPlayer {
 						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
 					}
+					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>600 || numParts<30)) {
 						rc.activate(adjNeutralRobots[0].location);
@@ -246,6 +292,17 @@ public class ArchonPlayer {
 					if (rc.isCoreReady()) {
 						if (nearestParts != null && bug!= null) {
 							bug.move();
+						}
+					}
+					//if nothing else to do, then go towards army
+					if (rc.isCoreReady()) {
+						if (nearestParts == null) {
+							if (bug != null) {
+								bug.move();
+							}
+							else {
+								bug = new Bugging(rc, destination);
+							}
 						}
 					}
 				}

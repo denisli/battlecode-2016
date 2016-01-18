@@ -473,7 +473,13 @@ public class TurretPlayer {
 						bugging.move();
 					}
 					else {
-						if (nearestEnemyLocation != null) {
+						if (nearestDenLocation != null) {
+							destination = nearestDenLocation;
+						}
+						else if (nearestZombieLocation != null) {
+							destination = nearestZombieLocation;
+						}
+						else if (nearestEnemyLocation != null) {
 							destination = nearestEnemyLocation;
 						}
 						else if (nearestTurretLocation != null) {
@@ -481,12 +487,6 @@ public class TurretPlayer {
 						}
 						else if (nearestEnemyArchon != null) {
 							destination = nearestEnemyArchon;
-						}
-						else if (nearestZombieLocation != null) {
-							destination = nearestZombieLocation;
-						}
-						else if (nearestDenLocation != null) {
-							destination = nearestDenLocation;
 						}
 						else if (nearestArchonLocation != null) {
 							destination = nearestArchonLocation;
