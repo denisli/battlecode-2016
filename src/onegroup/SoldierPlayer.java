@@ -165,6 +165,12 @@ public class SoldierPlayer {
     		if (dir != Direction.NONE) rc.move(dir);
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
+    			// Broadcast den killed if killed it
+    			if (bestEnemy.type == RobotType.ZOMBIEDEN) {
+    				if (bestEnemy.health <= RobotType.SOLDIER.attackPower) {
+    					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.DENKILLED, Message.FULL_MAP_RANGE);
+    				}
+    			}
     			rc.attackLocation(bestEnemy.location);
     		}
     	}
@@ -212,6 +218,12 @@ public class SoldierPlayer {
     	// Attack whenever you can
     	if (rc.isWeaponReady()) {
     		if (rc.canAttackLocation(bestEnemy.location)) {
+    			// Broadcast den killed if killed it.
+    			if (bestEnemy.type == RobotType.ZOMBIEDEN) {
+    				if (bestEnemy.health <= RobotType.SOLDIER.attackPower) {
+    					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.DENKILLED, Message.FULL_MAP_RANGE);
+    				}
+    			}
     			rc.attackLocation(bestEnemy.location);
     		}
     	}
