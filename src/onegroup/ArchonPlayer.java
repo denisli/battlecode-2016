@@ -142,6 +142,7 @@ public class ArchonPlayer {
 					//find what to broadcast
 					if (denLocs != null) {
 						toBroadcast = denLocs.closestElement(myLoc);
+						
 					}
 					else if (targetEnemy!=null) {
 						toBroadcast = targetEnemy;
