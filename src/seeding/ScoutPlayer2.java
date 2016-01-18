@@ -71,6 +71,7 @@ public class ScoutPlayer2 {
 				
 				// Broadcast collectibles
 				if (rc.isCoreReady()) {
+						}
 					if (numTurnsStationary < 15 && numTurnsSincePreviousCollectiblesBroadcast >= 15) {
 						if (isPaired) {
 							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
@@ -80,7 +81,6 @@ public class ScoutPlayer2 {
 							if (!inDanger) {
 								broadcastCollectibles(rc, hostiles.length > 0);
 							}
-						}
 					}
 				}
 				
@@ -530,7 +530,6 @@ public class ScoutPlayer2 {
 			
 			// If my closest enemy can hit me, get away.
 			if (closestEnemy.location.distanceSquaredTo(myLoc) <= closestEnemy.type.attackRadiusSquared) {
-				inDanger = true;
 				// Find a direction closest to paired turret that is not in attack range.
 				int closestPairedDist = 10000;
 				Direction dodgeEnemyDir = Direction.NONE;
@@ -551,9 +550,10 @@ public class ScoutPlayer2 {
 					mainDir = dodgeEnemyDir;
 					rc.move(mainDir);
 					numTurnsStationary = 0;
+					break;
 				}
 			}
-		}		
+		}
 	}
 
 	private static boolean inEnemyAttackRange(MapLocation location, RobotInfo[] hostiles) {
