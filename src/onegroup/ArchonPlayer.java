@@ -155,7 +155,7 @@ public class ArchonPlayer {
 					}
 					//broadcast it
 					//set destination to whatever broadcasted
-					if (toBroadcast != prevBroadcast) {
+					if (toBroadcast != prevBroadcast && toBroadcast != null) {
 						Message.sendMessageGivenRange(rc, toBroadcast, Message.TARGET, Message.FULL_MAP_RANGE);
 						prevBroadcast = toBroadcast;
 						destination = toBroadcast;
