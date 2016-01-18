@@ -27,6 +27,7 @@ public class Message {
 	public static final int ENEMYTURRETSCOUT = 14;
 	public static final int ARCHONINDANGER = 15;
 	public static final int SOLDIERATTACK = 16;
+	public static final int TARGET = 17;
 	
 	private static final int AYY = 2000;
 	
