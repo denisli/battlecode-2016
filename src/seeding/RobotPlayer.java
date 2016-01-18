@@ -29,7 +29,7 @@ public class RobotPlayer {
         } else if (rc.getType() == RobotType.SOLDIER) {
 			SoldierPlayer.run(rc);
         } else if (rc.getType() == RobotType.SCOUT) {
-        	ScoutPlayer.run(rc);
+        	ScoutPlayer2.run(rc);
         } else if (rc.getType() == RobotType.TURRET || rc.getType() == RobotType.TTM) {
         	TurretPlayer.run(rc);
         } else if (rc.getType() == RobotType.GUARD) {
