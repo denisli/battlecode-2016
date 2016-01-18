@@ -93,10 +93,10 @@ public class Bugging {
 				// In this case, break out of bugging
 				if (getFanDist(dirToDest, cameFromDir) > 1 && ((rc.canMove(dirToDest) && safePredicate.test(dirToDest)) || shouldMine(dirToDest))) {
 					hugging = Hugging.NONE;
-					if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
-						rc.move(dirToDest);
-					} else {
+					if (shouldMine(dirToDest)) {
 						rc.clearRubble(dirToDest);
+					} else if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
+						rc.move(dirToDest);
 					}
 				// Continue to bug...
 				} else {
