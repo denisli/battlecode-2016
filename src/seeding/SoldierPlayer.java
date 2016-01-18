@@ -280,7 +280,7 @@ public class SoldierPlayer {
     	}
 	}
 	
-	// loops through the nearbyEnemies and gets the one that is closest regardless of everything
+	// loops through the nearbyEnemies and gets the best one
 	public static RobotInfo getBestEnemy(RobotController rc) {
 		RobotInfo bestEnemy = nearbyEnemies[0];
 		for (RobotInfo r : nearbyEnemies) {
@@ -291,13 +291,7 @@ public class SoldierPlayer {
 					totalEnemySoldierHealth += r.health;
 				}
 			}
-			if (r.type == RobotType.ARCHON) {
-				if (bestEnemy.type == RobotType.ARCHON && r.health < bestEnemy.health) {
-					bestEnemy = r;
-				} else {
-					bestEnemy = r;
-				}
-			} else if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
+			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
 				bestEnemy = r;
 			}
 		}
