@@ -30,6 +30,8 @@ public class ScoutPlayer {
 	
 	static RobotInfo closestRecordedEnemy = null; // does not include the Den!
 	static RobotInfo secondClosestRecordedEnemy = null; // does not include the Den!
+	static int closestRecordedEnemyDist = 10000;
+	static int secondClosestRecordedEnemyDist = 20000;
 	
 	static Random rand = new Random();
 	static Direction mainDir = RobotPlayer.directions[rand.nextInt(8)];
@@ -186,6 +188,7 @@ public class ScoutPlayer {
 			}
 		}
 		numTurnsStationary++;
+		
 	}
 
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {

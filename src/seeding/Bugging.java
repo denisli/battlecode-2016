@@ -3,7 +3,6 @@ package seeding;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import sprintplus.Bugging.Hugging;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;

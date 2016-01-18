@@ -171,7 +171,8 @@ public class ArchonPlayer {
 //						bug.move();
 //					}
 					//if sees enemies nearby, run away
-					/*else*/ if (hostileSightRange.length > 0) {
+					/*else*/ 
+					if (hostileSightRange.length > 0) {
 						//run away
 						RobotInfo closestEnemy = hostileSightRange[0];
 						MapLocation closestEnemyLoc = closestEnemy.location;
@@ -181,6 +182,7 @@ public class ArchonPlayer {
 								closestEnemyLoc = h.location;
 							}
 						}
+						rc.setIndicatorString(2, "here1");
 						//if it's far, broadcast its location
 /*						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
 							//broadcast location
@@ -199,7 +201,8 @@ public class ArchonPlayer {
 								previousBroadcastedEnemy = closestEnemy.location;	
 							}
 						}
-						else */if (closestEnemy.type != RobotType.ZOMBIEDEN){
+						else */
+						if (closestEnemy.type != RobotType.ZOMBIEDEN || closestEnemy.type != RobotType.ARCHON){
 							//move away
 							Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
 							Direction safeDir = dangerousDir.opposite();
@@ -231,6 +234,7 @@ public class ArchonPlayer {
 					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
+						rc.setIndicatorString(2, "sending message");
 						Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONLOC, 2.8);
 						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
@@ -238,12 +242,14 @@ public class ArchonPlayer {
 					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
+						rc.setIndicatorString(2, "moving to neutral");
 						rc.activate(adjNeutralRobots[0].location);
 						bug = null;
 						nearestParts = null;
 					}
 					//else if can move to adjacent parts, move to it
 					else if (adjParts.length > 0 && (roundNum>300 || numParts<30)) {
+						rc.setIndicatorString(2, "moving to parts");
 						MapLocation adjPartsLoc = adjParts[0];
 						if (adjParts.length > 1) {
 							int i = 1;
@@ -261,6 +267,7 @@ public class ArchonPlayer {
 					}
 					//else if turn 0 build scout
 					else if (roundNum < 14) {
+						rc.setIndicatorString(2, "build scout");
 						if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 							buildRandomDir(rc, RobotType.SCOUT, rand);
 						}
@@ -332,7 +339,7 @@ public class ArchonPlayer {
 					//if nothing else to do, then go towards army
 					rc.setIndicatorString(0, "destination"+destination);
 					rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
-					rc.setIndicatorString(2, partsInSight.length+" "+neutralRobotsInSight.length);
+					
 					if (rc.isCoreReady()) {
 						if (nearestParts == null) {
 							if (bug == null) {
