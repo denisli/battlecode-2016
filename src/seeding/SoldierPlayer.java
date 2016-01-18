@@ -39,6 +39,8 @@ public class SoldierPlayer {
 	private static boolean useSoldierMicro = false;
 	private static boolean wentGreedy = false;
 	
+	private static int distressedArchonTurns = 0;
+	
 	public static void run(RobotController rc) {
 		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
 		attackRadius = RobotType.SOLDIER.attackRadiusSquared;
@@ -191,31 +193,89 @@ public class SoldierPlayer {
 	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
 		// Prioritize movement
 		Direction d = myLoc.directionTo(bestEnemy.location);
-		
-		if (rc.isCoreReady()) {
-			int dist = myLoc.distanceSquaredTo(bestEnemy.location);
-			if (dist > RobotType.SOLDIER.attackRadiusSquared) {
-				Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
-				if (dir != Direction.NONE) {
-					rc.move(dir);
-				}
-			} else {
-				Direction awayDir = d.opposite();
-				MapLocation awayLoc = myLoc.add(awayDir);
-				if (awayLoc.distanceSquaredTo(bestEnemy.location) < RobotType.SOLDIER.attackRadiusSquared) {
-					Direction bestAwayDir = Movement.getBestMoveableDirection(awayDir, rc, 2);
-					if (bestAwayDir != Direction.NONE) {
-						rc.move(bestAwayDir);
-					}
-				}
-			}
+    	if (rc.isCoreReady()) {
+//    		// If can back away from soldier hit, then do it!
+//    		Direction bestBackAwayDir = Direction.NONE;
+//    		int bestBackAwayDist = 1000;
+//    		// Pick the direction that gets away from soldier attack, and minimizes that dist.
+//    		if (rc.canMove(d.opposite())) {
+//    			int backAwayDist = myLoc.add(d.opposite()).distanceSquaredTo(bestEnemy.location);
+//    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+//    				if (backAwayDist < bestBackAwayDist) {
+//    					bestBackAwayDist = backAwayDist;
+//    					bestBackAwayDir = d.opposite();
+//    				}
+//    			}
+//    		} else if (rc.canMove(d.opposite().rotateLeft())) {
+//    			int backAwayDist = myLoc.add(d.opposite().rotateLeft()).distanceSquaredTo(bestEnemy.location);
+//    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+//    				if (backAwayDist < bestBackAwayDist) {
+//    					bestBackAwayDist = backAwayDist;
+//    					bestBackAwayDir = d.opposite().rotateLeft();
+//    				}
+//    			}
+//    		} else if (rc.canMove(d.opposite().rotateRight())) {
+//    			int backAwayDist = myLoc.add(d.opposite().rotateRight()).distanceSquaredTo(bestEnemy.location);
+//    			if (backAwayDist > RobotType.SOLDIER.attackRadiusSquared) {
+//    				if (backAwayDist < bestBackAwayDist) {
+//    					bestBackAwayDist = backAwayDist;
+//    					bestBackAwayDir = d.opposite().rotateRight();
+//    				}
+//    			}
+//    		}
+//    		if (falsebestBackAwayDir != Direction.NONE) {
+//    			rc.move(bestBackAwayDir);
+//    		} else {
+        		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
+        			// If the enemy can be killed but we're not in range, move forward
+                	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower) {
+                		if (rc.canMove(d)) {
+                			rc.move(d);
+                		} else if (rc.canMove(d.rotateLeft())) {
+                			rc.move(d.rotateLeft());
+                		} else if (rc.canMove(d.rotateRight())) {
+                			rc.move(d.rotateRight());
+                		}
+                	// If not in range, see if we should move in by comparing soldier health
+                	} else {
+                		double totalOurSoldierHealth = 0;
+                		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
+                		for (RobotInfo ally : allies) {
+                			if (ally.type == RobotType.SOLDIER) {
+                				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
+                					totalOurSoldierHealth += ally.health;
+                				}
+                			}
+                		}
+                		// If we feel that we are strong enough, rush in.
+                		if (totalOurSoldierHealth > totalEnemySoldierHealth) {
+                			if (!rc.canAttackLocation(bestEnemy.location)) {
+                    			if (rc.canMove(d)) {
+		                			rc.move(d);
+		                		} else if (rc.canMove(d.rotateLeft())) {
+		                			rc.move(d.rotateLeft());
+		                		} else if (rc.canMove(d.rotateRight())) {
+		                			rc.move(d.rotateRight());
+		                		}
+                			}
+                		} else if (4 * totalOurSoldierHealth < 3 * totalEnemySoldierHealth) {
+                			if (rc.canMove(d.opposite())) {
+	                			rc.move(d.opposite());
+	                		} else if (rc.canMove(d.opposite().rotateLeft())) {
+	                			rc.move(d.opposite().rotateLeft());
+	                		} else if (rc.canMove(d.opposite().rotateRight())) {
+	                			rc.move(d.opposite().rotateRight());
+	                		}
+                		}
+            		}
+            	}
+    		//}
     	}
     	
     	// Attack whenever you can
     	if (rc.isWeaponReady()) {
     		if (rc.canAttackLocation(bestEnemy.location)) {
     			rc.attackLocation(bestEnemy.location);
-    			// rc.broadcastSignal(24);
     		}
     	}
 	}
@@ -274,9 +334,11 @@ public class SoldierPlayer {
 			if (nearestDenLocation.equals(currentDestination)) currentDestination = null;
 			nearestDenLocation = null;
 		}
-		if (nearestDistressedArchon != null && rc.canSense(nearestDistressedArchon) && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))) {
-			if (nearestDistressedArchon.equals(currentDestination)) currentDestination = null;
+		if (nearestDistressedArchon != null && rc.canSense(nearestDistressedArchon) && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))
+				|| distressedArchonTurns > 5) {
+			if (nearestDistressedArchon != null && nearestDistressedArchon.equals(currentDestination)) currentDestination = null;
 			nearestDistressedArchon = null;
+			distressedArchonTurns = 0;
 		}
 		if (nearestSoldierAttacking != null && rc.canSense(nearestSoldierAttacking) && rc.senseRobotAtLocation(nearestSoldierAttacking) == null) {
 			if (nearestSoldierAttacking.equals(currentDestination)) currentDestination = null;
@@ -288,6 +350,7 @@ public class SoldierPlayer {
 	public static void readMessages(RobotController rc) {
 		List<Message> messages = Message.readMessageSignals(rc);
 		// we want to loop through each message and get the ones that are relevant to the soldier
+		distressedArchonTurns++;
 		for (Message m : messages) {
 			// if the message is an enemy archon, get the nearest one
 			if (m.type == Message.ENEMYARCHONLOC) {
@@ -356,6 +419,7 @@ public class SoldierPlayer {
 			} else
 			// if we get an archon in distressed signal, needs to take priority
 			if (m.type == Message.ARCHONINDANGER) {
+				distressedArchonTurns = 0;
 				if (nearestDistressedArchon == null) {
 					nearestDistressedArchon = m.location;
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDistressedArchon)) {
