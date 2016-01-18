@@ -211,7 +211,7 @@ public class ScoutPlayer2 {
 						turretEncountered = hostile.location;
 					}
 					else if (hostile.type == RobotType.ZOMBIEDEN) {
-						if (turnsSincePreviousDenBroadcast > 15) {
+						if (turnsSincePreviousDenBroadcast > 15 && rc.isCoreReady()) {
 							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 								previouslyBroadcastedDen = hostile.location;
 								Message.sendMessageGivenRange(rc, hostile.location, Message.ZOMBIEDEN, Message.FULL_MAP_RANGE);
@@ -278,7 +278,7 @@ public class ScoutPlayer2 {
 			if (hostiles.length > 0) {
 				for (RobotInfo hostile : hostiles) {
 					if (hostile.type == RobotType.ZOMBIEDEN) {
-						if (turnsSincePreviousDenBroadcast > 15) {
+						if (turnsSincePreviousDenBroadcast > 15 && rc.isCoreReady()) {
 							previouslyBroadcastedDen = hostile.location;
 							Message.sendMessageGivenRange(rc, hostile.location, Message.ZOMBIEDEN, Message.FULL_MAP_RANGE);
 							turnsSincePreviousDenBroadcast = 0;
