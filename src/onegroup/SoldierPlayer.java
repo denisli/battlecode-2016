@@ -277,7 +277,6 @@ public class SoldierPlayer {
 			} else 
 			// if the message is a turret, try to get the nearest turret location
 			if (m.type == Message.TURRET) {
-				turretCount++;
 				if (nearestTurretLocation == null) {
 					nearestTurretLocation = m.location;
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
