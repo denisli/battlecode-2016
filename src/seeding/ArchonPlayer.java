@@ -39,7 +39,9 @@ public class ArchonPlayer {
 				RobotInfo[] friendlyRobotsAttackRange = rc.senseNearbyRobots(attackRadius, myTeam);
 				RobotInfo[] hostileSightRange = rc.senseHostileRobots(myLoc, sightRadius);
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
+				RobotInfo[] neutralRobotsInSight = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
 				MapLocation[] adjParts = rc.sensePartLocations(2);
+				MapLocation[] partsInSight = rc.sensePartLocations(sightRadius);
 				int roundNum = rc.getRoundNum();
 				double numParts = rc.getTeamParts();
 				double curHealth = rc.getHealth();
@@ -116,9 +118,14 @@ public class ArchonPlayer {
 						}
 					}
 				}
-				
+				//destination is nearest enemy
 				if (destination!=null && myLoc.distanceSquaredTo(destination) <= 35 && hostileSightRange.length==0) {
 					destination = null;
+				}
+				
+				//if no adjacent parts or neutral robots, set nearestParts=null
+				if (partsInSight.length==0 && neutralRobotsInSight.length==0 && nearestParts!=null && myLoc.distanceSquaredTo(nearestParts)<=sightRadius) {
+					nearestParts=null;
 				}
 				
 				//if sees friendly robot in need of repair, repair it
@@ -290,13 +297,42 @@ public class ArchonPlayer {
 
 					//if core is ready, move to nearest parts
 					if (rc.isCoreReady()) {
+						//go to parts nearby if they exist
+						if (partsInSight.length>0) {
+							if (nearestParts == null) {
+								nearestParts=partsInSight[0];
+							}
+							if (nearestParts != null) {
+								for (MapLocation p : partsInSight) {
+									if (myLoc.distanceSquaredTo(p) < myLoc.distanceSquaredTo(nearestParts)) {
+										nearestParts = p;
+									}
+								}
+							}
+						}
+						if (neutralRobotsInSight.length>0) {
+							if (nearestParts==null) {
+								nearestParts=neutralRobotsInSight[0].location;
+							}
+							if (nearestParts != null) {
+								for (RobotInfo n : neutralRobotsInSight) {
+									if (myLoc.distanceSquaredTo(n.location) < myLoc.distanceSquaredTo(nearestParts)) {
+										nearestParts = n.location;
+									}
+								}
+							}
+						}
 						if (nearestParts != null && bug!= null) {
 							bug.move();
 						}
+						
 					}
 					//if nothing else to do, then go towards army
+					rc.setIndicatorString(0, "destination"+destination);
+					rc.setIndicatorString(1, "parts"+nearestParts);
+					rc.setIndicatorString(2, partsInSight.length+" "+neutralRobotsInSight.length);
 					if (rc.isCoreReady()) {
-						if (nearestParts == null) {
+						if (nearestParts == null && destination != null) {
 							if (bug != null) {
 								bug.move();
 							}
