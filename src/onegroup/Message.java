@@ -67,7 +67,7 @@ public class Message {
 					int type = x / AYY;
 					messages.add(new Message(signal, new MapLocation(x - type * AYY, y - type * AYY), type));
 				} else { // it's a soldier signal
-					messages.add(new Message(signal, signal.getLocation(), SOLDIERATTACK));
+					messages.add(new Message(signal, signal.getLocation(), DENKILLED));
 				}
 			}
 			signal = rc.readSignal();
