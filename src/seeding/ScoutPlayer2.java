@@ -249,7 +249,8 @@ public class ScoutPlayer2 {
 			for (RobotInfo hostile : hostiles) {
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
 				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
-					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, myLoc.distanceSquaredTo(pairedArchon));
+					rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", Broadcasted archon sight " + hostile.location);
+					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
 				}
 			}
 			
