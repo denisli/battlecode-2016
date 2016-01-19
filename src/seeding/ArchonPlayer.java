@@ -122,6 +122,8 @@ public class ArchonPlayer {
 					}
 				}
 				
+				rc.setIndicatorString(2, "enemies"+hostileInSight.size());
+				
 				//if see enemy, stop going to destination
 				if (destination!=null && hostileInSight.size()!=0) {
 					destination = null;
@@ -185,19 +187,19 @@ public class ArchonPlayer {
 						}
 						//rc.setIndicatorString(2, "here1");
 						//if it's far, broadcast its location
-						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
-							//broadcast location
-							Message.sendMessageGivenDelay(rc, closestEnemyLoc, Message.ARCHONINDANGER, 2.3);
-						}
-						else {
+//						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
+//							//broadcast location
+//							Message.sendMessageGivenDelay(rc, closestEnemyLoc, Message.ARCHONINDANGER, 2.3);
+//						}
+//						else {
 							Direction safestDir = moveSafestDir(rc, hostileInSight);
 							if (safestDir != null) {
 								rc.move(safestDir);
 							}
 							else {
-								Message.sendMessageGivenDelay(rc, closestEnemyLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
+								Message.sendMessageGivenRange(rc, closestEnemyLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
 							}
-						}
+						//}
 					}
 					//no other place to go when getting attacked
 //					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
@@ -254,7 +256,7 @@ public class ArchonPlayer {
 					//else build mode
 					else {
 						rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
-						if (unpairedScouts < 6 && numSoldiersBuilt >= 12 && numVipersBuilt >= 2) {
+						if (unpairedScouts < 12 && numSoldiersBuilt >= 12 && numVipersBuilt >= 2) {
 							//build scouts
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
@@ -276,7 +278,7 @@ public class ArchonPlayer {
 								numVipersBuilt++;
 							}
 						}
-						else if (numScoutsBuilt>=2 && numSoldiersBuilt>=20 && numVipersBuilt == 1) {
+						else if (numScoutsBuilt>=3 && numSoldiersBuilt>=20 && numVipersBuilt == 1) {
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
 								numVipersBuilt++;
@@ -345,7 +347,7 @@ public class ArchonPlayer {
 						bugNull = "no";
 					}
 					//if nothing else to do, then go towards army
-					//rc.setIndicatorString(0, "destination"+destination);
+					rc.setIndicatorString(0, "unpaired"+unpairedScouts);
 					//rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 
 					if (rc.isCoreReady()) {
