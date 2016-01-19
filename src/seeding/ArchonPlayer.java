@@ -1,8 +1,6 @@
 package seeding;
 
 import battlecode.common.*;
-import seeding.Bugging;
-import seeding.Message;
 
 import java.util.ArrayList;
 import java.util.Arrays;
