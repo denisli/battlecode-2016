@@ -26,6 +26,17 @@ public class Bugging {
 	
 	public void move(Predicate<Direction> safePredicate) throws GameActionException {
 		MapLocation myLocation = rc.getLocation();
+		// Special case for when the destination is right in front of us. If we can't move there, but should mine, then mine it.
+		if (myLocation.distanceSquaredTo(destination) <= 2) {
+			Direction dir = myLocation.directionTo(destination);
+			if (rc.canMove(dir)) {
+				rc.move(dir);
+			} else if (shouldMine(dir)) {
+				rc.clearRubble(dir);
+			}
+		}
+		
+		// The rest of the normal code.
 		if (myLocation.equals(destination)) return;
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
