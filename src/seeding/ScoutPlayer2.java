@@ -176,8 +176,6 @@ public class ScoutPlayer2 {
 						} else if (hostile.team == Team.ZOMBIE) {
 							// Just pretend zombie sight radius is 24
 							if (dist <= 35) inDanger = true;
-						} else if (hostile.type == RobotType.SCOUT) { 
-							if (dist <= 24) inDanger = true;
 						} else {
 							if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
 						}
