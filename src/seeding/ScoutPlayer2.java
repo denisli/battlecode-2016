@@ -176,9 +176,7 @@ public class ScoutPlayer2 {
 						} else if (hostile.team == Team.ZOMBIE) {
 							// Just pretend zombie sight radius is 24
 							if (dist <= 35) inDanger = true;
-						} else if (hostile.type == RobotType.SCOUT) { 
-							if (dist <= 24) inDanger = true;
-						} else {
+						} else if (hostile.type != RobotType.SCOUT) {
 							if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
 						}
 					}
@@ -494,7 +492,7 @@ public class ScoutPlayer2 {
 							int minDist = 10000;
 							for (RobotInfo hostile : hostiles) {
 								int dist = dirLoc.distanceSquaredTo(hostile.location);
-								if (!isDangerous(hostile.type)) continue;
+								if (hostile.type == RobotType.ARCHON || hostile.type == RobotType.SCOUT) continue;
 								minDist = Math.min(dist, minDist);
 							}
 							if (maxMinDist < minDist) {
