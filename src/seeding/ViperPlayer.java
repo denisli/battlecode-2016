@@ -149,11 +149,7 @@ public class ViperPlayer {
 	}
 	
 	public static void nonrangeMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
-		if (useSoldierMicro) {
-			soldierMicro(rc, hostiles, bestEnemy);
-		} else {
-			nonSoldierMicro(rc, bestEnemy);
-		}
+		nonSoldierMicro(rc, bestEnemy);
 	}
 	
 	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
