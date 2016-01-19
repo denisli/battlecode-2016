@@ -186,6 +186,7 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastEnemies(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+		rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Is paired: " + isPaired);
 		if (isPaired) {
 			if (hostiles.length > 0) {
 				closestTurretLoc = null;
@@ -241,6 +242,7 @@ public class ScoutPlayer2 {
 					// When can't see turret anymore, broadcast turret killed message.
 					if (previouslyBroadcastedClosestTurretLoc != null && closestTurretLoc == null && rc.isCoreReady()) {
 						Message.sendMessageGivenDelay(rc, previouslyBroadcastedClosestTurretLoc, Message.TURRETKILLED, 2.25);
+						previouslyBroadcastedClosestTurretLoc = null;
 					}
 					
 					//if it sees enemy turret with a scout, signal that
