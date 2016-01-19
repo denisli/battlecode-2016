@@ -117,12 +117,22 @@ public class ArchonPlayer {
 							}
 						}
 					}
+					if (m.type==Message.TURRET) {
+						if (destination == null) {
+							destination = m.location;
+						}
+						else {
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
+								destination = m.location;
+							}
+						}
+					}
 					if (m.type==Message.ARCHONSIGHT) {
 						hostileInSight.add(m.location);
 					}
 				}
 
-
+				rc.setIndicatorString(0, "d"+destination);
 				//if see enemy, stop going to destination
 				if (hostileInSight.size()!=0) {
 					destination = null;
@@ -133,6 +143,7 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
+				rc.setIndicatorString(2, "d"+destination);
 				//destination = null;
 
 
@@ -176,7 +187,7 @@ public class ArchonPlayer {
 
 					//if sees enemies nearby, run away
 					if (hostileInSight.size() > 0) {
-						rc.setIndicatorString(0, "bytecodesused1a"+Clock.getBytecodeNum());
+						//rc.setIndicatorString(0, "bytecodesused1a"+Clock.getBytecodeNum());
 						//rc.setIndicatorString(0, "here0"+hostileSightRange.size());
 						//run away
 						//						MapLocation closestEnemyLoc = hostileInSight.get(0);
@@ -292,8 +303,8 @@ public class ArchonPlayer {
 //						}
 
 						//build viper code
-						rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
-						if (unpairedScouts < 9 && numSoldiersBuilt >= 12 && numVipersBuilt >= 2) {
+						//rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
+						if (unpairedScouts < 9 && numSoldiersBuilt >= 12) {
 							//build scouts
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
@@ -308,7 +319,7 @@ public class ArchonPlayer {
 							}
 						}
 						//build viper condition
-						else if (numScoutsBuilt>=2 && unpairedScouts >= 6 && numSoldiersBuilt >=12 && numVipersBuilt == 0 && roundNum > 320){
+						else if (numScoutsBuilt>=2 && unpairedScouts >= 8 && numSoldiersBuilt >=12 && numVipersBuilt == 0 && roundNum > 320){
 							//rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
@@ -336,7 +347,7 @@ public class ArchonPlayer {
 									if (buildFate < 3) {
 										toBuild = RobotType.TURRET;
 									} 
-									else if (buildFate ==3 && numVipersBuilt >=1) {
+									else if (buildFate ==3 && numVipersBuilt >=1 && roundNum < 1700) {
 										toBuild = RobotType.VIPER;
 										numVipersBuilt++;
 									}
@@ -390,7 +401,7 @@ public class ArchonPlayer {
 					//rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 
 					//if dangerous, forget about parts
-					if (hostileInSight.size()!=0) {
+					if (hostileInSight.size()>0) {
 						nearestParts = null;
 						bug = null;
 					}
