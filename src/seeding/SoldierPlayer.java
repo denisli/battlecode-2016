@@ -270,7 +270,7 @@ public class SoldierPlayer {
 		
 		if (rc.isCoreReady()) {
 			// If have destination get closer.
-			if (currentDestination != null) {
+			if (currentDestination != null && rc.canSenseLocation(currentDestination)) {
 				RobotInfo info = rc.senseRobotAtLocation(currentDestination);
 				if (info != null) {
 					// If can attack it, just only move closer if blocking someone behind.
