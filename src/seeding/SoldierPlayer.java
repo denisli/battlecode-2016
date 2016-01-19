@@ -1,8 +1,6 @@
 package seeding;
 
 import java.util.List;
-
-import realvipersoldier.Movement;
 import battlecode.common.*;
 
 public class SoldierPlayer {
