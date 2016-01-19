@@ -34,6 +34,7 @@ public class ScoutPlayer2 {
 	private static MapLocation previouslyBroadcastedPartLoc;
 	private static MapLocation previouslyBroadcastedDen;
 	private static int turnsSincePreviousDenBroadcast = 0;
+	private static int turnsSinceClosestTurretBroadcast = 0;
 	
 	private static MapLocation pairedTurret;
 	private static boolean isPaired = false;
@@ -47,6 +48,7 @@ public class ScoutPlayer2 {
 			try {
 				numTurnsSincePreviousCollectiblesBroadcast++;
 				turnsSincePreviousDenBroadcast++;
+				turnsSinceClosestTurretBroadcast++;
 				myLoc = rc.getLocation();
 				
 				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
@@ -234,9 +236,10 @@ public class ScoutPlayer2 {
 				}
 				if (!inDanger) {
 					// If there is a closest turret, send a message.
-					if (closestTurretLoc != null && rc.isCoreReady()) {
+					if (closestTurretLoc != null && turnsSinceClosestTurretBroadcast > 20 && rc.isCoreReady()) {
 						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
 						previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
+						turnsSinceClosestTurretBroadcast = 0;
 					}
 					
 					// When can't see turret anymore, broadcast turret killed message.
