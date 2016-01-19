@@ -245,17 +245,15 @@ public class ScoutPlayer2 {
 			}
 		} else if (pairing == Pairing.ARCHON) {
 			// Only broadcast enemies when adjacent to archon.
-			if (myLoc.distanceSquaredTo(pairedArchon) <= 2) {
-				for (RobotInfo hostile : hostiles) {
-					int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
-					if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
-						Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 8);
-					}
+			for (RobotInfo hostile : hostiles) {
+				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
+				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
+					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 8);
 				}
-				
-				if (hostiles.length > 0 && rc.isCoreReady()) {
-					Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
-				}
+			}
+			
+			if (hostiles.length > 0 && rc.isCoreReady()) {
+				Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
 			}
 		} else {
 			// If sees an enemy, get away and record the two closest enemies. Then broadcast the location while running away.
