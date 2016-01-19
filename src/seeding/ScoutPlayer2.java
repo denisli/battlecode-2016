@@ -427,7 +427,7 @@ public class ScoutPlayer2 {
 						getTheHellOut = true; break;
 					}
 				}
-				if (getTheHellOut) {
+				if (getTheHellOut && inDanger) {
 					// Go in direction maximizing the minimum distance
 					int maxMinDist = 0;
 					for (Direction dir : RobotPlayer.directions) {
@@ -451,10 +451,6 @@ public class ScoutPlayer2 {
 						numTurnsStationary = 0;
 					}
 				}
-				else if (inDanger) {
-					// Move in a direction that dodges enemy.
-					pairedDodgeEnemy(rc, hostiles);
-				} 
 				else {
 					// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
 					Direction dirToTurret = myLoc.directionTo(pairedTurret);
