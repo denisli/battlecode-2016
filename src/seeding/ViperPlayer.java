@@ -184,7 +184,7 @@ public class ViperPlayer {
     			rc.move(d.rotateRight().rotateRight());
     		}
     	} else { // otherwise we want to try to attack
-    		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
+    		if (rc.isWeaponReady()) {
     			rc.attackLocation(bestEnemy.location);
     			// rc.broadcastSignal(24);
     		}
