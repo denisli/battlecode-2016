@@ -678,6 +678,7 @@ public class ScoutPlayer2 {
 		public boolean noCloserScouts(MapLocation location) {
 			int myDist = myLoc.distanceSquaredTo(location);
 			for (RobotInfo ally : allies) {
+				if (ally.type != RobotType.SCOUT) continue;
 				int dist = ally.location.distanceSquaredTo(location);
 				if (dist < myDist) return false;
 			}
