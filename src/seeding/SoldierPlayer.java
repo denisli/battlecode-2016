@@ -70,6 +70,7 @@ public class SoldierPlayer {
 					nearestArchonLocation = newArchonLoc;
 				}
 
+				rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Rushing: " + rush);
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
@@ -270,13 +271,16 @@ public class SoldierPlayer {
 		
 		if (rc.isCoreReady()) {
 			// If have destination get closer.
-			if (currentDestination != null && rc.canSenseLocation(currentDestination)) {
-				RobotInfo info = rc.senseRobotAtLocation(currentDestination);
+			if (nearestTurretLocation != null) {
+				RobotInfo info = null;
+				if (rc.canSenseLocation(nearestTurretLocation)) {
+					info = rc.senseRobotAtLocation(nearestTurretLocation);
+				}
 				if (info != null) {
 					// If can attack it, just only move closer if blocking someone behind.
 					if (rc.canAttackLocation(info.location)) {
-						if (isBlockingSomeone(rc, currentDestination)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+						if (isBlockingSomeone(rc, nearestTurretLocation)) {
+							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(nearestTurretLocation), rc, 2);
 							if (dir != Direction.NONE) {
 								rc.move(dir);
 							}
@@ -284,7 +288,7 @@ public class SoldierPlayer {
 					}
 					// If can't attack it, move closer!
 					else {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(nearestTurretLocation), rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
 						}
@@ -292,7 +296,7 @@ public class SoldierPlayer {
 				}
 				// If not there, just move closer.
 				else {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(nearestTurretLocation), rc, 2);
 					if (dir != Direction.NONE) {
 						rc.move(dir);
 					}
