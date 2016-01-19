@@ -247,6 +247,7 @@ public class ScoutPlayer2 {
 		} else if (pairing == Pairing.ARCHON) {
 			// Only broadcast enemies when adjacent to archon.
 			for (RobotInfo hostile : hostiles) {
+				if (!isDangerous(hostile.type)) continue;
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
 				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
 					rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", Broadcasted archon sight " + hostile.location);
