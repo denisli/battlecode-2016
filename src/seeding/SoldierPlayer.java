@@ -24,6 +24,7 @@ public class SoldierPlayer {
 	private static MapLocation myPrevLoc;
 	private static int sightRadius;
 	private static int attackRadius;
+	private static RobotInfo[] nearbyAllies;
 	private static RobotInfo[] nearbyEnemies;
 	private static Bugging bugging = null;
 	private static MapLocation newArchonLoc = null;
@@ -52,6 +53,7 @@ public class SoldierPlayer {
 				totalEnemySoldierHealth = 0;
 				useSoldierMicro = false;
 				myLoc = rc.getLocation();
+				nearbyAllies = rc.senseNearbyRobots(sightRadius, myTeam);
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
 				newArchonLoc = null;
 				
@@ -61,62 +63,158 @@ public class SoldierPlayer {
 				readMessages(rc);
 				// modify destination based on some factors
 				destinationModifier(rc);
-				// heal if need
-				healIfNeed(rc, nearbyEnemies);
+				// heal if need (and set the archon destination to go to)
+				setRetreatingStatus(rc, nearbyEnemies);
 				
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
+				
+				// When retreating, retreat
+				if (healing) {
+					if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
+		    			bugging.enemyAvoidMove(nearbyEnemies);
+		    		} else if (rc.isCoreReady()) {
+		    			bugging.enemyAvoidMove(nearbyEnemies);
+		    		}
+				}
+				// When viper infected, do special micro
+				else if (isViperInfected(rc)) {
+					// If there are enemies, consider moving closer to them then to us.
+					RobotInfo closestEnemy = null;
+					int enemyDist = 10000;
+					RobotInfo[] enemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
+					for (RobotInfo enemy : enemies) {
+						int dist = myLoc.distanceSquaredTo(enemy.location);
+						if (dist < enemyDist) {
+							closestEnemy = enemy;
+							enemyDist = dist;
+						}
+					}
+					
+					RobotInfo closestAlly = null;
+					int allyDist = 10000;
+					for (RobotInfo ally : nearbyAllies) {
+						int dist = myLoc.distanceSquaredTo(ally.location);
+						if (dist < allyDist) {
+							closestAlly = ally;
+							allyDist = dist;
+						}
+					}
+					
+					
+					if (closestEnemy != null && closestAlly != null) {
+						if (rc.isCoreReady()) {
+							// When enemy is further than (or same dist) as ally, move closer to enemy.
+							if (enemyDist >= allyDist) {
+								Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 1);
+								// Move closer to enemy obviously
+								if (dir != Direction.NONE) {
+									rc.move(dir);
+								}
+								// If you could not move, see if you can attack the enemy and attack him.
+								else {
+									if (rc.isWeaponReady()) {
+										if (rc.canAttackLocation(closestEnemy.location)) {
+											rc.attackLocation(closestEnemy.location);
+										}
+									}
+								}
+							}
+							// If closer to the enemy, then just attack them if possible. Otherwise move closer.
+							else {
+								if (rc.isCoreReady()) {
+									if (!rc.canAttackLocation(closestEnemy.location)) {
+										Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
+										if (dir != Direction.NONE) {
+											rc.move(dir);
+										}
+									}
+								}
+								if (rc.isWeaponReady()) {
+									if (rc.canAttackLocation(closestEnemy.location)) {
+										rc.attackLocation(closestEnemy.location);
+									}
+								}
+							}
+						}
+					} else if (closestEnemy != null) {
+						// Move closer if can't hit closest. Otherwise attack closest.
+						if (rc.isCoreReady()) {
+							if (!rc.canAttackLocation(closestEnemy.location)) {
+								Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
+								if (dir != Direction.NONE) {
+									rc.move(dir);
+								}
+							}
+						}
+						if (rc.isWeaponReady()) {
+							if (rc.canAttackLocation(closestEnemy.location)) {
+								rc.attackLocation(closestEnemy.location);
+							}
+						}
+					}
+					// Get the hell away from ally!
+					else if (closestAlly != null) {
+						if (rc.isCoreReady()) {
+							Direction dir = Movement.getBestMoveableDirection(closestAlly.location.directionTo(myLoc), rc, 2);
+							if (dir != Direction.NONE) {
+								rc.move(dir);
+							}
+						}
+					}
+					
+					// If there are no enemies, just move the heck away from allies.
+					// If n
+				}
 				// if there are enemies in range, we should focus on attack and micro
-				if (!healing) {
-					if (nearbyEnemies.length > 0) {
-						// get the best enemy and do stuff based on this
-						RobotInfo bestEnemy = getBestEnemy(rc);
-						// if it's not a soldier and we aren't going to move in range of enemy, kite it
-						
-						if (!doNotMove || bestEnemy.team.equals(Team.ZOMBIE)) {
-							nonrangeMicro(rc, nearbyEnemies, bestEnemy);
-						} else { // othewise, just attack if it's in range
-							if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
-								rc.attackLocation(bestEnemy.location);
-								// rc.broadcastSignal(24);
-							}
+				else if (nearbyEnemies.length > 0) {
+					// get the best enemy and do stuff based on this
+					RobotInfo bestEnemy = getBestEnemy(rc);
+					// if it's not a soldier and we aren't going to move in range of enemy, kite it
+					
+					if (!doNotMove) {
+						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
+					} else { // othewise, just attack if it's in range
+						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
+							rc.attackLocation(bestEnemy.location);
+							// rc.broadcastSignal(24);
 						}
-						
-						
-					} else { // otherwise, we should always be moving somewhere
-						// if we have a real current destination
-						rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
-						if (currentDestination != null) {
-							// if bugging is never initialized or we are switching destinations, reinitialize bugging
-							if (!currentDestination.equals(storedDestination) || bugging == null) {
-								bugging = new Bugging(rc, currentDestination);
-								storedDestination = currentDestination;
-							}
-							// if we are trying to move towards a turret, stay out of range
-							if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
-								// try to move away from turret
-								bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
-								bugging.move();
-							} else
-							// if core is ready, then try to move towards destination
-							if (rc.isCoreReady()) {
-								bugging.move();
-							}
-						} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
-							rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
-							if (!nearestArchonLocation.equals(storedDestination)) {
-								bugging = new Bugging(rc, nearestArchonLocation);
-								storedDestination = nearestArchonLocation;
-							}
-							// if core is ready, try to move
-							if (rc.isCoreReady() && bugging != null) {
-								bugging.move();
-							}
-						} else { // if we literally have nowhere to go
-							rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
-							bugAroundFriendly(rc);
+					}
+					
+					
+				} else { // otherwise, we should always be moving somewhere
+					// if we have a real current destination
+					rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
+					if (currentDestination != null) {
+						// if bugging is never initialized or we are switching destinations, reinitialize bugging
+						if (!currentDestination.equals(storedDestination) || bugging == null) {
+							bugging = new Bugging(rc, currentDestination);
+							storedDestination = currentDestination;
 						}
+						// if we are trying to move towards a turret, stay out of range
+						if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
+							// try to move away from turret
+							bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
+							bugging.move();
+						} else
+						// if core is ready, then try to move towards destination
+						if (rc.isCoreReady()) {
+							bugging.move();
+						}
+					} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
+						rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
+						if (!nearestArchonLocation.equals(storedDestination)) {
+							bugging = new Bugging(rc, nearestArchonLocation);
+							storedDestination = nearestArchonLocation;
+						}
+						// if core is ready, try to move
+						if (rc.isCoreReady() && bugging != null) {
+							bugging.move();
+						}
+					} else { // if we literally have nowhere to go
+						rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
+						bugAroundFriendly(rc);
 					}
 				}
 				
@@ -282,6 +380,7 @@ public class SoldierPlayer {
 	
 	// loops through the nearbyEnemies and gets the best one
 	public static RobotInfo getBestEnemy(RobotController rc) {
+		TargetPrioritizer prioritizer = new TargetPrioritizer(rc);
 		RobotInfo bestEnemy = nearbyEnemies[0];
 		for (RobotInfo r : nearbyEnemies) {
 			if (r.type == RobotType.SOLDIER) {
@@ -291,7 +390,7 @@ public class SoldierPlayer {
 					totalEnemySoldierHealth += r.health;
 				}
 			}
-			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
+			if (prioritizer.isHigherPriority(bestEnemy, r)) {
 				bestEnemy = r;
 			}
 		}
@@ -502,8 +601,10 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void healIfNeed(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		healing = 3 * rc.getHealth() < RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.SOLDIER.maxHealth);
+	public static void setRetreatingStatus(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+		// Retreating is when your first hit less than a third health or when you were retreating already and is not max health yet.
+		// But you should not be retreating if you are infected. That's not a good idea!
+		healing = (3 * rc.getHealth() < RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.SOLDIER.maxHealth)) && !isViperInfected(rc);
 		if (!healing) {
 			if (wasHealing) bugging = null;
 			wasHealing = false;
@@ -522,11 +623,6 @@ public class SoldierPlayer {
     			}
     		}
     		wasHealing = true;
-    		if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
-    			bugging.enemyAvoidMove(hostiles);
-    		} else if (rc.isCoreReady()) {
-    			bugging.enemyAvoidMove(hostiles);
-    		}
     	}
 	}
 	
@@ -583,6 +679,86 @@ public class SoldierPlayer {
 		}
 		
 		return bestDir;
+	}
+	
+	private static boolean isViperInfected(RobotController rc) {
+		return rc.getViperInfectedTurns() > 0;
+	}
+	
+	private static class TargetPrioritizer implements Prioritizer<RobotInfo> {
+
+		private final RobotController rc;
+		
+		public TargetPrioritizer(RobotController rc) {
+			this.rc = rc;
+		}
+		
+		// Returns whether or not r1 is higher priority than r0.
+		@Override
+		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
+			if (r0 == null) return true;
+			if (r1 == null) return false;
+			// Highest priority are those within attack range.
+			// 		Highest priority is lowest health viper infected.
+			// 		Then lowest health zombie infected
+			// 		Then lowest health
+			
+			// Outside attack range, prioritize closest.
+			if (insideAttackRange(r0)) {
+				if (insideAttackRange(r1)) {
+					if (isViperInfected(r0)) {
+						if (isViperInfected(r1)) {
+							return r1.health < r0.health;
+						} else {
+							return false;
+						}
+					} else {
+						if (isViperInfected(r1)) {
+							return true;
+						} else { // both not viper infected
+							if (isInfected(r0)) {
+								if (isInfected(r1)) {
+									return r1.health < r0.health;
+								} else {
+									return false;
+								}
+							} else {
+								if (isInfected(r1)) {
+									return true;
+								} else {
+									return r1.health < r0.health;
+								}
+							}
+						}
+					}
+				} else {
+					return false;
+				}
+			} else {
+				if (insideAttackRange(r1)) {
+					return true;
+				} else { // both outside of attack range
+					return myLoc.distanceSquaredTo(r1.location) < myLoc.distanceSquaredTo(r0.location); 
+				}
+			}
+		}
+		
+		private boolean insideAttackRange(RobotInfo r) {
+			return myLoc.distanceSquaredTo(r.location) <= attackRadius;
+		}
+		
+		private boolean insideSightRange(RobotInfo r) {
+			return myLoc.distanceSquaredTo(r.location) <= sightRadius;
+		}
+		
+		private boolean isViperInfected(RobotInfo r) {
+			return r.viperInfectedTurns > 0;
+		}
+		
+		private boolean isInfected(RobotInfo r) {
+			return r.zombieInfectedTurns > 0;
+		}
+		
 	}
 
 }
