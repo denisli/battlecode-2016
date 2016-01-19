@@ -474,31 +474,33 @@ public class ScoutPlayer2 {
 				}
 			}
 		} else if (pairing == Pairing.ARCHON) {
-			// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
-			Direction dirToArchon = myLoc.directionTo(pairedArchon);
-			// If right next to turret, then circle around turret
-			if (myLoc.add(dirToArchon).equals(pairedArchon)) {
-				Direction left = dirToArchon.rotateLeft();
-				if (rc.canMove(left) && !inEnemyAttackRange(myLoc.add(left), hostiles)) {
-					mainDir = left;
-					rc.move(mainDir);
-					numTurnsStationary = 0;
-				} else {
-					Direction right = dirToArchon.rotateRight();
-					if (rc.canMove(right) && !inEnemyAttackRange(myLoc.add(right), hostiles)) {
-						mainDir = right;
+			if (rc.isCoreReady()) {
+				// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
+				Direction dirToArchon = myLoc.directionTo(pairedArchon);
+				// If right next to turret, then circle around turret
+				if (myLoc.add(dirToArchon).equals(pairedArchon)) {
+					Direction left = dirToArchon.rotateLeft();
+					if (rc.canMove(left) && !inEnemyAttackRange(myLoc.add(left), hostiles)) {
+						mainDir = left;
+						rc.move(mainDir);
+						numTurnsStationary = 0;
+					} else {
+						Direction right = dirToArchon.rotateRight();
+						if (rc.canMove(right) && !inEnemyAttackRange(myLoc.add(right), hostiles)) {
+							mainDir = right;
+							rc.move(mainDir);
+							numTurnsStationary = 0;
+						}
+					}
+				}
+				// Otherwise, move closer to the turret.
+				else {
+					Direction closerDir = Movement.getBestMoveableDirection(dirToArchon, rc, 2);
+					if (closerDir != Direction.NONE && !inEnemyAttackRange(myLoc.add(closerDir), hostiles)) {
+						mainDir = closerDir;
 						rc.move(mainDir);
 						numTurnsStationary = 0;
 					}
-				}
-			}
-			// Otherwise, move closer to the turret.
-			else {
-				Direction closerDir = Movement.getBestMoveableDirection(dirToArchon, rc, 2);
-				if (closerDir != Direction.NONE && !inEnemyAttackRange(myLoc.add(closerDir), hostiles)) {
-					mainDir = closerDir;
-					rc.move(mainDir);
-					numTurnsStationary = 0;
 				}
 			}
 		} else {
@@ -628,7 +630,11 @@ public class ScoutPlayer2 {
 	}
 	
 	private static boolean isAdjacentToPaired() {
-		return myLoc.distanceSquaredTo(pairedTurret) <= 2;
+		if (pairing == Pairing.TURRET) {
+			return myLoc.distanceSquaredTo(pairedTurret) <= 2;
+		} else {
+			return myLoc.distanceSquaredTo(pairedArchon) <= 2;
+		}
 	}
 	
 	private static boolean isDangerous(RobotType type) {
