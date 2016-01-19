@@ -2,6 +2,8 @@ package seeding;
 
 import java.util.Random;
 
+import com.sun.crypto.provider.RC2Cipher;
+
 import battlecode.common.Clock;
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
@@ -37,7 +39,8 @@ public class ScoutPlayer2 {
 	private static int turnsSinceClosestTurretBroadcast = 0;
 	
 	private static MapLocation pairedTurret;
-	private static boolean isPaired = false;
+	private static MapLocation pairedArchon;
+	private static Pairing pairing;
 	private static int numTurnsStationary = 0;
 	
 	private static int numTurnsSincePreviousCollectiblesBroadcast = 0;
@@ -71,13 +74,13 @@ public class ScoutPlayer2 {
 				
 				// Broadcast paired status
 				if (rc.getRoundNum() % 50 == 0) {
-					broadcastPairedStatus(rc, hostiles);
+					broadcastPairedStatus(rc);
 				}
 				
 				// Broadcast collectibles
 				if (!inDanger && rc.isCoreReady()) {
 					if (numTurnsStationary < 15 && numTurnsSincePreviousCollectiblesBroadcast >= 15) {
-						if (isPaired) {
+						if (pairing != Pairing.NONE) {
 							if (isAdjacentToPaired()) {
 								broadcastCollectibles(rc, hostiles.length > 0);
 							}
@@ -105,31 +108,15 @@ public class ScoutPlayer2 {
 	}
 
 	private static void computePairing(RobotController rc, RobotInfo[] allies) {
-		isPaired = false;
-		int followedTurretDist = 10000;
+		pairing = Pairing.NONE;
+		pairedTurret = null;
+		pairedArchon = null;
+		ScoutPairer pairer = new ScoutPairer(rc, allies);
+		RobotInfo bestPair = null;
 		for (RobotInfo ally : allies) {
-			// Add to power
-			if (ally.type == RobotType.TURRET || ally.type == RobotType.TTM) {
-				int dist = myLoc.distanceSquaredTo(ally.location);
-				if (dist < followedTurretDist) {
-					// Try to pair with this turret.
-					// Confirm that no other scout allies are nearby.
-					RobotInfo[] otherAllies = rc.senseNearbyRobots(ally.location, dist, team);
-					boolean canPairWith = true;
-					for (RobotInfo otherAlly : otherAllies) {
-						if (otherAlly.type == RobotType.SCOUT) {
-							int otherDist = ally.location.distanceSquaredTo(otherAlly.location);
-							if (otherDist < dist) {
-								canPairWith = false; break;
-							}
-						}
-					}
-					if (canPairWith) {
-						// This is turret we can pair with.
-						isPaired = true;
-						followedTurretDist = dist;
-						pairedTurret = ally.location;
-					}
+			if (pairer.canPairWith(ally)) {
+				if (pairer.isHigherPriority(bestPair, ally)) {
+					pairer.pairWith(ally);
 				}
 			}
 		}
@@ -137,7 +124,7 @@ public class ScoutPlayer2 {
 	
 	private static void computeInDanger(RobotController rc, RobotInfo[] hostiles) {
 		inDanger = false;
-		if (isPaired) {
+		if (pairing == Pairing.TURRET) {
 			if (hostiles.length > 0) {
 				int closestDist = 10000;
 				RobotInfo closestEnemy = hostiles[0];
@@ -158,7 +145,8 @@ public class ScoutPlayer2 {
 					}
 				}
 			}
-			
+		} else if (pairing == Pairing.ARCHON) {
+			inDanger = false; // You're never in danger!
 		} else {
 			if (hostiles.length > 0) {
 				for (RobotInfo hostile : hostiles) {
@@ -186,8 +174,8 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastEnemies(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Is paired: " + isPaired);
-		if (isPaired) {
+		rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Pairing: " + pairing);
+		if (pairing == Pairing.TURRET) {
 			if (hostiles.length > 0) {
 				closestTurretLoc = null;
 				RobotInfo bestEnemy = hostiles[0];
@@ -255,7 +243,20 @@ public class ScoutPlayer2 {
 					}
 				}
 			}
-			
+		} else if (pairing == Pairing.ARCHON) {
+			// Only broadcast enemies when adjacent to archon.
+			if (myLoc.distanceSquaredTo(pairedArchon) <= 2) {
+				for (RobotInfo hostile : hostiles) {
+					int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
+					if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
+						Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 8);
+					}
+				}
+				
+				if (hostiles.length > 0 && rc.isCoreReady()) {
+					Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
+				}
+			}
 		} else {
 			// If sees an enemy, get away and record the two closest enemies. Then broadcast the location while running away.
 			// If Scout sees Den, then just broadcast immediately.
@@ -321,7 +322,7 @@ public class ScoutPlayer2 {
 		
 		// Compute enemy power
 		enemyPower = 0;
-		if (isPaired) {
+		if (pairing == Pairing.TURRET) {
 		} else {
 			if (hostiles.length > 0) {
 				for (RobotInfo hostile : hostiles) {
@@ -336,22 +337,9 @@ public class ScoutPlayer2 {
 		}
 	}
 	
-	private static void broadcastPairedStatus(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		int messageType = isPaired ? Message.PAIRED : Message.UNPAIRED;
-		if (isPaired) {
-			if (isAdjacentToPaired()) { 
-				if (hostiles.length > 0) {
-					Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
-				} else {
-					Message.sendMessageGivenRange(rc, myLoc, messageType, Message.FULL_MAP_RANGE);
-				}
-			}
-		} else {
-			if (hostiles.length > 0) {
-				Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
-			} else {
-				Message.sendMessageGivenRange(rc, myLoc, messageType, Message.FULL_MAP_RANGE);
-			}
+	private static void broadcastPairedStatus(RobotController rc) throws GameActionException {
+		if (pairing == Pairing.NONE) {
+			Message.sendMessageGivenRange(rc, myLoc, Message.UNPAIRED, Message.FULL_MAP_RANGE);
 		}
 	}
 	
@@ -381,10 +369,14 @@ public class ScoutPlayer2 {
 			}
 		}
 		if (closestCollectible != null && rc.isCoreReady()) {
-			if (thereAreEnemies) {
-				Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
+			if (pairing != Pairing.ARCHON) {
+				if (thereAreEnemies) {
+					Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
+				} else {
+					Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, Message.FULL_MAP_RANGE);
+				}
 			} else {
-				Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, 5);
 			}
 			previouslyBroadcastedPartLoc = closestCollectible;
 		}
@@ -393,8 +385,9 @@ public class ScoutPlayer2 {
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		// When we have more turrets, broadcast that.
+		rc.setIndicatorString(2, "For rushing...: " + ", Our power: " + ourPower + ", Enemy power: " + enemyPower);
 		if (ourPower > 4 * enemyPower && rc.isCoreReady()) {
-			if (isPaired) {
+			if (pairing == Pairing.TURRET) {
 				if (isAdjacentToPaired()) {
 					if (closestTurretLoc != null) {
 						if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
@@ -416,7 +409,7 @@ public class ScoutPlayer2 {
 		
 		// When paired, move along with the turret
 		// Otherwise move in your main direction, and change it accordingly if you cannot move.
-		if (isPaired) {
+		if (pairing == Pairing.TURRET) {
 			if (rc.isCoreReady()) {
 				// Check if there are dangerous enemies within 24 range of the paired turret. If there are, get the hell out.
 				boolean getTheHellOut = false;
@@ -478,6 +471,34 @@ public class ScoutPlayer2 {
 							numTurnsStationary = 0;
 						}
 					}
+				}
+			}
+		} else if (pairing == Pairing.ARCHON) {
+			// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
+			Direction dirToArchon = myLoc.directionTo(pairedArchon);
+			// If right next to turret, then circle around turret
+			if (myLoc.add(dirToArchon).equals(pairedArchon)) {
+				Direction left = dirToArchon.rotateLeft();
+				if (rc.canMove(left) && !inEnemyAttackRange(myLoc.add(left), hostiles)) {
+					mainDir = left;
+					rc.move(mainDir);
+					numTurnsStationary = 0;
+				} else {
+					Direction right = dirToArchon.rotateRight();
+					if (rc.canMove(right) && !inEnemyAttackRange(myLoc.add(right), hostiles)) {
+						mainDir = right;
+						rc.move(mainDir);
+						numTurnsStationary = 0;
+					}
+				}
+			}
+			// Otherwise, move closer to the turret.
+			else {
+				Direction closerDir = Movement.getBestMoveableDirection(dirToArchon, rc, 2);
+				if (closerDir != Direction.NONE && !inEnemyAttackRange(myLoc.add(closerDir), hostiles)) {
+					mainDir = closerDir;
+					rc.move(mainDir);
+					numTurnsStationary = 0;
 				}
 			}
 		} else {
@@ -594,7 +615,7 @@ public class ScoutPlayer2 {
 	private static void finishBroadcastingEnemy(RobotController rc) throws GameActionException {
 		// If encountered turret, broadcast it
 		if (!inDanger && turretEncountered != null && rc.isCoreReady()) {
-			if (isPaired) {
+			if (pairing != Pairing.NONE) {
 				if (isAdjacentToPaired()) {
 					Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
 					turretEncountered = null;
@@ -612,6 +633,92 @@ public class ScoutPlayer2 {
 	
 	private static boolean isDangerous(RobotType type) {
 		return (type != RobotType.SCOUT && type != RobotType.ZOMBIEDEN && type != RobotType.ARCHON);
+	}
+	
+	private static class ScoutPairer implements Prioritizer<RobotInfo> {
+		
+		private final RobotController rc;
+		private final RobotInfo[] allies;
+		
+		public ScoutPairer(RobotController rc, RobotInfo[] allies) {
+			this.rc = rc;
+			this.allies = allies;
+		}
+		
+		public boolean canPairWith(RobotInfo r) {
+			if (rc.getRoundNum() > 300) {
+				if (r.type == RobotType.ARCHON) {
+					return noCloserScouts(r.location);
+				} else if (countsAsTurret(r.type)) {
+					return noCloserScouts(r.location);
+				} else {
+					return false;
+				}
+			} else {
+				if (countsAsTurret(r.type)) {
+					return noCloserScouts(r.location);
+				} else {
+					return false;
+				}
+			}
+		}
+		
+		public void pairWith(RobotInfo r) {
+			if (countsAsTurret(r.type)) {
+				pairing = Pairing.TURRET;
+				pairedTurret = r.location;
+				pairedArchon = null;
+			} else {
+				pairing = Pairing.ARCHON;
+				pairedArchon = r.location;
+				pairedTurret = null;
+			}
+		}
+		
+		public boolean noCloserScouts(MapLocation location) {
+			int myDist = myLoc.distanceSquaredTo(location);
+			for (RobotInfo ally : allies) {
+				int dist = ally.location.distanceSquaredTo(location);
+				if (dist < myDist) return false;
+			}
+			return true;
+		}
+
+		// Assumes you can pair with r1 and r0 except when r0 can be null. In that case r1 can be paired with.
+		// Determines whether or not r1 is higher priority.
+		@Override
+		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
+			if (r0 == null) return true;
+			if (r1 == null) return false; // defensive programming
+			int dist0 = myLoc.distanceSquaredTo(r0.location);
+			int dist1 = myLoc.distanceSquaredTo(r1.location);
+			if (rc.getRoundNum() > 300) {
+				if (r0.type == RobotType.ARCHON) {
+					if (r1.type == RobotType.ARCHON) {
+						return dist1 < dist0;
+					} else {
+						return false;
+					}
+				} else {
+					if (r1.type == RobotType.ARCHON) {
+						return true;
+					} else { // both are turrets
+						return dist1 < dist0;
+					}
+				}
+			} else {
+				return dist1 < dist0;
+			}
+		}
+		
+	}
+	
+	private static boolean countsAsTurret(RobotType type) {
+		return (type == RobotType.TURRET || type == RobotType.TTM);
+	}
+	
+	private static enum Pairing {
+		TURRET, ARCHON, NONE;
 	}
 	
 }
