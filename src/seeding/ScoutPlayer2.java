@@ -323,7 +323,9 @@ public class ScoutPlayer2 {
 		for (RobotInfo ally : allies) {
 			// Add to power
 			RobotType type = ally.type;
-			ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
+			if (type.attackDelay != 0) {
+				ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
+			}
 		}
 		
 		// Compute enemy power
@@ -334,7 +336,9 @@ public class ScoutPlayer2 {
 				} else {
 					// Add to enemy power
 					RobotType type = hostile.type;
-					enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * hostile.health) / type.attackDelay;
+					if (type.attackDelay != 0) {
+						enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * hostile.health) / type.attackDelay;
+					}
 				}
 			}
 		}
@@ -389,7 +393,7 @@ public class ScoutPlayer2 {
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		// When we have more turrets, broadcast that.
 		rc.setIndicatorString(2, "For rushing...: " + ", Our power: " + ourPower + ", Enemy power: " + enemyPower);
-		if (ourPower > 2 * enemyPower && previousRush > 15) {
+		if (2 * ourPower > 3 * enemyPower && previousRush > 15) {
 			if (pairing == Pairing.TURRET) {
 				if (isAdjacentToPaired()) {
 					if (closestTurretLoc != null) {
