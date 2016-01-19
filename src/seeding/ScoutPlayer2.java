@@ -393,7 +393,7 @@ public class ScoutPlayer2 {
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		// When we have more turrets, broadcast that.
 		rc.setIndicatorString(2, "For rushing...: " + ", Our power: " + ourPower + ", Enemy power: " + enemyPower);
-		if (2 * ourPower > 3 * enemyPower && previousRush > 15) {
+		if (4 * ourPower > 5 * enemyPower && previousRush > 15) {
 			if (pairing == Pairing.TURRET) {
 				if (isAdjacentToPaired()) {
 					if (closestTurretLoc != null) {
