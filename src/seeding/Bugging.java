@@ -34,6 +34,7 @@ public class Bugging {
 			} else if (shouldMine(dir)) {
 				rc.clearRubble(dir);
 			}
+			return;
 		}
 		
 		// The rest of the normal code.

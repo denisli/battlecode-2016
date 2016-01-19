@@ -41,10 +41,11 @@ public class ArchonPlayer {
 				MapLocation myLoc = rc.getLocation();
 				RobotInfo[] friendlyRobotsAttackRange = rc.senseNearbyRobots(attackRadius, myTeam);
 				RobotInfo[] hostileSightRangeArray = rc.senseHostileRobots(myLoc, sightRadius);
-				ArrayList<RobotInfo> hostileSightRange = new ArrayList<>();
+				//hostileSightRange also adds stuff from scout pairing
+				ArrayList<MapLocation> hostileInSight = new ArrayList<>();
 				for (RobotInfo h : hostileSightRangeArray) {
 					if (h.type != RobotType.ARCHON && h.type != RobotType.ZOMBIEDEN) {
-						hostileSightRange.add(h);
+						hostileInSight.add(h.location);
 					}
 				}
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
@@ -116,13 +117,13 @@ public class ArchonPlayer {
 							}
 						}
 					}
+					if (m.type==Message.ARCHONSIGHT) {
+						hostileInSight.add(m.location);
+					}
 				}
-				//destination is nearest enemy
-				if (destination!=null && myLoc.distanceSquaredTo(destination) <= 35 && hostileSightRange.size()==0) {
-					destination = null;
-					bug = null;
-				}
-				if (destination!=null && hostileSightRange.size()!=0) {
+				
+				//if see enemy, stop going to destination
+				if (destination!=null && hostileInSight.size()!=0) {
 					destination = null;
 					bug = null;
 				}
@@ -131,7 +132,7 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
-				destination = null;
+				//destination = null;
 
 
 				//if no adjacent parts or neutral robots, set nearestParts=null
@@ -158,14 +159,13 @@ public class ArchonPlayer {
 
 				//these are all in the same if else loop because they require core delay
 				if (rc.isCoreReady()) {
-					//if it gets damage probably from turrets, run away 
+					//consecutive safe turns
 					if (prevHealth - curHealth == 0) {
 						consecutiveSafeTurns++;
 					}
 					else {
 						consecutiveSafeTurns = 0;
 					}
-
 					if (consecutiveSafeTurns > 10) {
 						if (nearestParts == startLoc) {
 							nearestParts = null;
@@ -174,87 +174,42 @@ public class ArchonPlayer {
 					}
 
 					//if sees enemies nearby, run away
-					if (hostileSightRange.size() > 0) {
+					if (hostileInSight.size() > 0) {
 						//rc.setIndicatorString(0, "here0"+hostileSightRange.size());
 						//run away
-						RobotInfo closestEnemy = hostileSightRange.get(0);
-						MapLocation closestEnemyLoc = closestEnemy.location;
-						for (RobotInfo h : hostileSightRange) {
-							if (myLoc.distanceSquaredTo(h.location) < myLoc.distanceSquaredTo(closestEnemyLoc)) {
-								closestEnemy = h;
-								closestEnemyLoc = h.location;
+						MapLocation closestEnemyLoc = hostileInSight.get(0);
+						for (MapLocation h : hostileInSight) {
+							if (myLoc.distanceSquaredTo(h) < myLoc.distanceSquaredTo(closestEnemyLoc)) {
+								closestEnemyLoc = h;
 							}
 						}
 						//rc.setIndicatorString(2, "here1");
 						//if it's far, broadcast its location
 						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
 							//broadcast location
-							if (closestEnemy.location != previousBroadcastedEnemy) {
-								if (closestEnemy.team == Team.ZOMBIE) {
-									if (closestEnemy.type == RobotType.ZOMBIEDEN) {
-										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ARCHONINDANGER, 2.3);
-									}
-									else {
-										Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ARCHONINDANGER, 2.3);
-									}
-								}
-								else {
-									Message.sendMessageGivenDelay(rc, closestEnemy.location, Message.ARCHONINDANGER, 2.3);
-								}
-								previousBroadcastedEnemy = closestEnemy.location;	
-							}
+							Message.sendMessageGivenDelay(rc, closestEnemyLoc, Message.ARCHONINDANGER, 2.3);
 						}
 						else {
-							if (closestEnemy.type == RobotType.FASTZOMBIE) {
-								Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONINDANGER, 4);
+							Direction safestDir = moveSafestDir(rc, hostileInSight);
+							if (safestDir != null) {
+								rc.move(safestDir);
 							}
 							else {
-								//rc.setIndicatorString(1, " "+roundNum+closestEnemyLoc);
-								//rc.setIndicatorString(2, "here1");
-								Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
-								Direction safeDir = dangerousDir.opposite();
-								if (rc.canMove(safeDir)) {
-									rc.move(safeDir);
-								}
-								else if (rc.canMove(safeDir.rotateLeft())) {
-									rc.move(safeDir.rotateLeft());
-								}
-								else if (rc.canMove(safeDir.rotateRight())) {
-									rc.move(safeDir.rotateRight());
-								}							
-								else if (rc.canMove(safeDir.rotateLeft().rotateLeft())) {
-									rc.move(safeDir.rotateLeft().rotateLeft());
-								}
-								else if (rc.canMove(safeDir.rotateRight().rotateRight())) {
-									rc.move(safeDir.rotateRight().rotateRight());
-								}
-								else if (rc.canMove(dangerousDir.rotateLeft())) {
-									rc.move(dangerousDir.rotateLeft());
-								}
-								else if (rc.canMove(dangerousDir.rotateRight())) {
-									rc.move(dangerousDir.rotateRight());
-								}
-								else if (rc.canMove(dangerousDir)) {
-									rc.move(dangerousDir);
-								}
-								else {
-									//Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
-								}
+								Message.sendMessageGivenDelay(rc, closestEnemyLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
 							}
 						}
-
 					}
 					//no other place to go when getting attacked
-					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
-						rc.setIndicatorString(2, roundNum+"here1");
-						if (nearestParts != startLoc) {
-							nearestParts = startLoc;
-							bug = new Bugging(rc, startLoc);
-						}
-						if (bug != null) {
-							bug.move();							
-						}
-					}
+//					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
+//						rc.setIndicatorString(2, roundNum+"here1");
+//						if (nearestParts != startLoc) {
+//							nearestParts = startLoc;
+//							bug = new Bugging(rc, startLoc);
+//						}
+//						if (bug != null) {
+//							bug.move();							
+//						}
+//					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
 						//rc.setIndicatorString(2, "sending message");
@@ -394,20 +349,18 @@ public class ArchonPlayer {
 					//rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 
 					if (rc.isCoreReady()) {
-						if (nearestParts == null) {
-							//							if (bug == null) {
-							//								if (destination != null) {
-							//									bug = new Bugging(rc, destination);
-							//									bug.move();
-							//								}
-							//							}
-							//							else {
-							//								bug.move();
-							//							}
-						}
-						else {
+						if (nearestParts != null) {
 							if (bug == null) {
 								bug = new Bugging(rc, nearestParts);
+								bug.move();
+							}
+							else {
+								bug.move();
+							}
+						}
+						else if (destination != null) {
+							if (bug == null) {
+								bug = new Bugging(rc, destination);
 								bug.move();
 							}
 							else {
@@ -433,6 +386,25 @@ public class ArchonPlayer {
 		}
 	}
 
+	//move to safest direction
+	public static Direction moveSafestDir(RobotController rc, ArrayList<MapLocation> hostileInSight) {
+		MapLocation myLoc = rc.getLocation();
+		Direction toMoveDir = null;
+		int maxDist = 0;
+		for (Direction d : RobotPlayer.directions) {
+			MapLocation expectedLoc = myLoc.add(d);
+			int totalDist = 0;
+			for (MapLocation h : hostileInSight) {
+				totalDist = totalDist + expectedLoc.distanceSquaredTo(h);
+			}
+			if ((totalDist > maxDist)&&rc.canMove(d)) {
+				maxDist = totalDist;
+				toMoveDir = d;
+			}
+		}
+		return toMoveDir;
+	}
+	
 	public static boolean buildRandomDir(RobotController rc, RobotType type, Random rand) {
 		Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 		for (int i = 0; i < 8; i++) {
