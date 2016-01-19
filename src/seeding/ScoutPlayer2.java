@@ -159,29 +159,25 @@ public class ScoutPlayer2 {
 			
 		} else {
 			if (hostiles.length > 0) {
-				MapLocation realLoc = myLoc.add(mainDir);
 				for (RobotInfo hostile : hostiles) {
-					if (hostile.type == RobotType.ZOMBIEDEN) {
-					} else {
-						// In danger only if someone can attack me.
-						if (hostile.type != RobotType.ARCHON) {
-							int dist = realLoc.distanceSquaredTo(hostile.location);
-							if (hostile.type == RobotType.ZOMBIEDEN) {
-								if (dist <= 5) {
-									inDanger = true;
-								}
-							} else if (hostile.type == RobotType.TURRET) {
-								if (dist <= hostile.type.attackRadiusSquared) {
-									inDanger = true;
-								}
-							} else if (hostile.team == Team.ZOMBIE) {
-								// Just pretend zombie sight radius is 24
-								if (dist <= 35) inDanger = true;
-							} else if (hostile.type == RobotType.SCOUT) { 
-								if (dist <= 24) inDanger = true;
-							} else {
-								if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
+					// In danger only if someone can attack me.
+					if (hostile.type != RobotType.ARCHON) {
+						int dist = myLoc.distanceSquaredTo(hostile.location);
+						if (hostile.type == RobotType.ZOMBIEDEN) {
+							if (dist <= 5) {
+								inDanger = true;
 							}
+						} else if (hostile.type == RobotType.TURRET) {
+							if (dist <= hostile.type.attackRadiusSquared) {
+								inDanger = true;
+							}
+						} else if (hostile.team == Team.ZOMBIE) {
+							// Just pretend zombie sight radius is 24
+							if (dist <= 35) inDanger = true;
+						} else if (hostile.type == RobotType.SCOUT) { 
+							if (dist <= 24) inDanger = true;
+						} else {
+							if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
 						}
 					}
 				}
@@ -471,6 +467,9 @@ public class ScoutPlayer2 {
 							int minDist = 10000;
 							for (RobotInfo hostile : hostiles) {
 								int dist = dirLoc.distanceSquaredTo(hostile.location);
+								if (hostile.type == RobotType.ZOMBIEDEN) continue;
+								if (hostile.type == RobotType.ARCHON) continue;
+								if (hostile.type == RobotType.SCOUT) continue;
 								minDist = Math.min(dist, minDist);
 							}
 							if (maxMinDist < minDist) {
