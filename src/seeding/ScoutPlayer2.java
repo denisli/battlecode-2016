@@ -415,10 +415,43 @@ public class ScoutPlayer2 {
 		// Otherwise move in your main direction, and change it accordingly if you cannot move.
 		if (isPaired) {
 			if (rc.isCoreReady()) {
-				if (inDanger) {
+				// Check if there are dangerous enemies within 24 range of the paired turret. If there are, get the hell out.
+				boolean getTheHellOut = false;
+				RobotInfo[] nearbyHostiles = rc.senseHostileRobots(pairedTurret, RobotType.TURRET.sensorRadiusSquared);
+				for (RobotInfo hostile : nearbyHostiles) {
+					if (isDangerous(hostile.type)) {
+						getTheHellOut = true; break;
+					}
+				}
+				if (getTheHellOut) {
+					// Go in direction maximizing the minimum distance
+					int maxMinDist = 0;
+					for (Direction dir : RobotPlayer.directions) {
+						if (rc.canMove(dir)) {
+							MapLocation dirLoc = myLoc.add(dir);
+							int minDist = 10000;
+							for (RobotInfo hostile : hostiles) {
+								int dist = dirLoc.distanceSquaredTo(hostile.location);
+								if (!isDangerous(hostile.type)) continue;
+								minDist = Math.min(dist, minDist);
+							}
+							if (maxMinDist < minDist) {
+								maxMinDist = minDist;
+								mainDir = dir;
+							}
+						}
+					}
+					rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Max min dist: " + maxMinDist + ", Dir: " + mainDir);
+					if (rc.canMove(mainDir)) {
+						rc.move(mainDir);
+						numTurnsStationary = 0;
+					}
+				}
+				else if (inDanger) {
 					// Move in a direction that dodges enemy.
 					pairedDodgeEnemy(rc, hostiles);
-				} else {
+				} 
+				else {
 					// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
 					Direction dirToTurret = myLoc.directionTo(pairedTurret);
 					// If right next to turret, then circle around turret
@@ -460,9 +493,7 @@ public class ScoutPlayer2 {
 							int minDist = 10000;
 							for (RobotInfo hostile : hostiles) {
 								int dist = dirLoc.distanceSquaredTo(hostile.location);
-								if (hostile.type == RobotType.ZOMBIEDEN) continue;
-								if (hostile.type == RobotType.ARCHON) continue;
-								if (hostile.type == RobotType.SCOUT) continue;
+								if (!isDangerous(hostile.type)) continue;
 								minDist = Math.min(dist, minDist);
 							}
 							if (maxMinDist < minDist) {
@@ -520,7 +551,7 @@ public class ScoutPlayer2 {
 		for (RobotInfo hostile : hostiles) {
 			int dist = myLoc.distanceSquaredTo(hostile.location);
 			// Find the closest dangerous enemy
-			if (closestDist > dist && hostile.type != RobotType.ARCHON && hostile.location.distanceSquaredTo(pairedTurret)>5) {
+			if (closestDist > dist && isDangerous(hostile.type) && hostile.location.distanceSquaredTo(pairedTurret)>5) {
 				closestDist = dist;
 				closestEnemy = hostile;
 			}
@@ -567,6 +598,10 @@ public class ScoutPlayer2 {
 			Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
 			turretEncountered = null;
 		}
+	}
+	
+	private static boolean isDangerous(RobotType type) {
+		return (type != RobotType.SCOUT && type != RobotType.ZOMBIEDEN && type != RobotType.ARCHON);
 	}
 	
 }
