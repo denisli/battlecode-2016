@@ -594,7 +594,7 @@ public class ScoutPlayer2 {
 	
 	private static void finishBroadcastingEnemy(RobotController rc) throws GameActionException {
 		// If encountered turret, broadcast it
-		if (inDanger && turretEncountered != null && rc.isCoreReady()) {
+		if (!inDanger && turretEncountered != null && rc.isCoreReady()) {
 			Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
 			turretEncountered = null;
 		}
