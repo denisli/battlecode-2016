@@ -215,35 +215,23 @@ public class ScoutPlayer2 {
 					
 					// First handle finding the best enemy.
 					// make sure hostile range is > 5
-					if (hostile.location.distanceSquaredTo(pairedTurret) <= RobotType.TURRET.attackRadiusSquared && hostile.location.distanceSquaredTo(pairedTurret)>5) {
-						if (bestEnemy.type == RobotType.ARCHON) {
-							if (hostile.type == RobotType.ARCHON) {
-								if (hostile.health < bestEnemy.health) {
-									bestEnemy = hostile;
-								}
-							}
-						} else {
-							if (hostile.type == RobotType.ARCHON) {
-								bestEnemy = hostile;
-							} else {
-								if (hostile.health < bestEnemy.health) {
-									bestEnemy = hostile;
-								}
-							}
+					int turretDist = hostile.location.distanceSquaredTo(pairedTurret);
+					if (turretDist > RobotType.TURRET.sensorRadiusSquared) {
+						if (bestEnemy.location.distanceSquaredTo(pairedTurret) > turretDist) {
+							bestEnemy = hostile;
 						}
 					}
 					// Then find the closest turret
-					if (closestTurretDist > dist && hostile.type == RobotType.TURRET && hostile.location.distanceSquaredTo(pairedTurret)>5) {
+					if (closestTurretDist > dist && hostile.type == RobotType.TURRET && hostile.location.distanceSquaredTo(pairedTurret) > 5) {
 						closestTurretDist = dist;
 						closestTurretLoc = hostile.location;
 					}
 				}
+				// If there is a best enemy, send a message.
+				if (bestEnemy != null && rc.isCoreReady()) {
+					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
+				}
 				if (!inDanger) {
-					// If there is a best enemy, send a message.
-					if (bestEnemy != null && bestEnemy.location.distanceSquaredTo(pairedTurret)>5 && rc.isCoreReady()) {
-						Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
-					}
-					
 					// If there is a closest turret, send a message.
 					if (closestTurretLoc != null && rc.isCoreReady()) {
 						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
