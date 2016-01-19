@@ -114,23 +114,18 @@ public class ArchonPlayer {
 							}
 						}
 					}
-					if (m.type==Message.TURRET) {
-						if (destination == null) {
-							destination = m.location;
-						}
-						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
-							}
-						}
-					}
 				}
 				//destination is nearest enemy
 				if (destination!=null && myLoc.distanceSquaredTo(destination) <= 35 && hostileSightRange.size()==0) {
 					destination = null;
 					bug = null;
 				}
-				if (destination!=null && myLoc.distanceSquaredTo(destination)<=65) {
+				if (destination!=null && hostileSightRange.size()!=0) {
+					destination = null;
+					bug = null;
+				}
+				rc.setIndicatorString(1, destination+"d");
+				if (destination!=null && myLoc.distanceSquaredTo(destination)<=200) {
 					destination = null;
 					bug = null;
 				}
@@ -167,23 +162,16 @@ public class ArchonPlayer {
 						consecutiveSafeTurns = 0;
 					}
 
-					//					if (consecutiveSafeTurns > 10) {
-					//						if (nearestParts == startLoc) {
-					//							nearestParts = null;
-					//							bug = null;	
-					//						}
-					//					}
-					//					
-					//					if (prevHealth - curHealth >= 1 && myLoc != startLoc) {
-					//						if (nearestParts != startLoc) {
-					//							nearestParts = startLoc;
-					//							bug = new Bugging(rc, startLoc);
-					//						}
-					//						bug.move();
-					//					}
+					if (consecutiveSafeTurns > 10) {
+						if (nearestParts == startLoc) {
+							nearestParts = null;
+							bug = null;	
+						}
+					}
+
 					//if sees enemies nearby, run away
-					/*else*/ 
 					if (hostileSightRange.size() > 0) {
+						//rc.setIndicatorString(0, "here0"+hostileSightRange.size());
 						//run away
 						RobotInfo closestEnemy = hostileSightRange.get(0);
 						MapLocation closestEnemyLoc = closestEnemy.location;
@@ -195,7 +183,7 @@ public class ArchonPlayer {
 						}
 						//rc.setIndicatorString(2, "here1");
 						//if it's far, broadcast its location
-						/*						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
+						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
 							//broadcast location
 							if (closestEnemy.location != previousBroadcastedEnemy) {
 								if (closestEnemy.team == Team.ZOMBIE) {
@@ -212,34 +200,51 @@ public class ArchonPlayer {
 								previousBroadcastedEnemy = closestEnemy.location;	
 							}
 						}
-						else */
-						Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
-						Direction safeDir = dangerousDir.opposite();
-						if (rc.canMove(safeDir)) {
-							rc.move(safeDir);
-						}
-						else if (rc.canMove(safeDir.rotateLeft())) {
-							rc.move(safeDir.rotateLeft());
-						}
-						else if (rc.canMove(safeDir.rotateRight())) {
-							rc.move(safeDir.rotateRight());
-						}							
-						else if (rc.canMove(safeDir.rotateLeft().rotateLeft())) {
-							rc.move(safeDir.rotateLeft().rotateLeft());
-						}
-						else if (rc.canMove(safeDir.rotateRight().rotateRight())) {
-							rc.move(safeDir.rotateRight().rotateRight());
-						}
-						else if (rc.canMove(dangerousDir.rotateLeft())) {
-							rc.move(dangerousDir.rotateLeft());
-						}
-						else if (rc.canMove(dangerousDir.rotateLeft())) {
-							rc.move(dangerousDir.rotateLeft());
-						}
-						else if (rc.canMove(dangerousDir)) {
-							rc.move(dangerousDir);
+						else {
+							//rc.setIndicatorString(1, " "+roundNum+closestEnemyLoc);
+							//rc.setIndicatorString(2, "here1");
+							Direction dangerousDir = myLoc.directionTo(closestEnemyLoc);
+							Direction safeDir = dangerousDir.opposite();
+							if (rc.canMove(safeDir)) {
+								rc.move(safeDir);
+							}
+							else if (rc.canMove(safeDir.rotateLeft())) {
+								rc.move(safeDir.rotateLeft());
+							}
+							else if (rc.canMove(safeDir.rotateRight())) {
+								rc.move(safeDir.rotateRight());
+							}							
+							else if (rc.canMove(safeDir.rotateLeft().rotateLeft())) {
+								rc.move(safeDir.rotateLeft().rotateLeft());
+							}
+							else if (rc.canMove(safeDir.rotateRight().rotateRight())) {
+								rc.move(safeDir.rotateRight().rotateRight());
+							}
+							else if (rc.canMove(dangerousDir.rotateLeft())) {
+								rc.move(dangerousDir.rotateLeft());
+							}
+							else if (rc.canMove(dangerousDir.rotateRight())) {
+								rc.move(dangerousDir.rotateRight());
+							}
+							else if (rc.canMove(dangerousDir)) {
+								rc.move(dangerousDir);
+							}
+							else {
+								//Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
+							}
 						}
 
+					}
+					//no other place to go when getting attacked
+					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
+						rc.setIndicatorString(2, roundNum+"here1");
+						if (nearestParts != startLoc) {
+							nearestParts = startLoc;
+							bug = new Bugging(rc, startLoc);
+						}
+						if (bug != null) {
+							bug.move();							
+						}
 					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
@@ -283,7 +288,7 @@ public class ArchonPlayer {
 					}
 					//else build mode
 					else {
-						if (unpairedScouts < 5 && numSoldiersBuilt > 9) {
+						if (unpairedScouts < 6 && numSoldiersBuilt > 9) {
 							//build scouts
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
@@ -371,7 +376,9 @@ public class ArchonPlayer {
 							}
 						}
 					}
+					
 				}
+				
 				turnsWithoutMessaging++;
 				prevHealth = curHealth;
 				Clock.yield();

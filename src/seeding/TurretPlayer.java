@@ -53,7 +53,7 @@ public class TurretPlayer {
 			MapLocation toAttackLoc = null;
 			MapLocation pairedAttackLoc = null;
 			boolean attacked = false;
-			boolean enemiesTooClose = false;
+			boolean enemiesTooClose = true;
 			MapLocation newArchonLoc = null;
 
 			//process messages
@@ -136,17 +136,40 @@ public class TurretPlayer {
 					turnsNoEnemy = 0;
 					toAttack = enemiesWithinRange[0];
 					toAttackLoc = toAttack.location;
+					MapLocation closestDen = null;
+					MapLocation closestHostile = null;
 					for (RobotInfo e : enemiesWithinRange) {
 						if (myLoc.distanceSquaredTo(e.location) > 5) {
-							if (myLoc.distanceSquaredTo(toAttackLoc) < myLoc.distanceSquaredTo(e.location)) {
-								toAttack = e;
-								toAttackLoc = e.location;	
+							if (e.type == RobotType.ZOMBIEDEN) {
+								if (closestDen == null) {
+									closestDen = e.location;
+								}
+								else {
+									if (myLoc.distanceSquaredTo(closestDen) < myLoc.distanceSquaredTo(e.location)) {
+										closestDen = e.location;
+									}
+								}
+							}
+							else {
+								if (closestHostile == null) {
+									closestHostile = e.location;
+								}
+								else {
+									if (myLoc.distanceSquaredTo(closestHostile) < myLoc.distanceSquaredTo(e.location)) {
+										closestHostile = e.location;
+									}
+								}
+							}
+							//prioritize non dens to attack first because they are more dangerous
+							if (closestHostile != null) {
+								toAttackLoc = closestHostile;
+							}
+							else {
+								toAttackLoc = closestDen;
 							}
 						}
-						else {
-							enemiesTooClose = true;
-						}
 					}
+
 					if (myLoc.distanceSquaredTo(toAttackLoc) > 5) {
 						rc.attackLocation(toAttackLoc);
 						attacked = true;
@@ -180,6 +203,10 @@ public class TurretPlayer {
 			if (!attacked && rc.isCoreReady() && rushing && turnsNoEnemy >=20) {
 				rc.pack();
 			}
+			//if there are enemies too close and nothing to attack, the pack
+			if (rc.isCoreReady() && enemiesWithinRange.length > 0 && enemiesTooClose && pairedAttackLoc == null) {
+				rc.pack();
+			}
 
 			rc.setIndicatorString(1, turnsNoEnemy+"turns no enemy");
 		} catch (Exception e) {
@@ -198,6 +225,8 @@ public class TurretPlayer {
 			Team myTeam = rc.getTeam();
 			Team otherTeam = myTeam.opponent();
 			RobotInfo[] friendlySightRange = rc.senseNearbyRobots(24, myTeam);
+			RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
+			boolean existEnemiesNotTooClose = false;
 			int numFriendlySoldiers = 0;
 			for (RobotInfo f : friendlySightRange) {
 				if (f.type == RobotType.SOLDIER) {
@@ -281,31 +310,34 @@ public class TurretPlayer {
 				nearestArchonLocation = newArchonLoc;
 			}
 
-			boolean canUnpack = true;
-			//		if (numFriendlySoldiers < 3) {
-			//			canUnpack = false;
-			//		}
-			//		if (nearestTurretLocation != null) {
-			//			if (myLoc.distanceSquaredTo(nearestTurretLocation) < 48) {
-			//				canUnpack = true;
-			//			}
-			//		}
-			//		if (nearestDenLocation != null) {
-			//			if (myLoc.distanceSquaredTo(nearestDenLocation) < 48) {
-			//				canUnpack = true;
-			//			}
-			//		}
-
 			//movement
 			if (rc.isCoreReady()) {
-				RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
-				boolean existEnemiesNotTooClose = false;
 				for (RobotInfo e : enemiesWithinRange) {
 					if (myLoc.distanceSquaredTo(e.location) > 5) {
 						existEnemiesNotTooClose = true;
 						break;
 					}
 				}
+				
+				boolean canUnpack = true;
+				//		if (numFriendlySoldiers < 3) {
+				//			canUnpack = false;
+				//		}
+				//		if (nearestTurretLocation != null) {
+				//			if (myLoc.distanceSquaredTo(nearestTurretLocation) < 48) {
+				//				canUnpack = true;
+				//			}
+				//		}
+				//		if (nearestDenLocation != null) {
+				//			if (myLoc.distanceSquaredTo(nearestDenLocation) < 48) {
+				//				canUnpack = true;
+				//			}
+				//		}
+				//do not unpack if there are enemies in range but nothing to attack
+				if (enemiesWithinRange.length > 0 && !existEnemiesNotTooClose) {
+					canUnpack = false;
+				}
+				
 				//if exist enemy in sight range but outside range >5, unpack
 				if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
 					if (canUnpack) {
@@ -314,6 +346,7 @@ public class TurretPlayer {
 				}
 				//else if enemy in attack range...
 				else if (pairedAttackLoc != null){
+					rc.setIndicatorString(1, rushing+" "+enemyTurretScoutLoc+" "+canUnpack);
 					if (!rushing) {
 						//if no turret+scout, unpack
 						if (enemyTurretScoutLoc == null) {
@@ -494,6 +527,31 @@ public class TurretPlayer {
 
 						if (destination != null) {
 							bugging = new Bugging(rc, destination);
+							bugging.move();
+						}
+					}
+				}
+			}
+			
+			//if nowhere to move, move to archon
+			if (rc.isCoreReady() && enemiesWithinRange.length > 0 && !existEnemiesNotTooClose && nearestArchonLocation!=null) {
+				if (destination==null) {
+					destination = nearestArchonLocation;
+					bugging = new Bugging(rc, destination);
+					bugging.move();
+				}
+				else {
+					if (destination == myLoc) {
+						destination = nearestArchonLocation;
+						bugging = new Bugging(rc, destination);
+						bugging.move();
+					}
+					else {
+						if (bugging == null) {
+							bugging = new Bugging(rc, destination);
+							bugging.move(); 
+						}
+						else {
 							bugging.move();
 						}
 					}
