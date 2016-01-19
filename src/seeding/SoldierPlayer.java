@@ -477,7 +477,7 @@ public class SoldierPlayer {
 			currentDestination = nearestTurretLocation;
 		}
 		// if we are looking at the same turret for too long, go somewhere else
-		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 30) {
+		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 54) {
 			turnsNotMoved++;
 		} else {
 			turnsNotMoved = 0;
@@ -485,6 +485,7 @@ public class SoldierPlayer {
 		if (turnsNotMoved > 100) {
 			currentDestination = nearestArchonLocation;
 			nearestTurretLocation = null;
+			doNotMove = false;
 			turnsNotMoved = 0;
 		}
 		storedTurretLocation = nearestTurretLocation;
