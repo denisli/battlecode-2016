@@ -89,9 +89,6 @@ public class TurretPlayer {
 				else if (m.type == Message.RUSH) {
 					rushing = true;
 				}
-				else if (m.type == Message.RUSHNOTURRET) {
-					rushing = true;
-				}
 				else if (m.type == Message.TURRET) {
 					if (nearestTurretLocation == null) {
 						nearestTurretLocation = m.location;
@@ -263,9 +260,6 @@ public class TurretPlayer {
 					pairedAttackLoc = m.location;
 				}
 				else if (m.type == Message.RUSH) {
-					rushing = true;
-				}
-				else if (m.type == Message.RUSHNOTURRET) {
 					rushing = true;
 				}
 				else if (m.type == Message.TURRET) {
