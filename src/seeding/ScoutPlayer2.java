@@ -232,6 +232,7 @@ public class ScoutPlayer2 {
 				}
 				// If there is a best enemy, send a message.
 				if (bestEnemy != null && rc.isCoreReady()) {
+					rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasted best enemy: " + bestEnemy.location);
 					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
 				}
 				if (isAdjacentToPaired()) {
