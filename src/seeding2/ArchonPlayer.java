@@ -1,4 +1,4 @@
-package seeding;
+package seeding2;
 
 import battlecode.common.*;
 import seeding.Bugging;

@@ -1,11 +1,10 @@
-package seeding;
+package seeding2;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import battlecode.common.*;
 
-public class ViperPlayer {
+public class SoldierPlayer {
 	
 	// this keeps track of 
 	private static MapLocation nearestTurretLocation = null;
@@ -159,7 +158,7 @@ public class ViperPlayer {
 	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
-		if (myLoc.distanceSquaredTo(bestEnemy.location) < 14 && rc.isCoreReady()) {
+		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
     		if (rc.canMove(d.opposite())) {
     			rc.move(d.opposite());
     		} else if (rc.canMove(d.opposite().rotateLeft())) {
@@ -171,7 +170,7 @@ public class ViperPlayer {
     		} else if (rc.canMove(d.opposite().rotateRight().rotateRight())) {
     			rc.move(d.opposite().rotateRight().rotateRight());
     		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 20 && rc.isCoreReady()) { // if we are too far, we want to move closer
+    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
     		if (rc.canMove(d)) {
     			rc.move(d);
     		} else if (rc.canMove(d.rotateLeft())) {
@@ -281,63 +280,28 @@ public class ViperPlayer {
     	}
 	}
 	
-	// loops through the nearbyEnemies and gets the one that is closest regardless of everything
-		public static RobotInfo getBestEnemy(RobotController rc) {
-			RobotInfo bestEnemy = nearbyEnemies[0];
-			List<RobotInfo> nonInfected = new ArrayList<>();
-			List<RobotInfo> infected = new ArrayList<>();
-			List<RobotInfo> zombies = new ArrayList<>();
-			List<RobotInfo> other = new ArrayList<>();
-			for (RobotInfo r : nearbyEnemies) {
-				if (r.type == RobotType.SOLDIER) {
-					useSoldierMicro = true;
-					numEnemySoldiers++;
-					if (r.health > RobotType.SOLDIER.attackPower) {
-						totalEnemySoldierHealth += r.health;
-					}
-				}
-				
-				// adding to the lists
-				
-				if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0) { // we want to target uninfected
-					nonInfected.add(r);
-				} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0) { // then, want to target least infected
-					infected.add(r);
-				} else if (r.team.equals(Team.ZOMBIE)) { // want to then target zombies
-					zombies.add(r);
-				} else { // target whatever else
-					other.add(r);
+	// loops through the nearbyEnemies and gets the best one
+	public static RobotInfo getBestEnemy(RobotController rc) {
+		RobotInfo bestEnemy = nearbyEnemies[0];
+		for (RobotInfo r : nearbyEnemies) {
+			if (r.type == RobotType.SOLDIER) {
+				useSoldierMicro = true;
+				numEnemySoldiers++;
+				if (r.health > RobotType.SOLDIER.attackPower) {
+					totalEnemySoldierHealth += r.health;
 				}
 			}
-			
-			// picking what to target
-			if (nonInfected.size() > 0) { // if there are non infected, pick the lowest health one
-				bestEnemy = nonInfected.get(0);
-				for (RobotInfo r : nonInfected) {
-					if (myLoc.distanceSquaredTo(r.location) > myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
-				}
-			} else if (infected.size() > 0) { // if there are only infected, pick the least infected
-				bestEnemy = infected.get(0);
-				for (RobotInfo r : infected) {
-					if (r.viperInfectedTurns < bestEnemy.viperInfectedTurns) bestEnemy = r;
-				}
-			} else if (zombies.size() > 0) { // if there are zombies, pick the closest
-				bestEnemy = zombies.get(0);
-				for (RobotInfo r : zombies) {
-					if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
-				}
-			} else if (other.size() > 0) { // otherwise, just pick the first if doesn't match any criteria
-				bestEnemy = other.get(0);
+			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
+				bestEnemy = r;
 			}
-			
-			if (doNotMove) {
-				if (bestEnemy.location.distanceSquaredTo(nearestTurretLocation) > 48) {
-					doNotMove = false;
-				}
-			}
-			return bestEnemy;
 		}
-
+		if (doNotMove) {
+			if (bestEnemy.location.distanceSquaredTo(nearestTurretLocation) > 48) {
+				doNotMove = false;
+			}
+		}
+		return bestEnemy;
+	}
 	
 	// if soldier is in range of stuff but doesn't see it, sets it to null
 	public static void resetLocations(RobotController rc) throws GameActionException {
