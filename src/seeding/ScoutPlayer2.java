@@ -305,7 +305,7 @@ public class ScoutPlayer2 {
 			if (enemy.type == RobotType.ARCHON) {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.ENEMYARCHONLOC, 4);
 			} else if (enemy.team == Team.ZOMBIE && enemy.type != RobotType.ZOMBIEDEN) {
-				Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 2);
+				Message.sendMessageGivenDelay(rc, enemy.location, Message.ZOMBIE, 0.1);
 			} else if (enemy.type == RobotType.TURRET) {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 4);
 			} else if (enemy.type != RobotType.SCOUT){
