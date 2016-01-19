@@ -130,6 +130,10 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
+				if (destination!=null && myLoc.distanceSquaredTo(destination)<=65) {
+					destination = null;
+					bug = null;
+				}
 
 				//if no adjacent parts or neutral robots, set nearestParts=null
 				if (partsInSight.length==0 && neutralRobotsInSight.length==0 && nearestParts!=null && myLoc.distanceSquaredTo(nearestParts)<=sightRadius) {
