@@ -25,6 +25,8 @@ public class ArchonPlayer {
 		MapLocation nearestParts = null;
 		Bugging bug = null;
 		int numSoldiersBuilt = 0;
+		int numScoutsBuilt = 0;
+		int numVipersBuilt = 0;
 		MapLocation startLoc = rc.getLocation();
 		double prevHealth = 1000;
 		//consecutive turns where no damage was dealt
@@ -129,7 +131,9 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
-
+				destination = null;
+				
+				
 				//if no adjacent parts or neutral robots, set nearestParts=null
 				if (partsInSight.length==0 && neutralRobotsInSight.length==0 && nearestParts!=null && myLoc.distanceSquaredTo(nearestParts)<=sightRadius) {
 					nearestParts=null;
@@ -284,32 +288,62 @@ public class ArchonPlayer {
 						//rc.setIndicatorString(2, "build scout");
 						if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 							buildRandomDir(rc, RobotType.SCOUT, rand);
+							numScoutsBuilt++;
 						}
 					}
 					//else build mode
 					else {
-						if (unpairedScouts < 6 && numSoldiersBuilt > 9) {
+						rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
+						if (unpairedScouts < 6 && numSoldiersBuilt >= 12 && numVipersBuilt >= 2) {
 							//build scouts
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
+								numScoutsBuilt++;
+							}
+						}
+						else if (numScoutsBuilt==1 && numSoldiersBuilt>=8) {
+							//build scouts
+							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
+								buildRandomDir(rc, RobotType.SCOUT, rand);
+								numScoutsBuilt++;
+							}
+						}
+						//build viper condition
+						else if (numScoutsBuilt>=2 && numSoldiersBuilt >=12 && numVipersBuilt == 0){
+							//rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
+							if (rc.hasBuildRequirements(RobotType.VIPER)) {
+								buildRandomDir(rc, RobotType.VIPER, rand);
+								numVipersBuilt++;
+							}
+						}
+						else if (numScoutsBuilt>=2 && numSoldiersBuilt>=20 && numVipersBuilt == 1) {
+							if (rc.hasBuildRequirements(RobotType.VIPER)) {
+								buildRandomDir(rc, RobotType.VIPER, rand);
+								numVipersBuilt++;
 							}
 						}
 						else {
-							if (numSoldiersBuilt <= 9) {
+							if (numSoldiersBuilt <= 12) {
 								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
 									buildRandomDir(rc, RobotType.SOLDIER, rand);
 									numSoldiersBuilt++;
 								}
 							}
 							else {
-								//build turrets/soldiers in 1/2? ratio
+								//build turrets/soldiers/vipers in 3/15, 1/15
 								if (rc.hasBuildRequirements(RobotType.TURRET)) {
-									int buildFate = rand.nextInt(7);
+									int buildFate = rand.nextInt(15);
 									RobotType toBuild = null;
-									if (buildFate <= 1) {
+									if (buildFate <= 2) {
 										toBuild = RobotType.TURRET;
-									} else {
+									} 
+									else if (buildFate ==3) {
+										toBuild = RobotType.VIPER;
+										numVipersBuilt++;
+									}
+									else {
 										toBuild = RobotType.SOLDIER;
+										numSoldiersBuilt++;
 									}
 									buildRandomDir(rc, toBuild, rand);
 								}
