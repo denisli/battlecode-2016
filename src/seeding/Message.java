@@ -44,6 +44,9 @@ public class Message {
 	}
 	
 	public static void sendMessageGivenRange(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
+		if (rc.getMessageSignalCount() == 20) {
+			rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", could not broadcast due to message count");
+		}
 		int x = location.x + type * AYY;
 		int y = location.y + type * AYY;
 		rc.broadcastMessageSignal(x, y, range);
