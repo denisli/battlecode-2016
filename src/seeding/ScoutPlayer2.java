@@ -78,7 +78,7 @@ public class ScoutPlayer2 {
 				if (!inDanger && rc.isCoreReady()) {
 					if (numTurnsStationary < 15 && numTurnsSincePreviousCollectiblesBroadcast >= 15) {
 						if (isPaired) {
-							if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+							if (isAdjacentToPaired()) {
 								broadcastCollectibles(rc, hostiles.length > 0);
 							}
 						} else {
@@ -234,23 +234,25 @@ public class ScoutPlayer2 {
 				if (bestEnemy != null && rc.isCoreReady()) {
 					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
 				}
-				if (!inDanger) {
-					// If there is a closest turret, send a message.
-					if (closestTurretLoc != null && turnsSinceClosestTurretBroadcast > 20 && rc.isCoreReady()) {
-						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
-						previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
-						turnsSinceClosestTurretBroadcast = 0;
-					}
-					
-					// When can't see turret anymore, broadcast turret killed message.
-					if (previouslyBroadcastedClosestTurretLoc != null && closestTurretLoc == null && rc.isCoreReady()) {
-						Message.sendMessageGivenDelay(rc, previouslyBroadcastedClosestTurretLoc, Message.TURRETKILLED, 2.25);
-						previouslyBroadcastedClosestTurretLoc = null;
-					}
-					
-					//if it sees enemy turret with a scout, signal that
-					if (enemyScoutLoc != null && enemyTurretLoc != null && rc.isCoreReady()) {
-						Message.sendMessageGivenRange(rc, enemyTurretLoc, Message.ENEMYTURRETSCOUT, 8);
+				if (isAdjacentToPaired()) {
+					if (!inDanger) {
+						// If there is a closest turret, send a message.
+						if (closestTurretLoc != null && turnsSinceClosestTurretBroadcast > 20 && rc.isCoreReady()) {
+							Message.sendMessageGivenRange(rc, closestTurretLoc, Message.TURRET, Message.FULL_MAP_RANGE);
+							previouslyBroadcastedClosestTurretLoc = closestTurretLoc;
+							turnsSinceClosestTurretBroadcast = 0;
+						}
+						
+						// When can't see turret anymore, broadcast turret killed message.
+						if (previouslyBroadcastedClosestTurretLoc != null && closestTurretLoc == null && rc.isCoreReady()) {
+							Message.sendMessageGivenDelay(rc, previouslyBroadcastedClosestTurretLoc, Message.TURRETKILLED, 2.25);
+							previouslyBroadcastedClosestTurretLoc = null;
+						}
+						
+						//if it sees enemy turret with a scout, signal that
+						if (enemyScoutLoc != null && enemyTurretLoc != null && rc.isCoreReady()) {
+							Message.sendMessageGivenRange(rc, enemyTurretLoc, Message.ENEMYTURRETSCOUT, 8);
+						}
 					}
 				}
 			}
@@ -338,7 +340,7 @@ public class ScoutPlayer2 {
 	private static void broadcastPairedStatus(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		int messageType = isPaired ? Message.PAIRED : Message.UNPAIRED;
 		if (isPaired) {
-			if (myLoc.distanceSquaredTo(pairedTurret) <= 2) { 
+			if (isAdjacentToPaired()) { 
 				if (hostiles.length > 0) {
 					Message.sendMessageGivenDelay(rc, myLoc, messageType, 0.3);
 				} else {
@@ -394,11 +396,13 @@ public class ScoutPlayer2 {
 		// When we have more turrets, broadcast that.
 		if (ourPower > 4 * enemyPower && rc.isCoreReady()) {
 			if (isPaired) {
-				if (closestTurretLoc != null) {
-					if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
-						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 4 * sightRange);
-					} else {
-						Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
+				if (isAdjacentToPaired()) {
+					if (closestTurretLoc != null) {
+						if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
+							Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 4 * sightRange);
+						} else {
+							Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
+						}
 					}
 				}
 			} else {
@@ -595,9 +599,20 @@ public class ScoutPlayer2 {
 	private static void finishBroadcastingEnemy(RobotController rc) throws GameActionException {
 		// If encountered turret, broadcast it
 		if (!inDanger && turretEncountered != null && rc.isCoreReady()) {
-			Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
-			turretEncountered = null;
+			if (isPaired) {
+				if (isAdjacentToPaired()) {
+					Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
+					turretEncountered = null;
+				}
+			} else {
+				Message.sendMessageGivenRange(rc, turretEncountered, Message.TURRET, Message.FULL_MAP_RANGE);
+				turretEncountered = null;
+			}
 		}
+	}
+	
+	private static boolean isAdjacentToPaired() {
+		return myLoc.distanceSquaredTo(pairedTurret) <= 2;
 	}
 	
 	private static boolean isDangerous(RobotType type) {
