@@ -494,7 +494,7 @@ public class ScoutPlayer2 {
 							int minDist = 10000;
 							for (RobotInfo hostile : hostiles) {
 								int dist = dirLoc.distanceSquaredTo(hostile.location);
-								if (!isDangerous(hostile.type)) continue;
+								if (hostile.type == RobotType.ARCHON || hostile.type == RobotType.SCOUT) continue;
 								minDist = Math.min(dist, minDist);
 							}
 							if (maxMinDist < minDist) {
