@@ -255,8 +255,10 @@ public class ScoutPlayer2 {
 				}
 			}
 			
-			if (hostiles.length > 0 && rc.isCoreReady()) {
-				Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
+			if (isAdjacentToPaired()) {
+				if (hostiles.length > 0 && rc.isCoreReady()) {
+					Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
+				}
 			}
 		} else {
 			// If sees an enemy, get away and record the two closest enemies. Then broadcast the location while running away.

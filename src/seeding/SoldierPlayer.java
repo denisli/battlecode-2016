@@ -69,9 +69,13 @@ public class SoldierPlayer {
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
-				
+
+				// When rushing, be mad aggressive.
+				if (rush) {
+					rushMicro(rc, nearbyEnemies);
+				}
 				// When retreating, retreat
-				if (healing) {
+				else if (healing) {
 					if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
 		    			bugging.enemyAvoidMove(nearbyEnemies);
 		    		} else if (rc.isCoreReady()) {
@@ -226,6 +230,122 @@ public class SoldierPlayer {
 		}
 	}
 	
+	private static void rushMicro(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+		// Prioritizes attacking turrets.
+		RobotInfo bestEnemy = null;
+		boolean canAttackBestEnemy = false;
+		int bestEnemyDist = 10000; // only care if can't hit
+		for (RobotInfo hostile : hostiles) {
+			// Can attack this enemy.
+			int dist = myLoc.distanceSquaredTo(hostile.location);
+			if (dist <= attackRadius) {
+				if (bestEnemy != null) {
+					if (countsAsTurret(bestEnemy.type)) {
+						if (countsAsTurret(hostile.type)) {
+							if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+						}
+					} else {
+						if (countsAsTurret(hostile.type)) {
+							bestEnemy = hostile;
+						} else {
+							if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+						}
+					}
+				} else {
+					bestEnemy = hostile;
+				}
+			} else {
+				// Only update best enemy if you can't attack best enemy
+				if (!canAttackBestEnemy) {
+					if (bestEnemy != null) {
+						if (bestEnemyDist > dist) {
+							bestEnemyDist = dist; bestEnemy = hostile;
+						}
+					} else {
+						bestEnemyDist = dist; bestEnemy = hostile;
+					}
+				}
+			}
+		}
+		
+		if (rc.isCoreReady()) {
+			// If have destination get closer.
+			if (currentDestination != null) {
+				RobotInfo info = rc.senseRobotAtLocation(currentDestination);
+				if (info != null) {
+					// If can attack it, just only move closer if blocking someone behind.
+					if (rc.canAttackLocation(info.location)) {
+						if (isBlockingSomeone(rc, currentDestination)) {
+							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+							if (dir != Direction.NONE) {
+								rc.move(dir);
+							}
+						}
+					}
+					// If can't attack it, move closer!
+					else {
+						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+						if (dir != Direction.NONE) {
+							rc.move(dir);
+						}
+					}
+				}
+				// If not there, just move closer.
+				else {
+					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+					if (dir != Direction.NONE) {
+						rc.move(dir);
+					}
+				}
+			}
+			// Otherwise move closer to best enemy.
+			else {
+				if (bestEnemy != null) {
+					// Move closer only if blocking someone.
+					if (rc.canAttackLocation(bestEnemy.location)) {
+						if (isBlockingSomeone(rc, bestEnemy.location)) {
+							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
+							if (dir != Direction.NONE) {
+								rc.move(dir);
+							}
+						}
+					}
+					// If can't attack it, move closer!
+					else {
+						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
+						if (dir != Direction.NONE) {
+							rc.move(dir);
+						}
+					}
+				}
+			}
+		}
+		
+		// Attack whenever you can.
+		if (bestEnemy != null) {
+			if (rc.isWeaponReady()) {
+				if (rc.canAttackLocation(bestEnemy.location)) {
+					rc.attackLocation(bestEnemy.location);
+				}
+			}
+		}
+	}
+	
+	private static boolean isBlockingSomeone(RobotController rc, MapLocation target) throws GameActionException {
+		Direction dir = myLoc.directionTo(target);
+		MapLocation behind = myLoc.add(dir.opposite());
+		MapLocation left = behind.add(dir.rotateLeft());
+		MapLocation right = behind.add(dir.rotateRight());
+		// There is someone behind us
+		if (rc.senseRobotAtLocation(behind) != null) {
+			// If there is stuff blocking on both sides, then blocking
+			if (!rc.canMove(myLoc.directionTo(left)) && !rc.canMove(myLoc.directionTo(right))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static void bugAroundFriendly(RobotController rc) throws GameActionException {
 		RobotInfo[] nearbyFriendlyRobots = rc.senseNearbyRobots(sightRadius, myTeam);
 		if (nearbyFriendlyRobots.length > 0) {
@@ -683,6 +803,10 @@ public class SoldierPlayer {
 	
 	private static boolean isViperInfected(RobotController rc) {
 		return rc.getViperInfectedTurns() > 0;
+	}
+	
+	private static boolean countsAsTurret(RobotType type) {
+		return (type == RobotType.TURRET || type == RobotType.TTM);
 	}
 	
 	private static class TargetPrioritizer implements Prioritizer<RobotInfo> {
