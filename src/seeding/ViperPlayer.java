@@ -1,5 +1,6 @@
 package seeding;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import battlecode.common.*;
@@ -162,7 +163,7 @@ public class ViperPlayer {
 	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
-		if (myLoc.distanceSquaredTo(bestEnemy.location) < 15 && rc.isCoreReady()) {
+		if (myLoc.distanceSquaredTo(bestEnemy.location) < 14 && rc.isCoreReady()) {
     		if (rc.canMove(d.opposite())) {
     			rc.move(d.opposite());
     		} else if (rc.canMove(d.opposite().rotateLeft())) {
@@ -254,6 +255,10 @@ public class ViperPlayer {
 	// loops through the nearbyEnemies and gets the one that is closest regardless of everything
 	public static RobotInfo getBestEnemy(RobotController rc) {
 		RobotInfo bestEnemy = nearbyEnemies[0];
+		List<RobotInfo> nonInfected = new ArrayList<>();
+		List<RobotInfo> infected = new ArrayList<>();
+		List<RobotInfo> zombies = new ArrayList<>();
+		List<RobotInfo> other = new ArrayList<>();
 		for (RobotInfo r : nearbyEnemies) {
 			if (r.type == RobotType.SOLDIER) {
 				useSoldierMicro = true;
@@ -262,10 +267,40 @@ public class ViperPlayer {
 					totalEnemySoldierHealth += r.health;
 				}
 			}
-			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) {
-				bestEnemy = r;
+			
+			// adding to the lists
+			
+			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0) { // we want to target uninfected
+				nonInfected.add(r);
+			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0) { // then, want to target least infected
+				infected.add(r);
+			} else if (r.team.equals(Team.ZOMBIE)) { // want to then target zombies
+				zombies.add(r);
+			} else { // target whatever else
+				other.add(r);
 			}
 		}
+		
+		// picking what to target
+		if (nonInfected.size() > 0) { // if there are non infected, pick the lowest health one
+			bestEnemy = nonInfected.get(0);
+			for (RobotInfo r : nonInfected) {
+				if (r.health < bestEnemy.health) bestEnemy = r;
+			}
+		} else if (infected.size() > 0) { // if there are only infected, pick the least infected
+			bestEnemy = infected.get(0);
+			for (RobotInfo r : infected) {
+				if (r.viperInfectedTurns < bestEnemy.viperInfectedTurns) bestEnemy = r;
+			}
+		} else if (zombies.size() > 0) { // if there are zombies, pick the closest
+			bestEnemy = zombies.get(0);
+			for (RobotInfo r : zombies) {
+				if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
+			}
+		} else if (other.size() > 0) { // otherwise, just pick the first if doesn't match any criteria
+			bestEnemy = other.get(0);
+		}
+		
 		if (doNotMove) {
 			if (bestEnemy.location.distanceSquaredTo(nearestTurretLocation) > 48) {
 				doNotMove = false;
