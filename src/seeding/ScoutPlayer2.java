@@ -116,6 +116,7 @@ public class ScoutPlayer2 {
 		for (RobotInfo ally : allies) {
 			if (pairer.canPairWith(ally)) {
 				if (pairer.isHigherPriority(bestPair, ally)) {
+					bestPair = ally;
 					pairer.pairWith(ally);
 				}
 			}
@@ -248,7 +249,7 @@ public class ScoutPlayer2 {
 			for (RobotInfo hostile : hostiles) {
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
 				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
-					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 8);
+					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, myLoc.distanceSquaredTo(pairedArchon));
 				}
 			}
 			
