@@ -397,8 +397,8 @@ public class ScoutPlayer2 {
 						}
 					}
 				}
-			} else {
-				Message.sendMessageGivenRange(rc, new MapLocation(0, 0), Message.RUSHNOTURRET, 2 * sightRange);
+			} else if (closestTurretLoc != null) {
+				Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 2 * sightRange);
 			}
 		}
 	}

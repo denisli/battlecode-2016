@@ -443,7 +443,7 @@ public class SoldierPlayer {
 				}
 			} else 
 			// if we get a rush signal, we want to rush towards the nearest turret
-			if (m.type == Message.RUSH || m.type == Message.RUSHNOTURRET) {
+			if (m.type == Message.RUSH) {
 				rush = true;
 				doNotMove = false;
 				// if the location contains an actual location, update the nearest turret with that location
