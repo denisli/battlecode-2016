@@ -283,6 +283,8 @@ public class SoldierPlayer {
 							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(nearestTurretLocation), rc, 2);
 							if (dir != Direction.NONE) {
 								rc.move(dir);
+							} else {
+								rc.clearRubble(dir);
 							}
 						}
 					}
@@ -291,6 +293,8 @@ public class SoldierPlayer {
 						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(nearestTurretLocation), rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
+						} else {
+							rc.clearRubble(dir);
 						}
 					}
 				}
@@ -299,6 +303,8 @@ public class SoldierPlayer {
 					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(nearestTurretLocation), rc, 2);
 					if (dir != Direction.NONE) {
 						rc.move(dir);
+					} else {
+						rc.clearRubble(dir);
 					}
 				}
 			}
@@ -311,6 +317,8 @@ public class SoldierPlayer {
 							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
 							if (dir != Direction.NONE) {
 								rc.move(dir);
+							} else {
+								rc.clearRubble(dir);
 							}
 						}
 					}
@@ -319,6 +327,8 @@ public class SoldierPlayer {
 						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
+						} else {
+							rc.clearRubble(dir);
 						}
 					}
 				}

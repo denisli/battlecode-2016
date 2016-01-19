@@ -43,6 +43,8 @@ public class ScoutPlayer2 {
 	private static Pairing pairing;
 	private static int numTurnsStationary = 0;
 	
+	private static int previousRush = 0;
+	
 	private static int numTurnsSincePreviousCollectiblesBroadcast = 0;
 	
 	public static void run(RobotController rc) {
@@ -52,6 +54,7 @@ public class ScoutPlayer2 {
 				numTurnsSincePreviousCollectiblesBroadcast++;
 				turnsSincePreviousDenBroadcast++;
 				turnsSinceClosestTurretBroadcast++;
+				previousRush++;
 				myLoc = rc.getLocation();
 				
 				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
@@ -320,9 +323,7 @@ public class ScoutPlayer2 {
 		for (RobotInfo ally : allies) {
 			// Add to power
 			RobotType type = ally.type;
-			if (ally.type == RobotType.SOLDIER) {
-				ourPower++;
-			}
+			ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * ally.health) / type.attackDelay;
 		}
 		
 		// Compute enemy power
@@ -333,9 +334,7 @@ public class ScoutPlayer2 {
 				} else {
 					// Add to enemy power
 					RobotType type = hostile.type;
-					if (hostile.type == RobotType.TURRET) {
-						enemyPower++;
-					}
+					enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower * hostile.health) / type.attackDelay;
 				}
 			}
 		}
@@ -390,20 +389,23 @@ public class ScoutPlayer2 {
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		// When we have more turrets, broadcast that.
 		rc.setIndicatorString(2, "For rushing...: " + ", Our power: " + ourPower + ", Enemy power: " + enemyPower);
-		if (ourPower > enemyPower) {
+		if (ourPower > 2 * enemyPower && previousRush > 15) {
 			if (pairing == Pairing.TURRET) {
 				if (isAdjacentToPaired()) {
 					if (closestTurretLoc != null) {
 						if (myLoc.distanceSquaredTo(pairedTurret) <= 2) {
 							Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 4 * sightRange);
+							previousRush = 0;
 						} else {
 							Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 4 * sightRange);
+							previousRush = 0;
 						}
 					}
 				}
 			} else if (closestTurretLoc != null) {
 				rc.setIndicatorString(2, "Round: " +  rc.getRoundNum() + ", RUSHING BROADCAST: " + closestTurretLoc);
 				Message.sendMessageGivenRange(rc, closestTurretLoc, Message.RUSH, 4 * sightRange);
+				previousRush = 0;
 			}
 		}
 	}
