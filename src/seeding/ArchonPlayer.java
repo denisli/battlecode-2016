@@ -1,6 +1,8 @@
 package seeding;
 
 import battlecode.common.*;
+import seeding.Bugging;
+import seeding.Message;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,7 +124,7 @@ public class ArchonPlayer {
 
 
 				//if see enemy, stop going to destination
-				if (destination!=null && hostileInSight.size()!=0) {
+				if (hostileInSight.size()!=0) {
 					destination = null;
 					bug = null;
 				}
@@ -306,14 +308,14 @@ public class ArchonPlayer {
 							}
 						}
 						//build viper condition
-						else if (numScoutsBuilt>=2 && unpairedScouts >= 4 && numSoldiersBuilt >=12 && numVipersBuilt == 0){
+						else if (numScoutsBuilt>=2 && unpairedScouts >= 6 && numSoldiersBuilt >=12 && numVipersBuilt == 0 && roundNum > 320){
 							//rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
 								numVipersBuilt++;
 							}
 						}
-						else if (numScoutsBuilt>=3 && unpairedScouts >= 6 && numSoldiersBuilt>=20 && numVipersBuilt == 1) {
+						else if (numScoutsBuilt>=3 && unpairedScouts >= 10 && numSoldiersBuilt>=20 && numVipersBuilt == 1) {
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
 								numVipersBuilt++;
@@ -331,10 +333,10 @@ public class ArchonPlayer {
 								if (rc.hasBuildRequirements(RobotType.TURRET)) {
 									int buildFate = rand.nextInt(15);
 									RobotType toBuild = null;
-									if (buildFate <= 3) {
+									if (buildFate < 3) {
 										toBuild = RobotType.TURRET;
 									} 
-									else if (buildFate ==3) {
+									else if (buildFate ==3 && numVipersBuilt >=1) {
 										toBuild = RobotType.VIPER;
 										numVipersBuilt++;
 									}
@@ -387,6 +389,12 @@ public class ArchonPlayer {
 
 					//rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 
+					//if dangerous, forget about parts
+					if (hostileInSight.size()!=0) {
+						nearestParts = null;
+						bug = null;
+					}
+					
 					if (rc.isCoreReady()) {
 						if (nearestParts != null) {
 							if (bug == null) {
