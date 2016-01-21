@@ -1,126 +1,84 @@
 package turtlebot;
 
+import java.util.List;
+
 import battlecode.common.*;
 
 public class TurretPlayer {
 
+	static Team myTeam = null;
+	static Team enemyTeam = null;
+	static MapLocation myLoc = null;
+	static int sightRadius = RobotType.TURRET.sensorRadiusSquared;
+	static boolean shouldMove = false;
+	static MapLocation archonLoc = null;
+	static Bugging bugging = null;
+	
 	public static void run(RobotController rc) {
-		int mySightRange = rc.getType().sensorRadiusSquared;
-		Team myTeam = rc.getTeam();
-		Team enemyTeam = myTeam.opponent();
         while (true) {
-            // This is a loop to prevent the run() method from returning. Because of the Clock.yield()
-            // at the end of it, the loop will iterate once per game round.
+        	myLoc = rc.getLocation();
             try {
-                // If this robot type can attack, check for enemies within range and attack one
-            	if (mySightRange > 0) {
-            		RobotInfo[] enemiesWithinRange = rc.senseNearbyRobots(mySightRange, enemyTeam);
-                    RobotInfo[] zombiesWithinRange = rc.senseNearbyRobots(mySightRange, Team.ZOMBIE);
-                    
-                    if (enemiesWithinRange.length > 0) {
-                    	// Check if weapon is ready
-                        if (rc.isWeaponReady()) {
-                            RobotInfo toAttack = enemiesWithinRange[0];
-                            for (RobotInfo r: enemiesWithinRange) {
-                            	if (r.type == RobotType.ARCHON) {
-                            		//it sees archon
-                            		if (toAttack.type == RobotType.ARCHON) {
-                            			if (r.health < toAttack.health) {
-                                			toAttack = r;
-                            			}
-                            		}
-                            		else {
-                            			toAttack = r;
-                            		}
-                            		//could check if it looked through all the archons- specs say there would be 6 max
-                            	}
-                        		//if it sees scout, attack it first
-                            	else if ((r.type == RobotType.SCOUT) && (toAttack.type != RobotType.ARCHON)) {
-                            		if (toAttack.type == RobotType.SCOUT) {
-                            			if (r.health < toAttack.health) {
-                                			toAttack = r;
-                            			}
-                            		}
-                            		else {
-                            			toAttack = r;
-                            		}
-                            	}
-                            	else {
-                            		//no archons/scouts in sight
-                        			if (toAttack.type != RobotType.ARCHON && toAttack.type != RobotType.SCOUT) {
-                        				//cur is not archon and sees no archons/scouts in list
-                        				if (r.health < toAttack.health) {
-                        					//attacks least health
-                        					toAttack = r;
-                        				}
-                        			}
-                            	}
-                            }
-                        	
-                            if (rc.canAttackLocation(toAttack.location)) {
-                        		rc.attackLocation(toAttack.location);
-                        	}
-                        }
-                    } else if (zombiesWithinRange.length > 0) {
-                    	if (rc.isWeaponReady()) {
-                            RobotInfo toAttack = zombiesWithinRange[0];
-                            for (RobotInfo r : zombiesWithinRange) {
-                            	if (r.health < toAttack.health) {
-                            		//attack zombie with least health
-                            		toAttack = r;
-                            	}
-                            }
-                        	if (rc.canAttackLocation(toAttack.location)) {
-                        		rc.attackLocation(toAttack.location);
-                        	}
-                            
-                        }
-                    } else { // in this case, there are no enemies, so check if we have a scout signal
-                    	Signal currentSignal = rc.readSignal();
-                    	MapLocation bestTarget = null;
-                    	if (currentSignal != null) {
-                			int messageX = currentSignal.getMessage()[0];
-                			int messageY = currentSignal.getMessage()[1];
-                			//if signal message > 80000, then the message is signaling a turret location
-                			if (messageX > 80000) {
-                				messageX = messageX-100000;
-                				messageY = messageY-100000;
-                			}
-                    		bestTarget = new MapLocation(messageX, messageY);
-                    	}
-                    	while (currentSignal != null) {
-                			// if we have a scout signal
-                    		if (currentSignal.getTeam().equals(myTeam) && currentSignal.getMessage() != null) { 
-                    			int messageX = currentSignal.getMessage()[0];
-                    			int messageY = currentSignal.getMessage()[1];
-                    			//if signal message > 80000, then the message is signaling a turret location
-                    			if (messageX > 80000) {
-                    				messageX = messageX-100000;
-                    				messageY = messageY-100000;
-                    			}
-                    			if (rc.getLocation().distanceSquaredTo(bestTarget) > rc.getLocation().distanceSquaredTo(new MapLocation(messageX, messageY))) {
-                    				bestTarget = new MapLocation(messageX, messageY);
-                    			}
-                    		}
-                    		currentSignal = rc.readSignal();
-                    	}
-                    	if (bestTarget != null) { // if we actually have a target
-                    		if (rc.isWeaponReady()) { // and if we attack
-                    			if (rc.canAttackLocation(bestTarget)) {
-                    				rc.attackLocation(bestTarget); // attack the location in the message
-                    			}
-                    			
-                    		}
-                    	}
-                    	rc.emptySignalQueue();
-                    }
-                }
-
+            	// run turret code
+            	if (rc.getType() == RobotType.TURRET) {
+            		 // get the robot info
+                	RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, sightRadius);
+                	// if there are any enemies nearby, attack closest
+                	if (hostiles.length > 0) {
+                		RobotInfo bestEnemy = hostiles[0];
+                		for (RobotInfo r : hostiles) {
+                			if (myLoc.distanceSquaredTo(r.location) < myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
+                		}
+                		
+                		// try to attack
+                		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) rc.attackLocation(bestEnemy.location);
+                	} else { // check for signals and stuff
+                		checkSignals(rc);
+                		if (shouldMove) {
+                			rc.pack();
+                		}
+                	}
+            	} else { // run ttm code, which should be just moving a single square
+            		moveOut(rc);
+            		if (!shouldMove) rc.unpack();
+            	}
+               
+            	
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println(e.getMessage());
                 e.printStackTrace();
             }
         }
+	}
+	
+	// move out one square
+	public static void moveOut(RobotController rc) throws GameActionException {
+		Direction dirToMove = myLoc.directionTo(archonLoc).opposite();
+		if (rc.isCoreReady()) {
+			bugging = new Bugging(rc, myLoc.add(dirToMove, 5));
+			bugging.move();
+			if (!rc.getLocation().equals(myLoc)) {
+				shouldMove = false;
+			}
+			
+		}
+	}
+	
+	public static void checkSignals(RobotController rc) throws GameActionException {
+		List<Message> messages = Message.readMessageSignals(rc);
+		MapLocation bestEnemy = null;
+		for (Message m : messages) {
+			if (m.type == Message.TURRET_ATTACK) {
+				if (bestEnemy == null) {
+					bestEnemy = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(bestEnemy)) bestEnemy = m.location;
+			} else if (m.type == Message.MOVE_OUT) {
+				shouldMove = true;
+				archonLoc = m.location;
+			}
+		}
+		
+		if (bestEnemy != null) {
+			if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy)) rc.attackLocation(bestEnemy);
+		}
 	}
 }

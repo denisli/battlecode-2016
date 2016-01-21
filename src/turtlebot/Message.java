@@ -10,24 +10,9 @@ import battlecode.common.Signal;
 
 public class Message {
 	
-	public static final int UNPAIRED = 1;
-	public static final int PAIRED = 2;
-	public static final int ZOMBIEDEN = 3;
-	public static final int ZOMBIE = 4;
-	public static final int TURRET = 5;
-	public static final int TURRETKILLED = 6;
-	public static final int ENEMY = 7;
-	public static final int COLLECTIBLES = 8;
-	public static final int ENEMYARCHONLOC = 9; // enemy archon loc
-	public static final int RUSH = 10;
-	public static final int ARCHONLOC = 11; // our archon loc
-	public static final int PAIREDATTACK = 13;
-	//scout sends to turret if it sees enemy turret+scout
-	public static final int ENEMYTURRETSCOUT = 14;
-	public static final int ARCHONINDANGER = 15;
-	public static final int SOLDIERATTACK = 16;
-	//only used for scout archon pairing
-	public static final int ARCHONSIGHT = 17;
+	public static final int INITIAL_ARCHON = 1;
+	public static final int MOVE_OUT = 2;
+	public static final int TURRET_ATTACK = 3;
 	
 	private static final int AYY = 2000;
 	
@@ -69,8 +54,6 @@ public class Message {
 					int x = signalMessage[0], y = signalMessage[1];
 					int type = x / AYY;
 					messages.add(new Message(signal, new MapLocation(x - type * AYY, y - type * AYY), type));
-				} else { // it's a soldier signal
-					messages.add(new Message(signal, signal.getLocation(), SOLDIERATTACK));
 				}
 			}
 			signal = rc.readSignal();
