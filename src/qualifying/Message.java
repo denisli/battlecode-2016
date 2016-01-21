@@ -10,24 +10,19 @@ import battlecode.common.Signal;
 
 public class Message {
 	
-	public static final int UNPAIRED = 1;
-	public static final int PAIRED = 2;
-	public static final int ZOMBIEDEN = 3;
-	public static final int ZOMBIE = 4;
-	public static final int TURRET = 5;
-	public static final int TURRETKILLED = 6;
-	public static final int ENEMY = 7;
-	public static final int COLLECTIBLES = 8;
-	public static final int ENEMYARCHONLOC = 9; // enemy archon loc
-	public static final int RUSH = 10;
-	public static final int ARCHONLOC = 11; // our archon loc
-	public static final int PAIREDATTACK = 13;
-	//scout sends to turret if it sees enemy turret+scout
-	public static final int ENEMYTURRETSCOUT = 14;
-	public static final int ARCHONINDANGER = 15;
-	public static final int SOLDIERATTACK = 16;
-	//only used for scout archon pairing
-	public static final int ARCHONSIGHT = 17;
+	public static final int BASIC = 0;
+	public static final int ZOMBIEDEN = 1;
+	public static final int TURRET = 2;
+	public static final int TURRETKILLED = 3;
+	public static final int ENEMY = 4; //includes zombies
+	public static final int COLLECTIBLES = 5;
+	public static final int RUSH = 6;
+	public static final int ARCHONLOC = 7; // our archon loc
+	//for scouts to aid turret sight
+	public static final int PAIREDATTACK = 8;
+	public static final int ARCHONINDANGER = 9;
+	//only used for scout archon pairing; scout uses for telling archons of nearby enemies
+	public static final int ARCHONSIGHT = 10;
 	
 	private static final int AYY = 2000;
 	
