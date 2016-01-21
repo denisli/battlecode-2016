@@ -39,7 +39,7 @@ public class Message {
 	}
 	
 	public static void sendMessageGivenRange(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
-		if (rc.getMessageSignalCount() == 20) {
+		if (rc.getMessageSignalCount() + rc.getBasicSignalCount() == 20) {
 			rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", could not broadcast due to message count");
 			return;
 		}
@@ -48,9 +48,21 @@ public class Message {
 		rc.broadcastMessageSignal(x, y, range);
 	}
 	
+	public static void sendBasicGivenRange(RobotController rc, int range) throws GameActionException {
+		if (rc.getMessageSignalCount() + rc.getBasicSignalCount() == 20) {
+			rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", could not broadcast due to message count");
+			return;
+		}
+		rc.broadcastSignal(range);
+	}
+	
 	public static void sendMessageGivenDelay(RobotController rc, MapLocation location, int type, double delay) throws GameActionException {
 		int range = getRangeGivenDelay(rc, delay);
 		sendMessageGivenRange(rc, location, type, range);
+	}
+	
+	public static void sendBasicGivenDelay(RobotController rc, int range) throws GameActionException {
+		rc.broadcastSignal(range);
 	}
 	
 	public static List<Message> readMessageSignals(RobotController rc) {
@@ -64,8 +76,8 @@ public class Message {
 					int x = signalMessage[0], y = signalMessage[1];
 					int type = x / AYY;
 					messages.add(new Message(signal, new MapLocation(x - type * AYY, y - type * AYY), type));
-				} else { // it's a soldier signal
-					messages.add(new Message(signal, signal.getLocation(), SOLDIERATTACK));
+				} else { // it's a basic signal
+					messages.add(new Message(signal, signal.getLocation(), BASIC));
 				}
 			}
 			signal = rc.readSignal();
