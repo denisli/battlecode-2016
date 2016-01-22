@@ -112,7 +112,6 @@ public class SoldierPlayer {
 					} else { // othewise, just attack if it's in range
 						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
 							broadcastingAttack(rc, bestEnemy);
-							// rc.broadcastSignal(24);
 						}
 					}
 					
@@ -141,25 +140,13 @@ public class SoldierPlayer {
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
 					nearestTurretLocation = m.location;
 				}
-				// turrets also count as enemies, so compute accordingly for that too.
-				if (nearestEnemyLocation == null) {
-					nearestEnemyLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestEnemyLocation)) {
-					nearestEnemyLocation = m.location;
-				}
 			} else
 			// if the message is to remove a turret, and if it's our nearestTurret, remove it
 			if (m.type == Message.TURRETKILLED) {
 				turretLocations.remove(m.location);
 				// Compute the new closest turret
 				if (m.location.equals(nearestTurretLocation)) {
-					int minDist = Message.FULL_MAP_RANGE;
 					nearestTurretLocation = turretLocations.getClosest(myLoc);
-					// if the removed location was also closest enemy, then the new 
-					// closest turret is regarded as new closest enemy
-					if (m.location.equals(nearestEnemyLocation)) {
-						nearestEnemyLocation = nearestTurretLocation;
-					}
 				}
 			} else 
 			// if the message is an enemy, get the closet one
@@ -241,13 +228,21 @@ public class SoldierPlayer {
 	}
 	
 	private static void setCurrentDestination(RobotController rc) {
-		// Prioritize dens first
+		// Distressed archons
+		if (nearestDistressedArchon != null) {
+			currentDestination = nearestDistressedArchon;
+		} else 
+		// Dens
 		if (nearestDenLocation != null) {
 			currentDestination = nearestDenLocation;
 		} else
-		// Then prioritize enemies
+		// Enemies
 		if (nearestEnemyLocation != null) {
 			currentDestination = nearestEnemyLocation;
+		} else
+		// Turrets
+		if (nearestTurretLocation != null) {
+			currentDestination = nearestTurretLocation;
 		}
 	}
 	
