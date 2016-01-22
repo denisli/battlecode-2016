@@ -330,7 +330,6 @@ public class ArchonPlayer {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
 								giveLocs(rc, denLocs);
-								giveLocs(rc, enemyTurrets);
 								numScoutsBuilt++;
 							}
 						}
@@ -338,7 +337,6 @@ public class ArchonPlayer {
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
 								giveLocs(rc, denLocs);
-								giveLocs(rc, enemyTurrets);
 								numVipersBuilt++;
 							}
 						}
@@ -347,7 +345,6 @@ public class ArchonPlayer {
 								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
 									buildRandomDir(rc, RobotType.SOLDIER, rand);
 									giveLocs(rc, denLocs);
-									giveLocs(rc, enemyTurrets);
 									numSoldiersBuilt++;
 								}
 							}
@@ -369,7 +366,6 @@ public class ArchonPlayer {
 								}
 								buildRandomDir(rc, toBuild, rand);
 								giveLocs(rc, denLocs);
-								giveLocs(rc, enemyTurrets);
 							}
 
 						}
