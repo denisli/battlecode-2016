@@ -95,6 +95,21 @@ public class Bugging {
 				}
 			}
 		} else {
+			// Do some containing when hit something that is off map.
+			if (hugging == Hugging.LEFT) {
+				MapLocation left = myLocation.add(dirWhileHugging.rotateLeft().rotateLeft());
+				if (!rc.onTheMap(left)) {
+					hugging = Hugging.RIGHT;
+					dirWhileHugging = dirWhileHugging.opposite().rotateLeft();
+				}
+			} else {
+				MapLocation right = myLocation.add(dirWhileHugging.rotateRight().rotateRight());
+				if (!rc.onTheMap(right)) {
+					hugging = Hugging.LEFT;
+					dirWhileHugging = dirWhileHugging.opposite().rotateRight();
+				}
+			}
+			
 			if (hugging == Hugging.LEFT) {
 				// Check to see if the robot can move towards the destination.
 				// If the direction is fan = 1 away from the direction it came
