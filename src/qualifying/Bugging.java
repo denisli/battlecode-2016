@@ -31,7 +31,7 @@ public class Bugging {
 		// Special case for when the destination is right in front of us. If we can't move there, but should mine, then mine it.
 		if (myLocation.distanceSquaredTo(destination) <= 2) {
 			Direction dir = myLocation.directionTo(destination);
-			if (rc.canMove(dir)) {
+			if (canMoveNoSlow(dir)) {
 				rc.move(dir);
 			} else if (shouldMine(dir)) {
 				rc.clearRubble(dir);
@@ -41,11 +41,11 @@ public class Bugging {
 		
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
-			if (rc.canMove(dir) && safePredicate.test(dir)) {
+			if (canMoveNoSlow(dir) && safePredicate.test(dir)) {
 				rc.move(dir);
-			} else if (rc.canMove(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
+			} else if (canMoveNoSlow(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
 				rc.move(dir.rotateLeft());
-			} else if (rc.canMove(dir.rotateRight()) && safePredicate.test(dir.rotateRight())) {
+			} else if (canMoveNoSlow(dir.rotateRight()) && safePredicate.test(dir.rotateRight())) {
 				rc.move(dir.rotateRight());
 			} else if (shouldMine(dir)) {
 				rc.clearRubble(dir);
@@ -443,6 +443,17 @@ public class Bugging {
 	// Number of turns away from the 4 dir.
 	private int getDirTurnsAwayFrom4(Direction dir) {
 		return Math.abs(dir.ordinal() - 4);
+	}
+	
+	private boolean canMoveNoSlow(Direction dir) {
+		if (rc.getType() == RobotType.SCOUT) {
+			return rc.canMove(dir);
+		} else {
+			MapLocation myLoc = rc.getLocation();
+			MapLocation dirLoc = myLoc.add(dir);
+			double rubble = rc.senseRubble(dirLoc);
+			return rubble >= 50 && rubble < 100;
+		}
 	}
 	
 	// Assumes that you cannot move in that location
