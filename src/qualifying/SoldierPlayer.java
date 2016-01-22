@@ -48,7 +48,6 @@ public class SoldierPlayer {
 	// Whether or not the soldier is retreating
 	private static boolean healing = false;
 	private static boolean wasHealing = false;
-	private static int turnsNotMoved = 0;
 	
 	// Used for helping an archon in danger
 	private static int distressedArchonTurns = 0;
@@ -72,12 +71,10 @@ public class SoldierPlayer {
 				resetLocations(rc);
 				// read messages and get destination
 				readMessages(rc);
-				// modify destination based on some factors
-				destinationModifier(rc);
 				// heal if need (and set the archon destination to go to)
 				setRetreatingStatus(rc, nearbyEnemies);
 				
-				// Remove turret locations that are too far away.
+				// Remove turret locations that you can see are not there.
 				// Does NOT remove turret locations due to broadcasts. Already done in read messages.
 				removeTurretLocations(rc);
 				
@@ -209,22 +206,6 @@ public class SoldierPlayer {
 		}
 		// if we actually have a destination, set it to currentDestination
 		setCurrentDestination(rc);
-		
-		// if we are looking at the same turret for too long, go somewhere else
-		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 54) {
-			turnsNotMoved++;
-		} else {
-			turnsNotMoved = 0;
-		}
-		
-		if (turnsNotMoved > 100) {
-			currentDestination = nearestArchonLocation;
-			nearestTurretLocation = null;
-			doNotMove = false;
-			turnsNotMoved = 0;
-		}
-		storedTurretLocation = nearestTurretLocation;
-		doNotMove = false;
 	}
 	
 	private static void setCurrentDestination(RobotController rc) {
@@ -246,12 +227,17 @@ public class SoldierPlayer {
 		}
 	}
 	
-	private static void removeTurretLocations(RobotController rc) {
+	private static void removeTurretLocations(RobotController rc) throws GameActionException {
 		MapLocation[] removedLocations = new MapLocation[turretLocations.size()];
 		int removedLength = 0;
 		for (MapLocation location : turretLocations) {
-			if (4 * RobotType.TURRET.attackRadiusSquared < myLoc.distanceSquaredTo(location)) {
-				removedLocations[removedLength++] = location;
+			if (rc.canSenseLocation(location)) {
+				RobotInfo info = rc.senseRobotAtLocation(location);
+				if (info == null) {
+					removedLocations[removedLength++] = location;
+				} else if (info.team != enemyTeam || (info.team == enemyTeam && info.type != RobotType.TURRET)) {
+					removedLocations[removedLength++] = location;
+				}
 			}
 		}
 		for (int i = 0; i < removedLength; i++) {
@@ -277,15 +263,7 @@ public class SoldierPlayer {
 			}
 		}
 	}
-	// modifies the destination based on stuff
-	public static void destinationModifier(RobotController rc) {
-		// if there is a turret nearby, don't want to move in
-		if (nearestTurretLocation != null && currentDestination != null && currentDestination.distanceSquaredTo(nearestTurretLocation) < 49 && !rush) {
-			rc.setIndicatorString(0, "don't want to move in because of turret " + nearestTurretLocation + rc.getRoundNum());
-			currentDestination = nearestTurretLocation;
-			doNotMove = true;
-		}
-	}
+
 	// loops through the nearbyEnemies and gets the best one
 	public static RobotInfo getBestEnemy(RobotController rc) {
 		TargetPrioritizer prioritizer = new TargetPrioritizer();
@@ -339,14 +317,18 @@ public class SoldierPlayer {
 				storedDestination = currentDestination;
 			}
 			// if we are trying to move towards a turret, stay out of range
-			if (currentDestination.equals(nearestTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 49 && rc.isCoreReady()) {
-				// try to move away from turret
-				bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
-				bugging.move();
-			} else
-			// if core is ready, then try to move towards destination
 			if (rc.isCoreReady()) {
-				bugging.move();
+				if (currentDestination.equals(nearestTurretLocation)) {
+					if (myLoc.distanceSquaredTo(nearestTurretLocation) < 49) {
+						// try to move away from turret
+						bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
+						bugging.move();
+					} else {
+						bugging.moveAvoid(turretLocations);
+					}
+				} else
+					// if core is ready, then try to move towards destination
+					bugging.move();
 			}
 		} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
 			rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
