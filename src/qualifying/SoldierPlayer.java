@@ -88,11 +88,13 @@ public class SoldierPlayer {
 				}
 				// When retreating, retreat
 				else if (healing) {
-					if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
-		    			bugging.enemyAvoidMove(nearbyEnemies);
-		    		} else if (rc.isCoreReady()) {
-		    			bugging.enemyAvoidMove(nearbyEnemies);
-		    		}
+					if (rc.isCoreReady()) {
+						if (nearestArchonLocation != null) {
+							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 8) {
+								bugging.enemyAvoidMove(nearbyEnemies);
+							}
+						}
+					}
 				}
 				// When viper infected, do special micro
 				else if (isViperInfected(rc)) {
@@ -315,7 +317,11 @@ public class SoldierPlayer {
 					}
 				} else
 					// if core is ready, then try to move towards destination
-					bugging.move();
+					if (nearestTurretLocation != null) {
+						bugging.moveAvoid(turretLocations);
+					} else {
+						bugging.move();
+					}
 			}
 		} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
 			rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
@@ -325,7 +331,11 @@ public class SoldierPlayer {
 			}
 			// if core is ready, try to move
 			if (rc.isCoreReady() && bugging != null) {
-				bugging.move();
+				if (nearestTurretLocation != null) {
+					bugging.moveAvoid(turretLocations);
+				} else {
+					bugging.move();
+				}
 			}
 		} else { // if we literally have nowhere to go
 			rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
