@@ -760,6 +760,7 @@ public class SoldierPlayer {
 	private static void broadcastingAttack(RobotController rc, RobotInfo enemy) throws GameActionException {
 		if (enemy.health <= RobotType.SOLDIER.attackPower) {
 			if (enemy.type == RobotType.ZOMBIEDEN) {
+				rc.attackLocation(enemy.location);
 				Message.sendBasicGivenRange(rc, Message.FULL_MAP_RANGE);
 				denLocations.remove(enemy.location);
 			} else {
