@@ -1,4 +1,4 @@
-package turtlebot;
+package spamturret2;
 
 import java.util.Random;
 
@@ -13,13 +13,31 @@ public class ScoutPlayer {
 				MapLocation myLoc = rc.getLocation();
 				// sense all the hostile/friendly robots within the scout's radius
 				RobotInfo[] hostileWithinRange = rc.senseHostileRobots(myLoc, rc.getType().sensorRadiusSquared);
+				/*RobotInfo closestRobot = null;
+				int closestDistance = 0;
+				// get the furthest robot from the scout
+				for (RobotInfo r : hostileWithinRange) {
+					if (r.location.distanceSquaredTo(myLoc) > closestDistance) {
+						closestRobot = r;
+						closestDistance = r.location.distanceSquaredTo(myLoc);
+					}
+				}
+				// if there is such an enemy, signal it to 9 squares around it
+				if (closestRobot != null) {
+					try {
+						rc.broadcastMessageSignal(closestRobot.location.x, closestRobot.location.y, 15);
+					} catch (GameActionException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}*/
 				int signalsSent = 0;
 				if (hostileWithinRange.length > 0) { // broadcast every single enemy
 					for (RobotInfo r : hostileWithinRange) {
 						try {
 							//if hostile robot is turret, add 100000 to the coordinates
-							if (signalsSent < 20) {
-								Message.sendMessageGivenDelay(rc, r.location, Message.TURRET_ATTACK, .2);
+							if (r.type == RobotType.TURRET && signalsSent < 20) {
+								rc.broadcastMessageSignal(r.location.x+100000, r.location.y+100000, 15);
 								signalsSent++;
 							}
 							else if (signalsSent < 20) {
@@ -94,6 +112,19 @@ public class ScoutPlayer {
 								}
 							}
 						}
+//						else {
+//							//move randomly
+//							Direction dirToMove = RobotPlayer.directions[(rand.nextInt(8))];
+//							for (int i = 0; i < 8; i++) {
+//								if (rc.canMove(dirToMove)) {
+//									rc.move(dirToMove);
+//									break;
+//								}
+//								else {
+//									dirToMove = dirToMove.rotateLeft();
+//								}
+//							}
+//						}
 					}
 				}
 			} catch (Exception e) {

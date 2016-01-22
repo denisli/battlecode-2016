@@ -9,6 +9,9 @@ public class ArchonPlayer {
 	static Team enemyTeam = null;
 	static MapLocation myLoc = null;
 	static Bugging bugging = null;
+	static int scoutCount = 1;
+	static int turretCount = 1;
+	static int sightRadius = RobotType.ARCHON.sensorRadiusSquared;
 	
 	public static void run(RobotController rc) {
 		myTeam = rc.getTeam();
@@ -25,7 +28,7 @@ public class ArchonPlayer {
 		while (true) {
 			try {
 				myLoc = rc.getLocation();
-				
+				healUnit(rc);
 				// want to build as many units as we can
 				if (rc.isCoreReady()) {
 					buildUnit(rc);
@@ -41,18 +44,49 @@ public class ArchonPlayer {
 		
 	}
 	
+	public static void healUnit(RobotController rc) throws GameActionException {
+		RobotInfo[] friendly = rc.senseNearbyRobots(RobotType.ARCHON.attackRadiusSquared, myTeam);
+		if (friendly.length > 0) {
+			RobotInfo toHeal = null;
+			for (RobotInfo r : friendly) {
+				if (r.type != RobotType.ARCHON && r.health < r.maxHealth) {
+					if (toHeal == null) toHeal = r;
+					else if (r.health < toHeal.health) toHeal = r;
+				}
+			}
+			if (toHeal != null) rc.repair(toHeal.location);
+		}
+	}
+	
 	// checks to use what units
 	public static void buildUnit(RobotController rc) throws GameActionException {
 		boolean shouldMove = true;
-		if (rc.hasBuildRequirements(RobotType.TURRET)) {
+		boolean goIn = false;
+		if (rc.hasBuildRequirements(RobotType.TURRET) && scoutCount * 2 > turretCount) {
+			rc.setIndicatorString(1, "trying to build a fucking turret" + rc.getRoundNum());
+			goIn = true;
 			// try to build something in each direction
 			for (Direction d : RobotPlayer.directions) {
 				if (rc.canBuild(d, RobotType.TURRET)) {
 					rc.build(d, RobotType.TURRET);
 					shouldMove = false;
+					turretCount++;
 				}
 			}
-		} else {
+		} else
+		if (rc.hasBuildRequirements(RobotType.SCOUT) && scoutCount * 2 <= turretCount) {
+			rc.setIndicatorString(1, "trying to build a fucking scout" + rc.getRoundNum());
+			goIn = true;
+			// try to build something in each direction
+			for (Direction d : RobotPlayer.directions) {
+				if (rc.canBuild(d, RobotType.SCOUT)) {
+					rc.build(d, RobotType.SCOUT);
+					shouldMove = false;
+					scoutCount++;
+				}
+			}
+		}
+		if (!goIn) {
 			shouldMove = false;
 		}
 		if (shouldMove) { // if we didn't manage to build something, tell units to move out radially
