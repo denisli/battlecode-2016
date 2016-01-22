@@ -64,6 +64,19 @@ public class LocationSet implements Iterable<MapLocation> {
 		
 	}
 	
+	public MapLocation getClosest(MapLocation reference) {
+		int minDist = Integer.MAX_VALUE;
+		MapLocation bestLocation = null;
+		for (MapLocation location : this) {
+			int dist = reference.distanceSquaredTo(location);
+			if (dist < minDist) {
+				minDist = dist;
+				bestLocation = location;
+			}
+		}
+		return bestLocation;
+	}
+	
 	public int size() {
 		return size;
 	}
