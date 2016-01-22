@@ -383,14 +383,6 @@ public class ViperPlayer {
 		// we want to loop through each message and get the ones that are relevant to the soldier
 		distressedArchonTurns++;
 		for (Message m : messages) {
-			// if the message is an enemy archon, get the nearest one
-			if (m.type == Message.ENEMYARCHONLOC) {
-				if (nearestEnemyArchon == null) {
-					nearestEnemyArchon = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestEnemyArchon)) {
-					nearestEnemyArchon = m.location;
-				}
-			} else
 			// if the message is a turret, try to get the nearest turret location
 			if (m.type == Message.TURRET) {
 				turretCount++;
@@ -406,14 +398,6 @@ public class ViperPlayer {
 					nearestEnemyLocation = m.location;
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestEnemyLocation)) {
 					nearestEnemyLocation = m.location;
-				}
-			} else
-			// if the message is a zombie, get the closest one
-			if (m.type == Message.ZOMBIE) {
-				if (nearestZombieLocation == null) {
-					nearestZombieLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestZombieLocation)) {
-					nearestZombieLocation = m.location;
 				}
 			} else
 			// if the message is a den, get the closest one
@@ -456,15 +440,15 @@ public class ViperPlayer {
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDistressedArchon)) {
 					nearestDistressedArchon = m.location;
 				}
-			} else 
+			} //else 
 			// if we get a soldier signaling attacking, should go assist the soldier
-			if (m.type == Message.SOLDIERATTACK) {
-				if (nearestSoldierAttacking == null) {
-					nearestSoldierAttacking = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestSoldierAttacking)) {
-					nearestSoldierAttacking = m.location;
-				}
-			}
+//			if (m.type == Message.SOLDIERATTACK) {
+//				if (nearestSoldierAttacking == null) {
+//					nearestSoldierAttacking = m.location;
+//				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestSoldierAttacking)) {
+//					nearestSoldierAttacking = m.location;
+//				}
+//			}
 		}
 		// once we get all the messages, check to make sure which one is the best
 		int distanceToArchon = nearestEnemyArchon != null ? myLoc.distanceSquaredTo(nearestEnemyArchon) : 1000;
