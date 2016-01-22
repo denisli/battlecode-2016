@@ -3,7 +3,6 @@ package qualifying;
 import battlecode.common.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -22,6 +21,7 @@ public class ArchonPlayer {
 		MapLocation previouslyBroadcastedLoc = rc.getLocation();
 		MapLocation nearestParts = null;
 		Bugging bug = null;
+		int numTurretsBuilt = 0;
 		int numSoldiersBuilt = 0;
 		int numScoutsBuilt = 0;
 		int numVipersBuilt = 0;
@@ -30,8 +30,11 @@ public class ArchonPlayer {
 		//consecutive turns where no damage was dealt
 		int consecutiveSafeTurns = 0;
 		int turnsWithoutMessaging = 0;
-		MapLocation previousBroadcastedEnemy = null;
 		MapLocation destination = null;
+		LocationSet denLocs =  new LocationSet();
+		LocationSet enemyTurrets = new LocationSet();
+		MapLocation closestDen = null;
+		MapLocation closestEnemy = null;
 
 		while (true) {
 			//things that change every turn
@@ -53,10 +56,6 @@ public class ArchonPlayer {
 				int roundNum = rc.getRoundNum();
 				double numParts = rc.getTeamParts();
 				double curHealth = rc.getHealth();
-				//reset the unpaired scouts count
-				if (roundNum % 50 == 1) {
-					unpairedScouts = 0;
-				}
 
 				/*ZombieSpawnSchedule z = rc.getZombieSpawnSchedule();
 				ZombieCount[] z0 = z.getScheduleForRound(z.getRounds()[0]);
@@ -66,9 +65,6 @@ public class ArchonPlayer {
 				//process messages- for each unpaired scout message, increment unpairedScouts
 				List<Message> messages = Message.readMessageSignals(rc);
 				for (Message m : messages) {
-					if (m.type == Message.UNPAIRED) {
-						unpairedScouts++;
-					}
 					if (m.type == Message.COLLECTIBLES) {
 						MapLocation newPartsLoc = m.location;
 						if (nearestParts==null) {
@@ -82,62 +78,57 @@ public class ArchonPlayer {
 							}
 						}
 					}
-					if (m.type == Message.UNPAIRED) {
-						unpairedScouts++;
-					}
 					if (m.type==Message.ZOMBIEDEN) {
-						if (destination == null) {
-							destination = m.location;
+						if (closestDen == null) {
+							closestDen = m.location;
 						}
 						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(closestDen)) {
+								closestDen = m.location;
 							}
 						}
+						denLocs.add(closestDen);
+					}
+					if (m.type==Message.BASIC) {
+						//remove closest
+						//denLocs.remove(closestDen);
 					}
 					if (m.type==Message.ENEMY) {
-						if (destination == null) {
-							destination = m.location;
+						if (closestEnemy == null) {
+							closestEnemy = m.location;
 						}
 						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
-							}
-						}
-					}
-					if (m.type==Message.ZOMBIE) {
-						if (destination == null) {
-							destination = m.location;
-						}
-						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(closestEnemy)) {
+								closestEnemy = m.location;
 							}
 						}
 					}
 					if (m.type==Message.TURRET) {
-						if (destination == null) {
-							destination = m.location;
-						}
-						else {
-							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(destination)) {
-								destination = m.location;
-							}
-						}
+						enemyTurrets.add(m.location);
+					}
+					if (m.type==Message.TURRETKILLED) {
+						enemyTurrets.remove(m.location);
 					}
 					if (m.type==Message.ARCHONSIGHT) {
 						hostileInSight.add(m.location);
 					}
+
 				}
 
-				rc.setIndicatorString(0, "d"+destination);
+				//set destination; only go to it if no parts nearby
+				if (closestDen != null) {
+					destination = closestDen;
+				}
+				else if (closestEnemy != null) {
+					destination = closestEnemy;
+				}
+
 				//if see enemy, stop going to destination
 				if (hostileInSight.size()!=0) {
 					destination = null;
 					bug = null;
 				}
-				rc.setIndicatorString(1, destination+"d");
-				if (destination!=null && myLoc.distanceSquaredTo(destination)<=200) {
+				if (destination!=null && myLoc.distanceSquaredTo(destination)<=99) {
 					destination = null;
 					bug = null;
 				}
@@ -176,31 +167,16 @@ public class ArchonPlayer {
 					else {
 						consecutiveSafeTurns = 0;
 					}
-					if (consecutiveSafeTurns > 10) {
-						if (nearestParts == startLoc) {
-							nearestParts = null;
-							bug = null;	
-						}
-					}
+
+					//					if (consecutiveSafeTurns > 10) {
+					//						if (nearestParts == startLoc) {
+					//							nearestParts = null;
+					//							bug = null;	
+					//						}
+					//					}
 
 					//if sees enemies nearby, run away
 					if (hostileInSight.size() > 0) {
-						//rc.setIndicatorString(0, "bytecodesused1a"+Clock.getBytecodeNum());
-						//rc.setIndicatorString(0, "here0"+hostileSightRange.size());
-						//run away
-						//						MapLocation closestEnemyLoc = hostileInSight.get(0);
-						//						for (MapLocation h : hostileInSight) {
-						//							if (myLoc.distanceSquaredTo(h) < myLoc.distanceSquaredTo(closestEnemyLoc)) {
-						//								closestEnemyLoc = h;
-						//							}
-						//						}
-						//rc.setIndicatorString(2, "here1");
-						//if it's far, broadcast its location
-						//						if (myLoc.distanceSquaredTo(closestEnemyLoc) > 24) {
-						//							//broadcast location
-						//							Message.sendMessageGivenDelay(rc, closestEnemyLoc, Message.ARCHONINDANGER, 2.3);
-						//						}
-						//						else {
 						Direction safestDir = moveSafestDir(rc, hostileInSight);
 						if (safestDir != null) {
 							rc.move(safestDir);
@@ -211,7 +187,6 @@ public class ArchonPlayer {
 							}
 						}
 						//}
-						rc.setIndicatorString(2, "bytecodesused"+Clock.getBytecodeNum());
 					}
 					//no other place to go when getting attacked
 					//					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
@@ -235,7 +210,23 @@ public class ArchonPlayer {
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
 						//rc.setIndicatorString(2, "moving to neutral");
-						rc.activate(adjNeutralRobots[0].location);
+						RobotInfo toActivate = adjNeutralRobots[0];
+						if (toActivate.type == RobotType.SCOUT) {
+							numScoutsBuilt++;
+						}
+						if (toActivate.type == RobotType.SOLDIER) {
+							numSoldiersBuilt++;
+						}
+						if (toActivate.type == RobotType.TURRET) {
+							numTurretsBuilt++;
+						}
+						if (toActivate.type == RobotType.TTM) {
+							numTurretsBuilt++;
+						}
+						if (toActivate.type == RobotType.VIPER) {
+							numVipersBuilt++;
+						}
+						rc.activate(toActivate.location);
 						bug = null;
 						nearestParts = null;
 					}
@@ -267,67 +258,23 @@ public class ArchonPlayer {
 					}
 					//else build mode
 					else {
-						
-						//dont build viper code
-//						rc.setIndicatorString(0, "bytecodesused6a"+Clock.getBytecodeNum());
-//						if (unpairedScouts < 6 && numSoldiersBuilt > 9) {
-//							//build scouts
-//							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
-//								buildRandomDir(rc, RobotType.SCOUT, rand);
-//								numScoutsBuilt++;
-//							}
-//						}
-//						else {
-//							if (numSoldiersBuilt <= 9) {
-//								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
-//									buildRandomDir(rc, RobotType.SOLDIER, rand);
-//									numSoldiersBuilt++;
-//								}
-//							}
-//							else {
-//								if (rc.hasBuildRequirements(RobotType.TURRET)) {
-//									int buildFate = rand.nextInt(7);
-//									RobotType toBuild = null;
-//									if (buildFate <= 2) {
-//										toBuild = RobotType.TURRET;
-//									} 
-//									else {
-//										toBuild = RobotType.SOLDIER;
-//										numSoldiersBuilt++;
-//									}
-//									buildRandomDir(rc, toBuild, rand);
-//								}
-//							}
-//						}
-
-						//build viper code
-						//rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
-						if (unpairedScouts < 9 && numSoldiersBuilt >= 12) {
-							//build scouts
+						int freeScouts = numScoutsBuilt-numTurretsBuilt;
+						if (freeScouts < 2 && roundNum > 150) {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
 								numScoutsBuilt++;
 							}
 						}
-						else if (numScoutsBuilt==1 && numSoldiersBuilt>=8) {
-							//build scouts
+						else if (numVipersBuilt < 1 && roundNum>200) {
+							if (rc.hasBuildRequirements(RobotType.VIPER)) {
+								buildRandomDir(rc, RobotType.VIPER, rand);
+								numVipersBuilt++;
+							}
+						}
+						else if (freeScouts < 2) {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
 								numScoutsBuilt++;
-							}
-						}
-						//build viper condition
-						else if (numScoutsBuilt>=2 && unpairedScouts >= 8 && numSoldiersBuilt >=12 && numVipersBuilt == 0 && roundNum > 320){
-							//rc.setIndicatorString(0, "scout"+numScoutsBuilt+"soldier"+numSoldiersBuilt);
-							if (rc.hasBuildRequirements(RobotType.VIPER)) {
-								buildRandomDir(rc, RobotType.VIPER, rand);
-								numVipersBuilt++;
-							}
-						}
-						else if (numScoutsBuilt>=3 && unpairedScouts >= 10 && numSoldiersBuilt>=20 && numVipersBuilt == 1) {
-							if (rc.hasBuildRequirements(RobotType.VIPER)) {
-								buildRandomDir(rc, RobotType.VIPER, rand);
-								numVipersBuilt++;
 							}
 						}
 						else {
@@ -337,31 +284,30 @@ public class ArchonPlayer {
 									numSoldiersBuilt++;
 								}
 							}
-							else {
-								//build turrets/soldiers/vipers in 3/15, 1/15
-								if (rc.hasBuildRequirements(RobotType.TURRET)) {
-									int buildFate = rand.nextInt(15);
-									RobotType toBuild = null;
-									if (buildFate < 3) {
-										toBuild = RobotType.TURRET;
-									} 
-									else if (buildFate ==3 && numVipersBuilt >=1 && roundNum < 1700) {
-										toBuild = RobotType.VIPER;
-										numVipersBuilt++;
-									}
-									else {
-										toBuild = RobotType.SOLDIER;
-										numSoldiersBuilt++;
-									}
-									buildRandomDir(rc, toBuild, rand);
+							//build turrets/soldiers/vipers in 3/15, 1/15
+							if (rc.hasBuildRequirements(RobotType.TURRET)) {
+								int buildFate = rand.nextInt(20);
+								RobotType toBuild = null;
+								if (buildFate < 5) {
+									toBuild = RobotType.TURRET;
+								} 
+								else if (buildFate == 5) {
+									toBuild = RobotType.VIPER;
+									numVipersBuilt++;
 								}
+								else {
+									toBuild = RobotType.SOLDIER;
+									numSoldiersBuilt++;
+								}
+								buildRandomDir(rc, toBuild, rand);
 							}
+
 						}
 
 
 					}
 
-					//if core is ready, find nearest parts
+					//if core is ready, find nearest parts within sight range
 					if (rc.isCoreReady()) {
 						//go to parts nearby if they exist
 						if (partsInSight.length>0) {
@@ -403,7 +349,7 @@ public class ArchonPlayer {
 						nearestParts = null;
 						bug = null;
 					}
-					
+
 					if (rc.isCoreReady()) {
 						if (nearestParts != null) {
 							if (bug == null) {
