@@ -320,7 +320,7 @@ public class ScoutPlayer2 {
 					}
 				}
 				if (rc.isCoreReady()) {
-					if (!inDanger) {
+					if (!inDanger && turnsSinceEnemyBroadcast > 20) {
 						if (closestEnemy != null) {
 							// Send a message of the closest enemy, should broadcast further if not in danger
 							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting closest enemy " + closestEnemy.location);
@@ -336,8 +336,10 @@ public class ScoutPlayer2 {
 		if (rc.isCoreReady()) {
 			if (enemy.type == RobotType.TURRET) {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 1);
+				turnsSinceEnemyBroadcast = 0;
 			} else if (enemy.type != RobotType.SCOUT) {
 				Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
+				turnsSinceEnemyBroadcast = 0;
 			}
 		}
 	}
