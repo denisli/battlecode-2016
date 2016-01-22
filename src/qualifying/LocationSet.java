@@ -52,6 +52,7 @@ public class LocationSet implements Iterable<MapLocation> {
 	
 	// Returns whether or not a location was actually removed.
 	public boolean remove(MapLocation location) {
+		if (location == null) return false;
 		int x = location.x % 100 + 100, y = location.y % 100 + 100;
 		int index = containsLocation[x][y];
 		if (index == 0) return false; // no location removed

@@ -762,9 +762,12 @@ public class SoldierPlayer {
 			if (enemy.type == RobotType.ZOMBIEDEN) {
 				Message.sendBasicGivenRange(rc, Message.FULL_MAP_RANGE);
 				denLocations.remove(enemy.location);
+			} else {
+				rc.attackLocation(enemy.location);
 			}
+		} else {
+			rc.attackLocation(enemy.location);
 		}
-		rc.attackLocation(enemy.location);
 	}
 	
 }
