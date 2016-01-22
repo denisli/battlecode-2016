@@ -62,24 +62,24 @@ public class ArchonPlayer {
 	public static void buildUnit(RobotController rc) throws GameActionException {
 		boolean shouldMove = true;
 		boolean goIn = false;
-		if (rc.hasBuildRequirements(RobotType.TURRET) && scoutCount * 2 > turretCount) {
+		if (rc.hasBuildRequirements(RobotType.TURRET) && scoutCount * 3 > turretCount) {
 			rc.setIndicatorString(1, "trying to build a fucking turret" + rc.getRoundNum());
 			goIn = true;
 			// try to build something in each direction
 			for (Direction d : RobotPlayer.directions) {
-				if (rc.canBuild(d, RobotType.TURRET)) {
+				if (rc.canBuild(d, RobotType.TURRET) && rc.isCoreReady()) {
 					rc.build(d, RobotType.TURRET);
 					shouldMove = false;
 					turretCount++;
 				}
 			}
 		} else
-		if (rc.hasBuildRequirements(RobotType.SCOUT) && scoutCount * 2 <= turretCount) {
+		if (rc.hasBuildRequirements(RobotType.SCOUT) && scoutCount * 3 <= turretCount) {
 			rc.setIndicatorString(1, "trying to build a fucking scout" + rc.getRoundNum());
 			goIn = true;
 			// try to build something in each direction
 			for (Direction d : RobotPlayer.directions) {
-				if (rc.canBuild(d, RobotType.SCOUT)) {
+				if (rc.canBuild(d, RobotType.SCOUT) && rc.isCoreReady()) {
 					rc.build(d, RobotType.SCOUT);
 					shouldMove = false;
 					scoutCount++;

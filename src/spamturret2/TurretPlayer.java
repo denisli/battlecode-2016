@@ -79,6 +79,10 @@ public class TurretPlayer {
                     	Signal currentSignal = rc.readSignal();
                     	MapLocation bestTarget = null;
                     	if (currentSignal != null) {
+                    		if (currentSignal.getMessage() == null) {
+                    			currentSignal = rc.readSignal();
+                    			continue;
+                    		}
                 			int messageX = currentSignal.getMessage()[0];
                 			int messageY = currentSignal.getMessage()[1];
                 			//if signal message > 80000, then the message is signaling a turret location

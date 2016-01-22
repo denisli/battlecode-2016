@@ -265,6 +265,10 @@ public class ArchonPlayer {
 										Set<Direction> dangerousDirs = new HashSet<>();
 										Signal currentSignal = rc.readSignal();
 										while (currentSignal != null) {
+											if (currentSignal.getMessage() == null) {
+												currentSignal = rc.readSignal();
+												continue;
+											}
 											int messageX = currentSignal.getMessage()[0];
 											int messageY = currentSignal.getMessage()[1];
 											//if signal message > 80000, then the message is signaling a turret location
