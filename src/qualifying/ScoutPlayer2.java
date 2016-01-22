@@ -245,7 +245,6 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastEnemies(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
-		rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Pairing: " + pairing);
 		if (pairing == Pairing.TURRET) {
 			if (hostiles.length > 0) {
 				MapLocation closestTurretLoc = null;
@@ -278,7 +277,6 @@ public class ScoutPlayer2 {
 				}
 				// If there is a best enemy, send a message.
 				if (bestEnemy != null && rc.isCoreReady()) {
-					rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasted best enemy: " + bestEnemy.location);
 					Message.sendMessageGivenRange(rc, bestEnemy.location, Message.PAIREDATTACK, 15);
 				}
 				if (isAdjacentToPaired()) {
@@ -303,7 +301,6 @@ public class ScoutPlayer2 {
 				if (!isDangerous(hostile.type)) continue;
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
 				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
-					rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", Broadcasted archon sight " + hostile.location);
 					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
 				}
 			}
@@ -342,7 +339,6 @@ public class ScoutPlayer2 {
 					if (!inDanger && turnsSinceEnemyBroadcast > 20) {
 						if (closestEnemy != null) {
 							// Send a message of the closest enemy, should broadcast further if not in danger
-							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting closest enemy " + closestEnemy.location);
 							broadcastRecordedEnemy(rc, closestEnemy);
 						}
 					}
@@ -433,9 +429,10 @@ public class ScoutPlayer2 {
 		if (denLocations.size() == 0) {
 			turnsSinceRushSignal++;
 			if (turnsSinceRushSignal > 100) {
-				MapLocation closestDen = denLocations.getClosest(myLoc);
-				if (closestDen != null) {
-					Message.sendMessageGivenRange(rc, closestDen, Message.RUSH, 2 * sightRange);
+				MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
+				if (closestTurret != null) {
+					rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
+					Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 4 * sightRange);
 					turnsSinceRushSignal = 0;
 				}
 			}
@@ -478,7 +475,6 @@ public class ScoutPlayer2 {
 							}
 						}
 					}
-					rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Max min dist: " + maxMinDist + ", Dir: " + mainDir);
 					if (rc.canMove(mainDir)) {
 						rc.move(mainDir);
 					}
@@ -538,7 +534,6 @@ public class ScoutPlayer2 {
 				}
 			}
 		} else {
-			rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", In Danger: " + inDanger);
 			if (rc.isCoreReady()) {
 				if (inDanger) {
 					// Go in direction maximizing the minimum distance
@@ -558,7 +553,6 @@ public class ScoutPlayer2 {
 							}
 						}
 					}
-					rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Max min dist: " + maxMinDist + ", Dir: " + mainDir);
 					if (rc.canMove(mainDir)) {
 						rc.move(mainDir);
 					}
