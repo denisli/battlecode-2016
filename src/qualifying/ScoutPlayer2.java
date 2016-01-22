@@ -24,6 +24,7 @@ public class ScoutPlayer2 {
 	private static LocationSet denLocations = new LocationSet();
 	private static LocationSet enemyTurretLocations = new LocationSet();
 	private static int turnsSinceTurretBroadcast = 0;
+	private static int turnsSinceEnemyBroadcast = 0;
 
 	private static Random rand = new Random();
 	private static Direction mainDir = RobotPlayer.directions[rand.nextInt(8)];
@@ -42,6 +43,7 @@ public class ScoutPlayer2 {
 			try {
 				turnsSinceCollectibleBroadcast++;
 				turnsSinceTurretBroadcast++;
+				turnsSinceEnemyBroadcast++;
 				myLoc = rc.getLocation();
 				
 				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
@@ -267,6 +269,11 @@ public class ScoutPlayer2 {
 							Message.sendMessageGivenDelay(rc, closestTurretLoc, Message.TURRET, 1);
 							turnsSinceTurretBroadcast = 0;
 							enemyTurretLocations.add(closestTurretLoc);
+						}
+						
+						if (bestEnemy != null && turnsSinceEnemyBroadcast > 20 && rc.isCoreReady()) {
+							Message.sendMessageGivenDelay(rc, bestEnemy.location, Message.ENEMY, 1);
+							turnsSinceEnemyBroadcast = 0;
 						}
 					}
 				}
