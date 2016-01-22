@@ -1,5 +1,6 @@
 package qualifying;
 
+import java.util.List;
 import java.util.Random;
 
 import battlecode.common.Clock;
@@ -49,6 +50,9 @@ public class ScoutPlayer2 {
 				RobotInfo[] allies = rc.senseNearbyRobots(myLoc, sightRange, team);
 				RobotInfo[] hostiles = rc.senseHostileRobots(myLoc, sightRange);
 				
+				// Read messages
+				readMessages(rc);
+				
 				// Compute pairing.
 				computePairing(rc, allies);
 				
@@ -93,6 +97,20 @@ public class ScoutPlayer2 {
 			} catch (Exception e) {
 				e.printStackTrace();
 				Clock.yield();
+			}
+		}
+	}
+	
+	private static void readMessages(RobotController rc) {
+		List<Message> messages = Message.readMessageSignals(rc);
+		for (Message m : messages) {
+			if (m.type == Message.ZOMBIEDEN) {
+				denLocations.add(m.location);
+			} else if (m.type == Message.ZOMBIEDENKILLED) {
+				denLocations.remove(m.location);
+			} else if (m.type == Message.BASIC) {
+				MapLocation closestDen = denLocations.getClosest(m.signal.getLocation());
+				denLocations.remove(closestDen);
 			}
 		}
 	}
