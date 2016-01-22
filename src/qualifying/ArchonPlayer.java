@@ -35,6 +35,7 @@ public class ArchonPlayer {
 		LocationSet enemyTurrets = new LocationSet();
 		MapLocation closestDen = null;
 		MapLocation closestEnemy = null;
+		MapLocation closestTurret = null;
 
 		while (true) {
 			//things that change every turn
@@ -111,11 +112,27 @@ public class ArchonPlayer {
 							}
 						}
 					}
-					else if (m.type==Message.TURRET) {
-						enemyTurrets.add(m.location);
+					else if (m.type == Message.TURRET) {
+						if (closestTurret == null) {
+							closestTurret = m.location;
+						}
+						else {
+							if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(closestTurret)) {
+								closestTurret = m.location;
+							}
+						}
+						enemyTurrets.add(closestTurret);
 					}
-					else if (m.type==Message.TURRETKILLED) {
+					else if (m.type == Message.TURRETKILLED) {
 						enemyTurrets.remove(m.location);
+						if (closestTurret == m.location) {
+							if (enemyTurrets.size() > 0) {
+								closestTurret = enemyTurrets.getClosest(myLoc);
+							}
+							else {
+								closestTurret = null;
+							}
+						}
 					}
 					else if (m.type==Message.ARCHONSIGHT) {
 						hostileInSight.add(m.location);
@@ -123,12 +140,50 @@ public class ArchonPlayer {
 
 				}
 
+				//check if it is close to the den, enemy, or turret; if archon doesnt see it, remove it from storage
+				if (closestEnemy !=null && myLoc.distanceSquaredTo(closestEnemy) <= sightRadius) {
+					RobotInfo r = rc.senseRobotAtLocation(closestEnemy);
+					if (r != null) {
+						if (r.team == enemyTeam && r.type!=RobotType.TURRET) {
+							closestEnemy = null;
+							destination = null;
+							bug = null;
+						}
+					}
+					else {
+						closestEnemy = null;
+						destination = null;
+						bug = null;
+					}
+				}
+				if (closestTurret!=null && myLoc.distanceSquaredTo(closestTurret) <= sightRadius) {
+					RobotInfo r = rc.senseRobotAtLocation(closestTurret);
+					if (r==null || !((r.team == enemyTeam) && (r.type == RobotType.TURRET))) {
+						enemyTurrets.remove(closestTurret);
+						closestTurret = null;
+						destination = null;
+						bug = null;
+					}
+				}
+				if (closestDen!=null && myLoc.distanceSquaredTo(closestDen) <= sightRadius) {
+					RobotInfo r = rc.senseRobotAtLocation(closestDen);
+					if (r==null || r.type != RobotType.ZOMBIEDEN) {
+						denLocs.remove(closestDen);
+						closestDen = null;
+						destination = null;
+						bug = null;
+					}
+				}
+				
 				//set destination; only go to it if no parts nearby
 				if (closestDen != null) {
 					destination = closestDen;
 				}
 				else if (closestEnemy != null) {
 					destination = closestEnemy;
+				}
+				else if (closestTurret != null) {
+					destination = closestTurret;
 				}
 
 				//if see enemy, stop going to destination
@@ -236,6 +291,8 @@ public class ArchonPlayer {
 						}
 						
 						rc.activate(toActivate.location);
+						giveLocs(rc, denLocs);
+						giveLocs(rc, enemyTurrets);
 						bug = null;
 						nearestParts = null;
 					}
@@ -271,12 +328,16 @@ public class ArchonPlayer {
 						if (freeScouts < 2 && roundNum > 150) {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
+								giveLocs(rc, denLocs);
+								giveLocs(rc, enemyTurrets);
 								numScoutsBuilt++;
 							}
 						}
 						else if (numVipersBuilt < 1 && numSoldiersBuilt > 12) {
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
+								giveLocs(rc, denLocs);
+								giveLocs(rc, enemyTurrets);
 								numVipersBuilt++;
 							}
 						}
@@ -284,6 +345,8 @@ public class ArchonPlayer {
 							if (numSoldiersBuilt <= 12) {
 								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
 									buildRandomDir(rc, RobotType.SOLDIER, rand);
+									giveLocs(rc, denLocs);
+									giveLocs(rc, enemyTurrets);
 									numSoldiersBuilt++;
 								}
 							}
@@ -304,6 +367,8 @@ public class ArchonPlayer {
 									numSoldiersBuilt++;
 								}
 								buildRandomDir(rc, toBuild, rand);
+								giveLocs(rc, denLocs);
+								giveLocs(rc, enemyTurrets);
 							}
 
 						}
@@ -431,6 +496,17 @@ public class ArchonPlayer {
 			}
 		}
 		return false;
+	}
+	
+	public static void giveLocs(RobotController rc, LocationSet locs) {
+		for (MapLocation m : locs) {
+			try {
+				Message.sendMessageGivenRange(rc, m, Message.ZOMBIEDEN, 2);
+			} catch (GameActionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 }
