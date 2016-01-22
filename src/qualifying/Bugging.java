@@ -94,6 +94,21 @@ public class Bugging {
 				}
 			}
 		} else {
+			// Change the hugging based off of out-of-map stuff first.
+			if (hugging == Hugging.LEFT) {
+				MapLocation left = myLocation.add(dirWhileHugging.rotateLeft().rotateLeft());
+				if (!rc.onTheMap(left)) {
+					hugging = Hugging.RIGHT;
+					dirWhileHugging = dirWhileHugging.opposite();
+				}
+			} else { // hugging = Hugging.RIGHT
+				MapLocation right = myLocation.add(dirWhileHugging.rotateRight().rotateRight());
+				if (!rc.onTheMap(right)) {
+					hugging = Hugging.LEFT;
+					dirWhileHugging = dirWhileHugging.opposite();
+				}
+			}
+			
 			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Hugging for bug: " + hugging);
 			if (hugging == Hugging.LEFT) {
 				// Check to see if the robot can move towards the destination.
