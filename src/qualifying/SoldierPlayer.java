@@ -81,6 +81,7 @@ public class SoldierPlayer {
 					nearestArchonLocation = newArchonLoc;
 				}
 
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
@@ -297,6 +298,7 @@ public class SoldierPlayer {
 	
 	private static void moveSoldier(RobotController rc) throws GameActionException {
 		// if we have a real current destination
+		rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
 		if (currentDestination != null) {
 			// if bugging is never initialized or we are switching destinations, reinitialize bugging
 			if (!currentDestination.equals(storedDestination) || bugging == null) {
@@ -306,16 +308,23 @@ public class SoldierPlayer {
 			// if we are trying to move towards a turret, stay out of range
 			if (rc.isCoreReady()) {
 				if (currentDestination.equals(nearestTurretLocation)) {
-					bugging.turretAvoidMove(turretLocations);
+					if (myLoc.distanceSquaredTo(nearestTurretLocation) < 49) {
+						// try to move away from turret
+						bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
+						bugging.move();
+					} else {
+						bugging.moveAvoid(turretLocations);
+					}
 				} else
-				// if core is ready, then try to move towards destination
-				if (nearestTurretLocation != null) {
-					bugging.turretAvoidMove(turretLocations);
-				} else {
-					bugging.move();
-				}
+					// if core is ready, then try to move towards destination
+					if (nearestTurretLocation != null) {
+						bugging.moveAvoid(turretLocations);
+					} else {
+						bugging.move();
+					}
 			}
 		} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
+			rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
 			if (!nearestArchonLocation.equals(storedDestination)) {
 				bugging = new Bugging(rc, nearestArchonLocation);
 				storedDestination = nearestArchonLocation;
@@ -323,12 +332,13 @@ public class SoldierPlayer {
 			// if core is ready, try to move
 			if (rc.isCoreReady() && bugging != null) {
 				if (nearestTurretLocation != null) {
-					bugging.turretAvoidMove(turretLocations);
+					bugging.moveAvoid(turretLocations);
 				} else {
 					bugging.move();
 				}
 			}
 		} else { // if we literally have nowhere to go
+			rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
 			bugAroundFriendly(rc);
 		}
 	}
@@ -553,6 +563,7 @@ public class SoldierPlayer {
 			for (RobotInfo r : nearbyRobots) {
 				if (r.type == RobotType.ARCHON) nearestArchonLocation = r.location;
 			}
+			rc.setIndicatorString(0, "should be retreating " + nearestArchonLocation + rc.getRoundNum());
     		if (!wasHealing || !bugging.destination.equals(nearestArchonLocation)) {
     			if (nearestArchonLocation == null) {
     				bugging = new Bugging(rc, rc.getLocation().add(Direction.EAST));

@@ -344,7 +344,7 @@ public class ViperPlayer {
 						bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
 						bugging.move();
 					} else {
-						bugging.turretAvoidMove(turretLocations);
+						bugging.moveAvoid(turretLocations);
 					}
 				} else
 					// if core is ready, then try to move towards destination

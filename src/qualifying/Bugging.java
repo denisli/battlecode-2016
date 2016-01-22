@@ -1,5 +1,6 @@
 package qualifying;
 
+import java.util.Set;
 import java.util.function.Predicate;
 
 import battlecode.common.Direction;
@@ -39,7 +40,6 @@ public class Bugging {
 		}
 		
 		if (hugging == Hugging.NONE) {
-			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Not hugging for bug.");
 			Direction dir = myLocation.directionTo(destination);
 			if (canMoveNoSlow(dir) && safePredicate.test(dir)) {
 				rc.move(dir);
@@ -94,22 +94,6 @@ public class Bugging {
 				}
 			}
 		} else {
-			// Change the hugging based off of out-of-map stuff first.
-			if (hugging == Hugging.LEFT) {
-				MapLocation left = myLocation.add(dirWhileHugging.rotateLeft().rotateLeft());
-				if (!rc.onTheMap(left)) {
-					hugging = Hugging.RIGHT;
-					dirWhileHugging = dirWhileHugging.opposite();
-				}
-			} else { // hugging = Hugging.RIGHT
-				MapLocation right = myLocation.add(dirWhileHugging.rotateRight().rotateRight());
-				if (!rc.onTheMap(right)) {
-					hugging = Hugging.LEFT;
-					dirWhileHugging = dirWhileHugging.opposite();
-				}
-			}
-			
-			rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Hugging for bug: " + hugging);
 			if (hugging == Hugging.LEFT) {
 				// Check to see if the robot can move towards the destination.
 				// If the direction is fan = 1 away from the direction it came
@@ -128,7 +112,6 @@ public class Bugging {
 					}
 				// Continue to bug...
 				} else {
-					rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", reached this point in code.");
 					dirWhileHugging = dirWhileHugging.rotateLeft();
 					int numRotates = 0;
 					while (!(rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) && numRotates < 8) {
@@ -178,17 +161,17 @@ public class Bugging {
 	}
 	
 	public void turretAvoidMove(LocationSet enemyTurrets) throws GameActionException {
-		rc.setIndicatorString(1, "Core ready: " + rc.isCoreReady());
+		rc.setIndicatorString(1, "Core raeady: " + rc.isCoreReady());
 		MapLocation myLocation = rc.getLocation();
 
 		boolean[] directionIsGood = new boolean[10];
 		dirChecking: for (Direction dir : Direction.values()) {
 			for (MapLocation e : enemyTurrets) {
-				if (myLocation.add(dir).distanceSquaredTo(e) <= RobotType.TURRET.attackRadiusSquared) {
+				if (myLocation.add(dir).distanceSquaredTo(e) <= 53) {
 					directionIsGood[dir.ordinal()] = false;
 					continue dirChecking;
 				}
-			}
+			}///////////////////////////////////////////////////''''''////////////////////////
 			directionIsGood[dir.ordinal()] = true;
 		}
 		Predicate<Direction> predicate = new Predicate<Direction>() {
@@ -198,7 +181,6 @@ public class Bugging {
 			}
 		};
 		
-		// If already in danger, get the hell out of it.
 		if (!predicate.test(Direction.NONE)) {
 			int maxMinDist = 0;
 			Direction bestDir = Direction.NONE;
@@ -222,6 +204,54 @@ public class Bugging {
 			}
 		}
 		move(predicate);
+		
+	}
+	
+	public void turretAvoidMove(Set<MapLocation> enemyTurrets) throws GameActionException {
+		rc.setIndicatorString(1, "Core raeady: " + rc.isCoreReady());
+		MapLocation myLocation = rc.getLocation();
+
+		boolean[] directionIsGood = new boolean[10];
+		dirChecking: for (Direction dir : Direction.values()) {
+			for (MapLocation e : enemyTurrets) {
+				if (myLocation.add(dir).distanceSquaredTo(e) <= 53) {
+					directionIsGood[dir.ordinal()] = false;
+					continue dirChecking;
+				}
+			}///////////////////////////////////////////////////''''''////////////////////////
+			directionIsGood[dir.ordinal()] = true;
+		}
+		Predicate<Direction> predicate = new Predicate<Direction>() {
+			@Override
+			public boolean test(Direction t) {
+				return directionIsGood[t.ordinal()];
+			}
+		};
+		
+		if (!predicate.test(Direction.NONE)) {
+			int maxMinDist = 0;
+			Direction bestDir = Direction.NONE;
+			for (Direction dir : RobotPlayer.directions) {
+				if (rc.canMove(dir)) {
+					MapLocation dirLoc = myLocation.add(dir);
+					int minDist = 1000;
+					for (MapLocation turret : enemyTurrets) {
+						int dist = dirLoc.distanceSquaredTo(turret);
+						minDist = Math.min(dist, minDist);
+					}
+					if (maxMinDist < minDist) {
+						maxMinDist = minDist;
+						bestDir = dir;
+					}
+				}
+			}
+			if (bestDir != Direction.NONE) {
+				rc.move(bestDir);
+				return;
+			}
+		}
+		move(predicate);
+		
 	}
 	
 	public void enemyAvoidMove(RobotInfo[] hostiles) throws GameActionException {
@@ -233,7 +263,7 @@ public class Bugging {
 					directionIsGood[dir.ordinal()] = false;
 					continue dirChecking;
 				}
-			}
+			}///////////////////////////////////////////////////''''''////////////////////////
 			directionIsGood[dir.ordinal()] = true;
 		}
 		Predicate<Direction> predicate = new Predicate<Direction>() {
@@ -268,6 +298,138 @@ public class Bugging {
 		}
 		
 		move(predicate);
+	}
+	
+	//avoids list 
+	public void moveAvoid(LocationSet enemyTurrets) throws GameActionException {
+		MapLocation myLocation = rc.getLocation();
+		if (myLocation.equals(destination)) return;
+		if (hugging == Hugging.NONE) {
+			Direction dir = myLocation.directionTo(destination);
+			if (rc.canMove(dir)) {
+				findDanger(rc, enemyTurrets, myLocation, dir);
+			} else if (rc.canMove(dir.rotateLeft())) {
+				findDanger(rc, enemyTurrets, myLocation, dir.rotateLeft());
+			} else if (rc.canMove(dir.rotateRight())) {
+				findDanger(rc, enemyTurrets, myLocation, dir.rotateRight());
+			} else if (shouldMine(dir)) {
+				rc.clearRubble(dir);
+			} else if (shouldMine(dir.rotateLeft())) { 
+				rc.clearRubble(dir.rotateLeft());
+			} else if (shouldMine(dir.rotateRight())) {
+				rc.clearRubble(dir.rotateRight());
+			} else {
+				// Since we can't move closer to the destination, we should
+				// commence hugging.
+				// First we find out which direction of hugging is faster.
+
+				// Compute the distance assuming hugging right
+				int numRotates = 0;
+				Direction rightHugDir = dir.rotateLeft();
+				while (!rc.canMove(rightHugDir) && numRotates < 8) {
+					rightHugDir = rightHugDir.rotateLeft();
+					numRotates++;
+				}
+				MapLocation rightHugLoc = myLocation.add(rightHugDir);
+				int rightHugDist = rightHugLoc.distanceSquaredTo(destination);
+
+				// Compute the distance assuming hugging left
+				numRotates = 0;
+				Direction leftHugDir = dir.rotateRight();
+				while (!rc.canMove(leftHugDir) && numRotates < 8) {
+					leftHugDir = leftHugDir.rotateRight();
+					numRotates++;
+				}
+				MapLocation leftHugLoc = myLocation.add(leftHugDir);
+				int leftHugDist = leftHugLoc.distanceSquaredTo(destination);
+
+				// Pick the hugging which gives the least distance towards the
+				// destination
+				if (rightHugDist < leftHugDist) {
+					hugging = Hugging.RIGHT;
+					dirWhileHugging = rightHugDir;
+				} else {
+					hugging = Hugging.LEFT;
+					dirWhileHugging = leftHugDir;
+				}
+
+				// Complete the move.
+				if (rc.canMove(dirWhileHugging)) {
+					findDanger(rc, enemyTurrets, myLocation, dirWhileHugging);
+				}
+			}
+		} else {
+			if (hugging == Hugging.LEFT) {
+				// Check to see if the robot can move towards the destination.
+				// If the direction is fan = 1 away from the direction it came
+				// from,
+				// then do NOT break out of hugging. Else get out of hugging.
+				Direction dirToDest = myLocation.directionTo(destination);
+				Direction cameFromDir = dirWhileHugging.opposite();
+
+				// In this case, break out of bugging
+				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
+					hugging = Hugging.NONE;
+					if (rc.canMove(dirToDest)) {
+						findDanger(rc, enemyTurrets, myLocation, dirToDest);
+					} else {
+						rc.clearRubble(dirToDest);
+					}
+				// Continue to bug...
+				} else {
+					dirWhileHugging = dirWhileHugging.rotateLeft();
+					int numRotates = 0;
+					while (!rc.canMove(dirWhileHugging) && numRotates < 8) {
+						dirWhileHugging = dirWhileHugging.rotateRight();
+						numRotates++;
+					}
+					if (rc.canMove(dirWhileHugging)) {
+						findDanger(rc, enemyTurrets, myLocation, dirWhileHugging);
+					}
+				}
+			} else { // hugging = Hugging.RIGHT MOSTLY COPY PASTA FROM ABOVE
+				// Check to see if the robot can move towards the destination.
+				// If the direction is fan = 1 away from the direction it came
+				// from,
+				// then do NOT break out of hugging. Else get out of hugging.
+				Direction dirToDest = myLocation.directionTo(destination);
+				Direction cameFromDir = dirWhileHugging.opposite();
+
+				// In this case, break out of bugging
+				if (getFanDist(dirToDest, cameFromDir) > 1 && (rc.canMove(dirToDest) || shouldMine(dirToDest))) {
+					hugging = Hugging.NONE;
+					if (rc.canMove(dirToDest)) {
+						findDanger(rc, enemyTurrets, myLocation, dirToDest);
+					} else {
+						rc.clearRubble(dirToDest);
+					}
+				// Continue to bug...
+				} else {
+					dirWhileHugging = dirWhileHugging.rotateRight();
+					int numRotates = 0;
+					while (!rc.canMove(dirWhileHugging) && numRotates < 8) {
+						dirWhileHugging = dirWhileHugging.rotateLeft();
+						numRotates++;
+					}
+					if (rc.canMove(dirWhileHugging)) {
+						findDanger(rc, enemyTurrets, myLocation, dirWhileHugging);
+					}
+				}
+			}
+		}
+	}
+	
+	public static void findDanger(RobotController rc, LocationSet enemyTurrets, MapLocation myLocation, Direction moveDir) throws GameActionException {
+		// danger: if true then dont move
+		boolean danger = false;
+		for (MapLocation e : enemyTurrets) {
+			if (myLocation.add(moveDir).distanceSquaredTo(e) <=53) {
+				danger = true;
+			}
+		}
+		if (rc.canMove(moveDir) && !danger) {
+			rc.move(moveDir);
+		}
 	}
 	
 	private static enum Hugging {

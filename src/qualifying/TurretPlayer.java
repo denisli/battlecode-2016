@@ -24,7 +24,6 @@ public class TurretPlayer {
 	public static boolean rushing = false;
 	public static LocationSet denLocs = new LocationSet();
 	public static LocationSet enemyTurrets = new LocationSet();
-	public static MapLocation pairedAttackLoc = null;
 
 	public static void run(RobotController rc) {
 		//rand = new Random(rc.getID());
@@ -54,6 +53,7 @@ public class TurretPlayer {
 			//attack closest enemy
 			RobotInfo toAttack = null;
 			MapLocation toAttackLoc = null;
+			MapLocation pairedAttackLoc = null;
 			boolean attacked = false;
 			boolean enemiesTooClose = true;
 
@@ -334,13 +334,8 @@ public class TurretPlayer {
 					canUnpack = false;
 				}
 				
-				if (pairedAttackLoc!=null && (myLoc.distanceSquaredTo(pairedAttackLoc) <= 40)) {
-					if (canUnpack) {
-						rc.unpack();
-					}
-				}
 				//if exist enemy in sight range but outside range >5, unpack
-				else if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
+				if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
 					if (canUnpack) {
 						rc.unpack();
 					}
