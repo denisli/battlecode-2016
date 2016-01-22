@@ -345,12 +345,6 @@ public class TurretPlayer {
 						rc.unpack();
 					}
 				}
-				//else if enemy in attack range...
-				else if (pairedAttackLoc != null){
-					if (canUnpack) {
-						rc.unpack();
-					}
-				}
 				//else move like soldiers
 				else {
 					//if arrived at destination
