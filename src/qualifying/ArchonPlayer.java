@@ -165,7 +165,7 @@ public class ArchonPlayer {
 						rc.repair(toRepair.location);
 					}
 				}
-
+				rc.setIndicatorString(1, "activate"+adjNeutralRobots.length);
 				//these are all in the same if else loop because they require core delay
 				if (rc.isCoreReady()) {
 					//consecutive safe turns
@@ -209,7 +209,7 @@ public class ArchonPlayer {
 					//					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
-						//rc.setIndicatorString(2, "sending message");
+						rc.setIndicatorString(0, roundNum+"sending message");
 						Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONLOC, 2.8);
 						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
@@ -217,23 +217,24 @@ public class ArchonPlayer {
 					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
-						//rc.setIndicatorString(2, "moving to neutral");
+						rc.setIndicatorString(0, "activate neutral");
 						RobotInfo toActivate = adjNeutralRobots[0];
 						if (toActivate.type == RobotType.SCOUT) {
 							numScoutsBuilt++;
 						}
-						if (toActivate.type == RobotType.SOLDIER) {
+						else if (toActivate.type == RobotType.SOLDIER) {
 							numSoldiersBuilt++;
 						}
-						if (toActivate.type == RobotType.TURRET) {
+						else if (toActivate.type == RobotType.TURRET) {
 							numTurretsBuilt++;
 						}
-						if (toActivate.type == RobotType.TTM) {
+						else if (toActivate.type == RobotType.TTM) {
 							numTurretsBuilt++;
 						}
-						if (toActivate.type == RobotType.VIPER) {
+						else if (toActivate.type == RobotType.VIPER) {
 							numVipersBuilt++;
 						}
+						
 						rc.activate(toActivate.location);
 						bug = null;
 						nearestParts = null;
@@ -273,16 +274,10 @@ public class ArchonPlayer {
 								numScoutsBuilt++;
 							}
 						}
-						else if (numVipersBuilt < 1 && roundNum>200) {
+						else if (numVipersBuilt < 1 && numSoldiersBuilt > 12) {
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
 								buildRandomDir(rc, RobotType.VIPER, rand);
 								numVipersBuilt++;
-							}
-						}
-						else if (freeScouts < 2) {
-							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
-								buildRandomDir(rc, RobotType.SCOUT, rand);
-								numScoutsBuilt++;
 							}
 						}
 						else {
