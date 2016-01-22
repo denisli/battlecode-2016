@@ -665,16 +665,16 @@ public class ScoutPlayer2 {
 			int dist0 = myLoc.distanceSquaredTo(r0.location);
 			int dist1 = myLoc.distanceSquaredTo(r1.location);
 			if (rc.getRoundNum() > 300) {
-				if (r0.type == RobotType.ARCHON) {
-					if (r1.type == RobotType.ARCHON) {
+				if (countsAsTurret(r0.type)) {
+					if (countsAsTurret(r1.type)) {
 						return dist1 < dist0;
 					} else {
 						return false;
 					}
 				} else {
-					if (r1.type == RobotType.ARCHON) {
+					if (countsAsTurret(r1.type)) {
 						return true;
-					} else { // both are turrets
+					} else { // both are archons
 						return dist1 < dist0;
 					}
 				}
