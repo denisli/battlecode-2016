@@ -19,6 +19,7 @@ public class ScoutPlayer2 {
 	
 	private static double ourPower = 0;
 	private static double enemyPower = 0;
+	private static int turnsSinceRushSignal = 0; // only increments when no dens
 	
 	private static boolean inDanger = false;
 	
@@ -429,7 +430,15 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
-		
+		if (denLocations.size() == 0) {
+			turnsSinceRushSignal++;
+			if (turnsSinceRushSignal > 100) {
+				Message.sendMessageGivenRange(rc, denLocations.getClosest(myLoc), Message.RUSH, 2 * sightRange);
+				turnsSinceRushSignal = 0;
+			}
+		} else {
+			turnsSinceRushSignal = 0;
+		}
 	}
 	
 	private static void moveScout(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) throws GameActionException {
