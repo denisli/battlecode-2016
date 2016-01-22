@@ -308,17 +308,11 @@ public class SoldierPlayer {
 			// if we are trying to move towards a turret, stay out of range
 			if (rc.isCoreReady()) {
 				if (currentDestination.equals(nearestTurretLocation)) {
-					if (myLoc.distanceSquaredTo(nearestTurretLocation) < 49) {
-						// try to move away from turret
-						bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
-						bugging.move();
-					} else {
-						bugging.moveAvoid(turretLocations);
-					}
+					bugging.turretAvoidMove(turretLocations);
 				} else
 					// if core is ready, then try to move towards destination
 					if (nearestTurretLocation != null) {
-						bugging.moveAvoid(turretLocations);
+						bugging.turretAvoidMove(turretLocations);
 					} else {
 						bugging.move();
 					}
@@ -332,7 +326,7 @@ public class SoldierPlayer {
 			// if core is ready, try to move
 			if (rc.isCoreReady() && bugging != null) {
 				if (nearestTurretLocation != null) {
-					bugging.moveAvoid(turretLocations);
+					bugging.turretAvoidMove(turretLocations);
 				} else {
 					bugging.move();
 				}

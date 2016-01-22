@@ -264,7 +264,7 @@ public class ScoutPlayer2 {
 					// First handle finding the best enemy.
 					// make sure hostile range is > 5
 					int turretDist = hostile.location.distanceSquaredTo(pairedTurret);
-					if (turretDist > RobotType.TURRET.sensorRadiusSquared) {
+					if (turretDist > RobotType.TURRET.sensorRadiusSquared && turretDist <= RobotType.TURRET.attackRadiusSquared) {
 						if (bestEnemy.location.distanceSquaredTo(pairedTurret) > turretDist) {
 							bestEnemy = hostile;
 						}
