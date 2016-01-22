@@ -36,6 +36,7 @@ public class ArchonPlayer {
 		MapLocation closestDen = null;
 		MapLocation closestEnemy = null;
 		MapLocation closestTurret = null;
+		MapLocation closestNeutralArchon = null;
 
 		while (true) {
 			//things that change every turn
@@ -191,17 +192,18 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
-				if (destination!=null && myLoc.distanceSquaredTo(destination)<=99) {
+				if (destination!=null && myLoc.distanceSquaredTo(destination)<=199) {
 					destination = null;
 					bug = null;
 				}
-				rc.setIndicatorString(2, "d"+destination);
+				rc.setIndicatorString(2, roundNum+"d"+destination);
 				//destination = null;
 
 
 				//if no adjacent parts or neutral robots, set nearestParts=null
 				if (partsInSight.length==0 && neutralRobotsInSight.length==0 && nearestParts!=null && myLoc.distanceSquaredTo(nearestParts)<=sightRadius) {
 					nearestParts=null;
+					bug = null;
 				}
 
 				//if sees friendly robot in need of repair, repair it
@@ -220,7 +222,6 @@ public class ArchonPlayer {
 						rc.repair(toRepair.location);
 					}
 				}
-				rc.setIndicatorString(1, "activate"+adjNeutralRobots.length);
 				//these are all in the same if else loop because they require core delay
 				if (rc.isCoreReady()) {
 					//consecutive safe turns
@@ -418,7 +419,8 @@ public class ArchonPlayer {
 						nearestParts = null;
 						bug = null;
 					}
-
+					
+					
 					if (rc.isCoreReady()) {
 						if (nearestParts != null) {
 							if (bug == null) {
@@ -430,6 +432,8 @@ public class ArchonPlayer {
 							}
 						}
 						else if (destination != null) {
+							rc.setIndicatorString(1, roundNum+"here0"+destination);
+
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
 								bug.move();
