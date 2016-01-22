@@ -24,6 +24,7 @@ public class TurretPlayer {
 	public static boolean rushing = false;
 	public static LocationSet denLocs = new LocationSet();
 	public static LocationSet enemyTurrets = new LocationSet();
+	public static MapLocation pairedAttackLoc = null;
 
 	public static void run(RobotController rc) {
 		//rand = new Random(rc.getID());
@@ -53,9 +54,9 @@ public class TurretPlayer {
 			//attack closest enemy
 			RobotInfo toAttack = null;
 			MapLocation toAttackLoc = null;
-			MapLocation pairedAttackLoc = null;
 			boolean attacked = false;
 			boolean enemiesTooClose = true;
+			pairedAttackLoc = null;
 
 			//process messages
 			List<Message> messages = Message.readMessageSignals(rc);
@@ -209,7 +210,7 @@ public class TurretPlayer {
 				rc.pack();
 			}
 
-			rc.setIndicatorString(1, turnsNoEnemy+"turns no enemy");
+			rc.setIndicatorString(1, pairedAttackLoc+" ");
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
@@ -306,6 +307,7 @@ public class TurretPlayer {
 				}
 			}
 
+			rc.setIndicatorString(1, pairedAttackLoc+" ");
 			//movement
 			if (rc.isCoreReady()) {
 				for (RobotInfo e : enemiesWithinRange) {
@@ -334,8 +336,11 @@ public class TurretPlayer {
 					canUnpack = false;
 				}
 				
+				if (pairedAttackLoc!=null && (myLoc.distanceSquaredTo(pairedAttackLoc) <= 40)) {
+					rc.unpack();
+				}
 				//if exist enemy in sight range but outside range >5, unpack
-				if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
+				else if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
 					if (canUnpack) {
 						rc.unpack();
 					}
@@ -471,7 +476,6 @@ public class TurretPlayer {
 	public static Direction moveRandom(RobotController rc, Direction randomDirection) throws GameActionException {
 		if (rc.isCoreReady()) {
 			if (rc.canMove(randomDirection)) {
-				rc.setIndicatorString(1, randomDirection+"");
 				rc.move(randomDirection);
 			}
 			else {
