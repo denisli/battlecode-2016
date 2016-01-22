@@ -81,6 +81,7 @@ public class SoldierPlayer {
 					nearestArchonLocation = newArchonLoc;
 				}
 
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
