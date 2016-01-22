@@ -40,7 +40,7 @@ public class Message {
 	}
 	
 	public static void sendMessageGivenRange(RobotController rc, MapLocation location, int type, int range) throws GameActionException {
-		if (rc.getMessageSignalCount() + rc.getBasicSignalCount() == 20) {
+		if (rc.getMessageSignalCount() == 20) {
 			rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", could not broadcast due to message count");
 			return;
 		}
@@ -50,7 +50,7 @@ public class Message {
 	}
 	
 	public static void sendBasicGivenRange(RobotController rc, int range) throws GameActionException {
-		if (rc.getMessageSignalCount() + rc.getBasicSignalCount() == 20) {
+		if (rc.getBasicSignalCount() == 5) {
 			rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", could not broadcast due to message count");
 			return;
 		}
@@ -62,7 +62,8 @@ public class Message {
 		sendMessageGivenRange(rc, location, type, range);
 	}
 	
-	public static void sendBasicGivenDelay(RobotController rc, int range) throws GameActionException {
+	public static void sendBasicGivenDelay(RobotController rc, int delay) throws GameActionException {
+		int range = getRangeGivenDelay(rc, delay);
 		rc.broadcastSignal(range);
 	}
 	

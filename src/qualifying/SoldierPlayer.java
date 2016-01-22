@@ -43,7 +43,6 @@ public class SoldierPlayer {
 	
 	// Properties for how to fight against turrets
 	private static boolean rush = false;
-	private static boolean doNotMove = false;
 	
 	// Whether or not the soldier is retreating
 	private static boolean healing = false;
@@ -82,6 +81,7 @@ public class SoldierPlayer {
 					nearestArchonLocation = newArchonLoc;
 				}
 
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
@@ -103,14 +103,7 @@ public class SoldierPlayer {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
-					
-					if (!doNotMove) {
-						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
-					} else { // othewise, just attack if it's in range
-						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
-							broadcastingAttack(rc, bestEnemy);
-						}
-					}
+					micro(rc, nearbyEnemies, bestEnemy);
 					
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
@@ -182,7 +175,6 @@ public class SoldierPlayer {
 			// if we get a rush signal, we want to rush towards the nearest turret
 			if (m.type == Message.RUSH) {
 				rush = true;
-				doNotMove = false;
 				// if the location contains an actual location, update the nearest turret with that location
 				if (m.type == Message.RUSH) {
 					nearestTurretLocation = m.location;
@@ -280,11 +272,6 @@ public class SoldierPlayer {
 				bestEnemy = r;
 			}
 		}
-		if (doNotMove) {
-			if (bestEnemy.location.distanceSquaredTo(nearestTurretLocation) > 48) {
-				doNotMove = false;
-			}
-		}
 		return bestEnemy;
 	}
 	
@@ -346,7 +333,7 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void nonrangeMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
+	public static void micro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
 		if (useSoldierMicro) {
 			soldierMicro(rc, hostiles, bestEnemy);
 		} else {
