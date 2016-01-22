@@ -82,17 +82,25 @@ public class ViperPlayer {
 					nearestArchonLocation = newArchonLoc;
 				}
 
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
+				// Reset rushing if there is a den.
+				if (denLocations.size() > 0) {
+					rush = false;
+				}
+				
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
 				}
 				// When retreating, retreat
 				else if (healing) {
-					if (rc.isCoreReady() && nearestArchonLocation != null && myLoc.distanceSquaredTo(nearestArchonLocation) > 3) {
-		    			bugging.enemyAvoidMove(nearbyEnemies);
-		    		} else if (rc.isCoreReady()) {
-		    			bugging.enemyAvoidMove(nearbyEnemies);
-		    		}
+					if (rc.isCoreReady()) {
+						if (nearestArchonLocation != null) {
+							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 8) {
+								bugging.enemyAvoidMove(nearbyEnemies);
+							}
+						}
+					}
 				}
 				// When viper infected, do special micro
 				else if (isViperInfected(rc)) {
@@ -339,16 +347,14 @@ public class ViperPlayer {
 			// if we are trying to move towards a turret, stay out of range
 			if (rc.isCoreReady()) {
 				if (currentDestination.equals(nearestTurretLocation)) {
-					if (myLoc.distanceSquaredTo(nearestTurretLocation) < 49) {
-						// try to move away from turret
-						bugging = new Bugging(rc, myLoc.add(myLoc.directionTo(currentDestination).opposite()));
-						bugging.move();
-					} else {
-						bugging.moveAvoid(turretLocations);
-					}
+					bugging.turretAvoidMove(turretLocations);
 				} else
 					// if core is ready, then try to move towards destination
-					bugging.move();
+					if (nearestTurretLocation != null) {
+						bugging.turretAvoidMove(turretLocations);
+					} else {
+						bugging.move();
+					}
 			}
 		} else if (nearestArchonLocation != null){ // we don't actually have a destination, so we want to try to move towards the closest archon
 			rc.setIndicatorString(0, "moving to nearest archon " + nearestArchonLocation + rc.getRoundNum());
@@ -358,7 +364,11 @@ public class ViperPlayer {
 			}
 			// if core is ready, try to move
 			if (rc.isCoreReady() && bugging != null) {
-				bugging.move();
+				if (nearestTurretLocation != null) {
+					bugging.turretAvoidMove(turretLocations);
+				} else {
+					bugging.move();
+				}
 			}
 		} else { // if we literally have nowhere to go
 			rc.setIndicatorString(1, "bugging around friendly " + rc.getRoundNum());
@@ -513,8 +523,11 @@ public class ViperPlayer {
 		
 		if (rc.isCoreReady()) {
 			// If have destination get closer.
-			if (currentDestination != null && rc.canSenseLocation(currentDestination)) {
-				RobotInfo info = rc.senseRobotAtLocation(currentDestination);
+			if (currentDestination != null) {
+				RobotInfo info = null;
+				if (rc.canSenseLocation(currentDestination)) {
+					info = rc.senseRobotAtLocation(currentDestination);
+				}
 				if (info != null) {
 					// If can attack it, just only move closer if blocking someone behind.
 					if (rc.canAttackLocation(info.location)) {
@@ -684,6 +697,76 @@ public class ViperPlayer {
 		}
 	}
 	
+	private static boolean countsAsTurret(RobotType type) {
+		return (type == RobotType.TURRET || type == RobotType.TTM);
+	}
+	
+	private static class TargetPrioritizer implements Prioritizer<RobotInfo> {
+
+		private boolean insideAttackRange(RobotInfo r) {
+			return myLoc.distanceSquaredTo(r.location) <= attackRadius;
+		}
+		
+		// Returns whether or not r1 is higher priority than r0.
+		@Override
+		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
+			if (r0 == null) return true;
+			if (r1 == null) return false;
+			// Highest priority are those within attack range.
+			// 		Highest priority is lowest health viper infected.
+			// 		Then lowest health zombie infected
+			// 		Then lowest health
+			
+			// Outside attack range, prioritize closest.
+			if (insideAttackRange(r0)) {
+				if (insideAttackRange(r1)) {
+					if (isViperInfected(r0)) {
+						if (isViperInfected(r1)) {
+							return r1.health < r0.health;
+						} else {
+							return false;
+						}
+					} else {
+						if (isViperInfected(r1)) {
+							return true;
+						} else { // both not viper infected
+							if (isInfected(r0)) {
+								if (isInfected(r1)) {
+									return r1.health < r0.health;
+								} else {
+									return false;
+								}
+							} else {
+								if (isInfected(r1)) {
+									return true;
+								} else {
+									return r1.health < r0.health;
+								}
+							}
+						}
+					}
+				} else {
+					return false;
+				}
+			} else {
+				if (insideAttackRange(r1)) {
+					return true;
+				} else { // both outside of attack range
+					return myLoc.distanceSquaredTo(r1.location) < myLoc.distanceSquaredTo(r0.location); 
+				}
+			}
+		}
+		
+		private boolean isInfected(RobotInfo r) {
+			return r.zombieInfectedTurns > 0;
+		}
+		
+		private boolean isViperInfected(RobotInfo r) {
+			return r.viperInfectedTurns > 0;
+		}
+		
+	}
+	
 	private static void broadcastingAttack(RobotController rc, RobotInfo enemy) throws GameActionException {
 		if (enemy.health <= RobotType.SOLDIER.attackPower) {
 			if (enemy.type == RobotType.ZOMBIEDEN) {
@@ -696,10 +779,6 @@ public class ViperPlayer {
 		} else {
 			rc.attackLocation(enemy.location);
 		}
-	}
-	
-	private static boolean countsAsTurret(RobotType type) {
-		return (type == RobotType.TURRET || type == RobotType.TTM);
 	}
 	
 }
