@@ -7,6 +7,9 @@ import battlecode.common.*;
 public class SoldierPlayer {
 	
 	// Keeping track of locations.
+	private static LocationSet turretLocations = new LocationSet();
+	private static LocationSet denLocations = new LocationSet();
+	
 	private static MapLocation nearestTurretLocation = null;
 	private static MapLocation storedTurretLocation = null;
 	private static MapLocation nearestEnemyLocation = null;
@@ -74,6 +77,10 @@ public class SoldierPlayer {
 				// heal if need (and set the archon destination to go to)
 				setRetreatingStatus(rc, nearbyEnemies);
 				
+				// Remove turret locations that are too far away.
+				// Does NOT remove turret locations due to broadcasts. Already done in read messages.
+				removeTurretLocations(rc);
+				
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
@@ -109,7 +116,6 @@ public class SoldierPlayer {
 						}
 					}
 					
-					
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
 				}
@@ -118,6 +124,148 @@ public class SoldierPlayer {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	// reads the message signals and sets the nearestTurretLocation and currentDestination static variables
+	public static void readMessages(RobotController rc) {
+		List<Message> messages = Message.readMessageSignals(rc);
+		// we want to loop through each message and get the ones that are relevant to the soldier
+		distressedArchonTurns++;
+		for (Message m : messages) {
+			// if the message is a turret, try to get the nearest turret location
+			if (m.type == Message.TURRET) {
+				turretLocations.add(m.location);
+				if (nearestTurretLocation == null) {
+					nearestTurretLocation = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
+					nearestTurretLocation = m.location;
+				}
+				// turrets also count as enemies, so compute accordingly for that too.
+				if (nearestEnemyLocation == null) {
+					nearestEnemyLocation = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestEnemyLocation)) {
+					nearestEnemyLocation = m.location;
+				}
+			} else
+			// if the message is to remove a turret, and if it's our nearestTurret, remove it
+			if (m.type == Message.TURRETKILLED) {
+				turretLocations.remove(m.location);
+				// Compute the new closest turret
+				if (m.location.equals(nearestTurretLocation)) {
+					int minDist = Message.FULL_MAP_RANGE;
+					for (MapLocation location : turretLocations) {
+						int dist = myLoc.distanceSquaredTo(location);
+						if (dist < minDist) {
+							minDist = dist; nearestTurretLocation = location;
+						}
+					}
+					// if the removed location was also closest enemy, then the new 
+					// closest turret is regarded as new closest enemy
+					if (m.location.equals(nearestEnemyLocation)) {
+						nearestEnemyLocation = nearestTurretLocation;
+					}
+				}
+			} else 
+			// if the message is an enemy, get the closet one
+			if (m.type == Message.ENEMY) {
+				if (nearestEnemyLocation == null) {
+					nearestEnemyLocation = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestEnemyLocation)) {
+					nearestEnemyLocation = m.location;
+				}
+			} else
+			// if the message is a den, get the closest one
+			if (m.type == Message.ZOMBIEDEN) {
+				denLocations.add(m.location);
+				if (nearestDenLocation == null) {
+					nearestDenLocation = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
+					nearestDenLocation = m.location;
+				}
+			} else 
+			// if zombie killed message, then recompute the nearest den and remove den location.
+			if (m.type == Message.ZOMBIEDENKILLED) {
+				denLocations.remove(m.location);
+				if (m.location.equals(nearestDenLocation)) {
+					int minDist = Message.FULL_MAP_RANGE;
+					for (MapLocation location : denLocations) {
+						int dist = myLoc.distanceSquaredTo(location);
+						if (dist < minDist) {
+							minDist = dist; nearestDenLocation = location;
+						}
+					}
+				}
+			} else 
+			// if the message is an archon location, store the nearest current archon location
+			if (m.type == Message.ARCHONLOC) {
+				if (newArchonLoc == null) {
+					newArchonLoc = m.location;
+				}
+				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(newArchonLoc)) {
+					newArchonLoc= m.location;
+				}
+			} else 
+			// if we get a rush signal, we want to rush towards the nearest turret
+			if (m.type == Message.RUSH) {
+				rush = true;
+				doNotMove = false;
+				// if the location contains an actual location, update the nearest turret with that location
+				if (m.type == Message.RUSH) {
+					nearestTurretLocation = m.location;
+				}
+			} else
+			// if we get an archon in distressed signal, needs to take priority
+			if (m.type == Message.ARCHONINDANGER) {
+				distressedArchonTurns = 0;
+				if (nearestDistressedArchon == null) {
+					nearestDistressedArchon = m.location;
+				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDistressedArchon)) {
+					nearestDistressedArchon = m.location;
+				}
+			}
+		}
+		// if we actually have a destination, set it to currentDestination
+		setCurrentDestination(rc);
+		
+		// if we are looking at the same turret for too long, go somewhere else
+		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 54) {
+			turnsNotMoved++;
+		} else {
+			turnsNotMoved = 0;
+		}
+		
+		if (turnsNotMoved > 100) {
+			currentDestination = nearestArchonLocation;
+			nearestTurretLocation = null;
+			doNotMove = false;
+			turnsNotMoved = 0;
+		}
+		storedTurretLocation = nearestTurretLocation;
+		doNotMove = false;
+	}
+	
+	private static void setCurrentDestination(RobotController rc) {
+		// Prioritize dens first
+		if (nearestDenLocation != null) {
+			currentDestination = nearestDenLocation;
+		} else
+		// Then prioritize enemies
+		if (nearestEnemyLocation != null) {
+			currentDestination = nearestEnemyLocation;
+		}
+	}
+	
+	private static void removeTurretLocations(RobotController rc) {
+		MapLocation[] removedLocations = new MapLocation[turretLocations.size()];
+		int removedLength = 0;
+		for (MapLocation location : turretLocations) {
+			if (4 * RobotType.TURRET.attackRadiusSquared < myLoc.distanceSquaredTo(location)) {
+				removedLocations[removedLength++] = location;
+			}
+		}
+		for (int i = 0; i < removedLength; i++) {
+			turretLocations.remove(removedLocations[i]);
 		}
 	}
 	
@@ -171,60 +319,6 @@ public class SoldierPlayer {
 		}
 		return bestEnemy;
 	}
-	// Finds a safe direction that is minimum distance from enemy. If no direction is safe, finds the maximum distance from enemy.
-	// Distance from enemy is the minimum distance from all enemy.
-	public static Direction getMinDirectionAwayFromHostileAttacks(RobotController rc, RobotInfo[] hostiles) {
-		Direction bestDir = Direction.NONE;
-		boolean bestDirInDanger = false;
-		// Compute the minimum distance from hostiles at current location.
-		// Also preset whether or not the best direction is a dangerous location.
-		int originalDistFromEnemy = 10000;
-		for (RobotInfo hostile : hostiles) {
-			int dist = myLoc.distanceSquaredTo(hostile.location);
-			originalDistFromEnemy = Math.min(originalDistFromEnemy, dist);
-			if (hostile.type.attackRadiusSquared >= dist) {
-				bestDirInDanger = true;
-			}
-		}
-		int minDistFromEnemy = originalDistFromEnemy;
-		int maxDistFromEnemy = originalDistFromEnemy;
-		
-		// Loop through the rest of the directions.
-		// When in danger, update the direction for max dist from enemy.
-		// When not in danger, update the direction for min dist from enemy. Also ignore directions in danger.
-		searchDir: for (Direction dir : RobotPlayer.directions) {
-			if (rc.canMove(dir)) {
-				int distFromEnemyForDir = 10000;
-				MapLocation dirLoc = myLoc.add(dir);
-				boolean dirInDanger = false;
-				for (RobotInfo hostile : hostiles) {
-					int dist = dirLoc.distanceSquaredTo(hostile.location);
-					if (hostile.type.attackRadiusSquared >= dist) {
-						// If our best direction is not in danger, don't bother checking this direction.
-						if (!bestDirInDanger) {
-							continue searchDir;
-						}
-						dirInDanger = true;
-					}
-					distFromEnemyForDir = Math.min(distFromEnemyForDir, dist);
-				}
-				bestDirInDanger = dirInDanger;
-				if (bestDirInDanger) {
-					if (maxDistFromEnemy < distFromEnemyForDir) {
-						bestDir = dir;
-						maxDistFromEnemy = distFromEnemyForDir;
-					}
-				} else {
-					if (minDistFromEnemy > distFromEnemyForDir) {
-						bestDir = dir;
-						minDistFromEnemy = distFromEnemyForDir;
-					}
-				}
-			}
-		}
-		
-		return bestDir;
-	}
 	
 	private static boolean isBlockingSomeone(RobotController rc, MapLocation target) throws GameActionException {
 		Direction dir = myLoc.directionTo(target);
@@ -240,9 +334,11 @@ public class SoldierPlayer {
 		}
 		return false;
 	}
+	
 	private static boolean isViperInfected(RobotController rc) {
 		return rc.getViperInfectedTurns() > 0;
 	}
+	
 	private static void moveSoldier(RobotController rc) throws GameActionException {
 		// if we have a real current destination
 		rc.setIndicatorString(1, "moving somewhere " + currentDestination + rc.getRoundNum());
@@ -289,145 +385,79 @@ public class SoldierPlayer {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
 		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
-    		if (rc.canMove(d.opposite())) {
-    			rc.move(d.opposite());
-    		} else if (rc.canMove(d.opposite().rotateLeft())) {
-    			rc.move(d.opposite().rotateLeft());
-    		} else if (rc.canMove(d.opposite().rotateRight())) {
-    			rc.move(d.opposite().rotateRight());
-    		} else if (rc.canMove(d.opposite().rotateLeft().rotateLeft())) {
-    			rc.move(d.opposite().rotateLeft().rotateLeft());
-    		} else if (rc.canMove(d.opposite().rotateRight().rotateRight())) {
-    			rc.move(d.opposite().rotateRight().rotateRight());
+			Direction dir = Movement.getBestMoveableDirection(d.opposite(), rc, 2);
+    		if (dir != Direction.NONE) {
+    			rc.move(dir);
     		}
     	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
-    		if (rc.canMove(d)) {
-    			rc.move(d);
-    		} else if (rc.canMove(d.rotateLeft())) {
-    			rc.move(d.rotateLeft());
-    		} else if (rc.canMove(d.rotateRight())) {
-    			rc.move(d.rotateRight());
-    		} else if (rc.canMove(d.rotateLeft().rotateLeft())) {
-    			rc.move(d.rotateLeft().rotateLeft());
-    		} else if (rc.canMove(d.rotateRight().rotateRight())) {
-    			rc.move(d.rotateRight().rotateRight());
+    		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
+    		if (dir != Direction.NONE) {
+    			rc.move(dir);
     		}
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
     			rc.attackLocation(bestEnemy.location);
-    			// rc.broadcastSignal(24);
     		}
     	}
 	}
-	// reads the message signals and sets the nearestTurretLocation and currentDestination static variables
-	public static void readMessages(RobotController rc) {
-		List<Message> messages = Message.readMessageSignals(rc);
-		// we want to loop through each message and get the ones that are relevant to the soldier
-		distressedArchonTurns++;
-		for (Message m : messages) {
-			// if the message is a turret, try to get the nearest turret location
-			if (m.type == Message.TURRET) {
-				if (nearestTurretLocation == null) {
-					nearestTurretLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
-					nearestTurretLocation = m.location;
-				}
-			} else 
-			// if the message is an enemy, get the closet one
-			if (m.type == Message.ENEMY) {
-				if (nearestEnemyLocation == null) {
-					nearestEnemyLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestEnemyLocation)) {
-					nearestEnemyLocation = m.location;
-				}
-			} else
-			// if the message is a den, get the closest one
-			if (m.type == Message.ZOMBIEDEN) {
-				if (nearestDenLocation == null) {
-					nearestDenLocation = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
-					nearestDenLocation = m.location;
-				}
-			} else
-			// if the message is to remove a turret, and if it's our nearestTurret, remove it
-			if (m.type == Message.TURRETKILLED) {
-				if (m.location.equals(nearestTurretLocation)) {
-					nearestTurretLocation = null;
-				}
-			} else
-			// if the message is an archon location, store the nearest current archon location
-			if (m.type == Message.ARCHONLOC) {
-				if (newArchonLoc == null) {
-					newArchonLoc = m.location;
-				}
-				else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(newArchonLoc)) {
-					newArchonLoc= m.location;
-				}
-			} else 
-			// if we get a rush signal, we want to rush towards the nearest turret
-			if (m.type == Message.RUSH) {
-				rush = true;
-				doNotMove = false;
-				// if the location contains an actual location, update the nearest turret with that location
-				if (m.type == Message.RUSH) {
-					nearestTurretLocation = m.location;
-				}
-			} else
-			// if we get an archon in distressed signal, needs to take priority
-			if (m.type == Message.ARCHONINDANGER) {
-				distressedArchonTurns = 0;
-				if (nearestDistressedArchon == null) {
-					nearestDistressedArchon = m.location;
-				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDistressedArchon)) {
-					nearestDistressedArchon = m.location;
-				}
-			}
-		}
-		// once we get all the messages, check to make sure which one is the best
-		int distanceToTurret = nearestTurretLocation != null ? myLoc.distanceSquaredTo(nearestTurretLocation) : 1000;
-		int distanceToEnemy = nearestEnemyLocation != null ? myLoc.distanceSquaredTo(nearestEnemyLocation) : 1000;
-		int distanceToDen = nearestDenLocation != null ? myLoc.distanceSquaredTo(nearestDenLocation) : 1000;
-		int bestDistance = Math.min(Math.min(distanceToTurret, distanceToEnemy), distanceToDen);
-		
-		// if we actually have a destination, set it to currentDestination
-		if (bestDistance < 1000) {
-			if (bestDistance == distanceToTurret) {
-				rc.setIndicatorString(0, "moving to nearest turret " + nearestTurretLocation + rc.getRoundNum());
-				currentDestination = nearestTurretLocation;
-			} else if (bestDistance == distanceToEnemy) {
-				rc.setIndicatorString(0, "moving to nearest enemy " + nearestEnemyLocation + rc.getRoundNum());
-				currentDestination = nearestEnemyLocation;
-			} else if (bestDistance == distanceToDen) {
-				rc.setIndicatorString(0, "moving to nearest den " + nearestDenLocation + rc.getRoundNum());
-				currentDestination = nearestDenLocation;
-			}
-		}
-		// prioritize distressed archons
-		if (nearestDistressedArchon != null) {
-			rc.setIndicatorString(0, "moving to protect archon " + nearestDistressedArchon + rc.getRoundNum());
-			currentDestination = nearestDistressedArchon;
-		} else if (nearestEnemyLocation != null) {
-			rc.setIndicatorString(0, "actually moving towards enemy " + nearestEnemyLocation + rc.getRoundNum());
-			currentDestination = nearestEnemyLocation;
-		} else if (nearestTurretLocation != null) {
-			rc.setIndicatorString(0, "actually moving towards turret " + nearestTurretLocation + rc.getRoundNum());
-			currentDestination = nearestTurretLocation;
-		}
-		// if we are looking at the same turret for too long, go somewhere else
-		if(nearestTurretLocation != null && nearestTurretLocation.equals(storedTurretLocation) && myLoc.distanceSquaredTo(nearestTurretLocation) < 54) {
-			turnsNotMoved++;
-		} else {
-			turnsNotMoved = 0;
-		}
-		if (turnsNotMoved > 100) {
-			currentDestination = nearestArchonLocation;
-			nearestTurretLocation = null;
-			doNotMove = false;
-			turnsNotMoved = 0;
-		}
-		storedTurretLocation = nearestTurretLocation;
-		doNotMove = false;
+	
+	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
+		// Prioritize movement
+		Direction d = myLoc.directionTo(bestEnemy.location);
+    	if (rc.isCoreReady()) {
+    		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
+    			// If the enemy can be killed but we're not in range, move forward
+            	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower) {
+            		if (rc.canMove(d)) {
+            			rc.move(d);
+            		} else if (rc.canMove(d.rotateLeft())) {
+            			rc.move(d.rotateLeft());
+            		} else if (rc.canMove(d.rotateRight())) {
+            			rc.move(d.rotateRight());
+            		}
+            	// If not in range, see if we should move in by comparing soldier health
+            	} else {
+            		double totalOurSoldierHealth = 0;
+            		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
+            		for (RobotInfo ally : allies) {
+            			if (ally.type == RobotType.SOLDIER) {
+            				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
+            					totalOurSoldierHealth += ally.health;
+            				}
+            			}
+            		}
+            		// If we feel that we are strong enough, rush in.
+            		if (totalOurSoldierHealth > totalEnemySoldierHealth) {
+            			if (!rc.canAttackLocation(bestEnemy.location)) {
+                			if (rc.canMove(d)) {
+	                			rc.move(d);
+	                		} else if (rc.canMove(d.rotateLeft())) {
+	                			rc.move(d.rotateLeft());
+	                		} else if (rc.canMove(d.rotateRight())) {
+	                			rc.move(d.rotateRight());
+	                		}
+            			}
+            		} else if (4 * totalOurSoldierHealth < 3 * totalEnemySoldierHealth) {
+            			if (rc.canMove(d.opposite())) {
+                			rc.move(d.opposite());
+                		} else if (rc.canMove(d.opposite().rotateLeft())) {
+                			rc.move(d.opposite().rotateLeft());
+                		} else if (rc.canMove(d.opposite().rotateRight())) {
+                			rc.move(d.opposite().rotateRight());
+                		}
+            		}
+        		}
+        	}
+    	}
+    	
+    	// Attack whenever you can
+    	if (rc.isWeaponReady()) {
+    		if (rc.canAttackLocation(bestEnemy.location)) {
+    			rc.attackLocation(bestEnemy.location);
+    		}
+    	}
 	}
+
 	// if soldier is in range of stuff but doesn't see it, sets it to null
 	public static void resetLocations(RobotController rc) throws GameActionException {
 		if (nearestTurretLocation != null && rc.canSense(nearestTurretLocation) && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
@@ -573,63 +603,6 @@ public class SoldierPlayer {
     			}
     		}
     		wasHealing = true;
-    	}
-	}
-	
-	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
-		// Prioritize movement
-		Direction d = myLoc.directionTo(bestEnemy.location);
-    	if (rc.isCoreReady()) {
-    		if (rc.getHealth() > (numEnemySoldiers + 1) * RobotType.SOLDIER.attackPower) {
-    			// If the enemy can be killed but we're not in range, move forward
-            	if (!rc.canAttackLocation(bestEnemy.location) && bestEnemy.health <= RobotType.SOLDIER.attackPower) {
-            		if (rc.canMove(d)) {
-            			rc.move(d);
-            		} else if (rc.canMove(d.rotateLeft())) {
-            			rc.move(d.rotateLeft());
-            		} else if (rc.canMove(d.rotateRight())) {
-            			rc.move(d.rotateRight());
-            		}
-            	// If not in range, see if we should move in by comparing soldier health
-            	} else {
-            		double totalOurSoldierHealth = 0;
-            		RobotInfo[] allies = rc.senseNearbyRobots(bestEnemy.location, 18, rc.getTeam());
-            		for (RobotInfo ally : allies) {
-            			if (ally.type == RobotType.SOLDIER) {
-            				if (ally.health > numEnemySoldiers * RobotType.SOLDIER.attackPower) {
-            					totalOurSoldierHealth += ally.health;
-            				}
-            			}
-            		}
-            		// If we feel that we are strong enough, rush in.
-            		if (totalOurSoldierHealth > totalEnemySoldierHealth) {
-            			if (!rc.canAttackLocation(bestEnemy.location)) {
-                			if (rc.canMove(d)) {
-	                			rc.move(d);
-	                		} else if (rc.canMove(d.rotateLeft())) {
-	                			rc.move(d.rotateLeft());
-	                		} else if (rc.canMove(d.rotateRight())) {
-	                			rc.move(d.rotateRight());
-	                		}
-            			}
-            		} else if (4 * totalOurSoldierHealth < 3 * totalEnemySoldierHealth) {
-            			if (rc.canMove(d.opposite())) {
-                			rc.move(d.opposite());
-                		} else if (rc.canMove(d.opposite().rotateLeft())) {
-                			rc.move(d.opposite().rotateLeft());
-                		} else if (rc.canMove(d.opposite().rotateRight())) {
-                			rc.move(d.opposite().rotateRight());
-                		}
-            		}
-        		}
-        	}
-    	}
-    	
-    	// Attack whenever you can
-    	if (rc.isWeaponReady()) {
-    		if (rc.canAttackLocation(bestEnemy.location)) {
-    			rc.attackLocation(bestEnemy.location);
-    		}
     	}
 	}
 	

@@ -23,6 +23,7 @@ public class Message {
 	public static final int ARCHONINDANGER = 9;
 	//only used for scout archon pairing; scout uses for telling archons of nearby enemies
 	public static final int ARCHONSIGHT = 10;
+	public static final int ZOMBIEDENKILLED = 11;
 	
 	private static final int AYY = 2000;
 	
