@@ -433,8 +433,11 @@ public class ScoutPlayer2 {
 		if (denLocations.size() == 0) {
 			turnsSinceRushSignal++;
 			if (turnsSinceRushSignal > 100) {
-				Message.sendMessageGivenRange(rc, denLocations.getClosest(myLoc), Message.RUSH, 2 * sightRange);
-				turnsSinceRushSignal = 0;
+				MapLocation closestDen = denLocations.getClosest(myLoc);
+				if (closestDen != null) {
+					Message.sendMessageGivenRange(rc, closestDen, Message.RUSH, 2 * sightRange);
+					turnsSinceRushSignal = 0;
+				}
 			}
 		} else {
 			turnsSinceRushSignal = 0;
