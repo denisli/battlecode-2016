@@ -111,7 +111,7 @@ public class SoldierPlayer {
 						nonrangeMicro(rc, nearbyEnemies, bestEnemy);
 					} else { // othewise, just attack if it's in range
 						if (rc.canAttackLocation(bestEnemy.location) && rc.isWeaponReady()) {
-							rc.attackLocation(bestEnemy.location);
+							broadcastingAttack(rc, bestEnemy);
 							// rc.broadcastSignal(24);
 						}
 					}
@@ -154,12 +154,7 @@ public class SoldierPlayer {
 				// Compute the new closest turret
 				if (m.location.equals(nearestTurretLocation)) {
 					int minDist = Message.FULL_MAP_RANGE;
-					for (MapLocation location : turretLocations) {
-						int dist = myLoc.distanceSquaredTo(location);
-						if (dist < minDist) {
-							minDist = dist; nearestTurretLocation = location;
-						}
-					}
+					nearestTurretLocation = turretLocations.getClosest(myLoc);
 					// if the removed location was also closest enemy, then the new 
 					// closest turret is regarded as new closest enemy
 					if (m.location.equals(nearestEnemyLocation)) {
@@ -188,13 +183,7 @@ public class SoldierPlayer {
 			if (m.type == Message.ZOMBIEDENKILLED) {
 				denLocations.remove(m.location);
 				if (m.location.equals(nearestDenLocation)) {
-					int minDist = Message.FULL_MAP_RANGE;
-					for (MapLocation location : denLocations) {
-						int dist = myLoc.distanceSquaredTo(location);
-						if (dist < minDist) {
-							minDist = dist; nearestDenLocation = location;
-						}
-					}
+					nearestDenLocation = denLocations.getClosest(myLoc);
 				}
 			} else 
 			// if the message is an archon location, store the nearest current archon location
@@ -223,6 +212,12 @@ public class SoldierPlayer {
 				} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDistressedArchon)) {
 					nearestDistressedArchon = m.location;
 				}
+			} else
+			// if we get a basic message, then remove the closest den location
+			if (m.type == Message.BASIC) {
+				MapLocation reference = m.signal.getLocation();
+				MapLocation closestDen = denLocations.getClosest(reference);
+				denLocations.remove(closestDen);
 			}
 		}
 		// if we actually have a destination, set it to currentDestination
@@ -396,7 +391,7 @@ public class SoldierPlayer {
     		}
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
-    			rc.attackLocation(bestEnemy.location);
+    			broadcastingAttack(rc, bestEnemy);
     		}
     	}
 	}
@@ -453,7 +448,7 @@ public class SoldierPlayer {
     	// Attack whenever you can
     	if (rc.isWeaponReady()) {
     		if (rc.canAttackLocation(bestEnemy.location)) {
-    			rc.attackLocation(bestEnemy.location);
+    			broadcastingAttack(rc, bestEnemy);
     		}
     	}
 	}
@@ -576,7 +571,7 @@ public class SoldierPlayer {
 		if (bestEnemy != null) {
 			if (rc.isWeaponReady()) {
 				if (rc.canAttackLocation(bestEnemy.location)) {
-					rc.attackLocation(bestEnemy.location);
+					broadcastingAttack(rc, bestEnemy);
 				}
 			}
 		}
@@ -643,7 +638,7 @@ public class SoldierPlayer {
 					else {
 						if (rc.isWeaponReady()) {
 							if (rc.canAttackLocation(closestEnemy.location)) {
-								rc.attackLocation(closestEnemy.location);
+								broadcastingAttack(rc, closestEnemy);
 							}
 						}
 					}
@@ -660,7 +655,7 @@ public class SoldierPlayer {
 					}
 					if (rc.isWeaponReady()) {
 						if (rc.canAttackLocation(closestEnemy.location)) {
-							rc.attackLocation(closestEnemy.location);
+							broadcastingAttack(rc, closestEnemy);
 						}
 					}
 				}
@@ -677,7 +672,7 @@ public class SoldierPlayer {
 			}
 			if (rc.isWeaponReady()) {
 				if (rc.canAttackLocation(closestEnemy.location)) {
-					rc.attackLocation(closestEnemy.location);
+					broadcastingAttack(rc, closestEnemy);
 				}
 			}
 		}
@@ -761,4 +756,15 @@ public class SoldierPlayer {
 		}
 		
 	}
+	
+	private static void broadcastingAttack(RobotController rc, RobotInfo enemy) throws GameActionException {
+		if (enemy.health <= RobotType.SOLDIER.attackPower) {
+			if (enemy.type == RobotType.ZOMBIEDEN) {
+				Message.sendBasicGivenRange(rc, Message.FULL_MAP_RANGE);
+				denLocations.remove(enemy.location);
+			}
+		}
+		rc.attackLocation(enemy.location);
+	}
+	
 }
