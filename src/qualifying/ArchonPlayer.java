@@ -78,7 +78,7 @@ public class ArchonPlayer {
 							}
 						}
 					}
-					if (m.type==Message.ZOMBIEDEN) {
+					else if (m.type==Message.ZOMBIEDEN) {
 						if (closestDen == null) {
 							closestDen = m.location;
 						}
@@ -89,11 +89,19 @@ public class ArchonPlayer {
 						}
 						denLocs.add(closestDen);
 					}
-					if (m.type==Message.BASIC) {
-						//remove closest
-						//denLocs.remove(closestDen);
+					else if (m.type==Message.ZOMBIEDENKILLED) {
+						denLocs.remove(m.location);
+						if (denLocs.size() > 0) {
+							closestDen = denLocs.getClosest(myLoc);
+						}
 					}
-					if (m.type==Message.ENEMY) {
+					else if (m.type==Message.BASIC) {
+						denLocs.remove(denLocs.getClosest(m.location));
+						if (denLocs.size() > 0) {
+							closestDen = denLocs.getClosest(myLoc);
+						}
+					}
+					else if (m.type==Message.ENEMY) {
 						if (closestEnemy == null) {
 							closestEnemy = m.location;
 						}
@@ -103,13 +111,13 @@ public class ArchonPlayer {
 							}
 						}
 					}
-					if (m.type==Message.TURRET) {
+					else if (m.type==Message.TURRET) {
 						enemyTurrets.add(m.location);
 					}
-					if (m.type==Message.TURRETKILLED) {
+					else if (m.type==Message.TURRETKILLED) {
 						enemyTurrets.remove(m.location);
 					}
-					if (m.type==Message.ARCHONSIGHT) {
+					else if (m.type==Message.ARCHONSIGHT) {
 						hostileInSight.add(m.location);
 					}
 

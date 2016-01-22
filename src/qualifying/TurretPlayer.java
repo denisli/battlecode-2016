@@ -75,7 +75,7 @@ public class TurretPlayer {
 						nearestEnemyLocation = m.location;
 					}
 				}
-				if (m.type == Message.PAIREDATTACK) {
+				else if (m.type == Message.PAIREDATTACK) {
 					if (myLoc.distanceSquaredTo(m.location) <= 40 && myLoc.distanceSquaredTo(m.location) > 5) {
 						pairedAttackLoc = m.location;
 					}
@@ -90,8 +90,28 @@ public class TurretPlayer {
 				else if (m.type == Message.TURRETKILLED) {
 					enemyTurrets.remove(m.location);
 				}
-				else if (m.type == Message.ZOMBIEDEN) {
-					denLocs.add(m.location);
+				else if (m.type==Message.ZOMBIEDEN) {
+					if (nearestDenLocation == null) {
+						nearestDenLocation = m.location;
+					}
+					else {
+						if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
+							nearestDenLocation = m.location;
+						}
+					}
+					denLocs.add(nearestDenLocation);
+				}
+				else if (m.type==Message.ZOMBIEDENKILLED) {
+					denLocs.remove(m.location);
+					if (denLocs.size() > 0) {
+						nearestDenLocation = denLocs.getClosest(myLoc);
+					}
+				}
+				else if (m.type==Message.BASIC) {
+					denLocs.remove(denLocs.getClosest(m.location));
+					if (denLocs.size() > 0) {
+						nearestDenLocation = denLocs.getClosest(myLoc);
+					}
 				}
 				else if (m.type == Message.ARCHONINDANGER) {
 					if (nearestArchonDangerLocation == null) {
@@ -224,8 +244,24 @@ public class TurretPlayer {
 				else if (m.type == Message.ZOMBIEDEN) {
 					if (nearestDenLocation == null) {
 						nearestDenLocation = m.location;
-					} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
-						nearestDenLocation = m.location;
+					}
+					else {
+						if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestDenLocation)) {
+							nearestDenLocation = m.location;
+						}
+					}
+					denLocs.add(nearestDenLocation);
+				}
+				else if (m.type==Message.ZOMBIEDENKILLED) {
+					denLocs.remove(m.location);
+					if (denLocs.size() > 0) {
+						nearestDenLocation = denLocs.getClosest(myLoc);
+					}
+				}
+				else if (m.type==Message.BASIC) {
+					denLocs.remove(denLocs.getClosest(m.location));
+					if (denLocs.size() > 0) {
+						nearestDenLocation = denLocs.getClosest(myLoc);
 					}
 				}
 				else if (m.type == Message.ARCHONINDANGER) {
