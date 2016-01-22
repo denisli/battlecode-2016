@@ -426,18 +426,23 @@ public class ScoutPlayer2 {
 	}
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
-		if (denLocations.size() == 0) {
-			turnsSinceRushSignal++;
-			if (turnsSinceRushSignal > 100) {
-				MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
-				if (closestTurret != null) {
-					rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
-					Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 4 * sightRange);
-					turnsSinceRushSignal = 0;
+		if (rc.getRoundNum() > 300) {
+			if (denLocations.size() == 0) {
+				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are no dens");
+				turnsSinceRushSignal++;
+				if (turnsSinceRushSignal > 100) {
+					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
+					rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
+					if (closestTurret != null) {
+						rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
+						Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
+						turnsSinceRushSignal = 0;
+					}
 				}
+			} else {
+				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
+				turnsSinceRushSignal = 0;
 			}
-		} else {
-			turnsSinceRushSignal = 0;
 		}
 	}
 	

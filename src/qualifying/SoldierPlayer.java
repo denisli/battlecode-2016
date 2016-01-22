@@ -82,6 +82,11 @@ public class SoldierPlayer {
 				}
 
 				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
+				// Reset rushing if there is a den.
+				if (denLocations.size() > 0) {
+					rush = false;
+				}
+				
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
