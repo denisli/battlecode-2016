@@ -293,6 +293,7 @@ public class ArchonPlayer {
 								RobotType toBuild = null;
 								if (buildFate < 5) {
 									toBuild = RobotType.TURRET;
+									numTurretsBuilt++;
 								} 
 								else if (buildFate == 5) {
 									toBuild = RobotType.VIPER;
