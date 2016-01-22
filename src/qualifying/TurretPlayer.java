@@ -85,10 +85,26 @@ public class TurretPlayer {
 					rushing = true;
 				}
 				else if (m.type == Message.TURRET) {
-					enemyTurrets.add(m.location);
+					if (nearestTurretLocation == null) {
+						nearestTurretLocation = m.location;
+					}
+					else {
+						if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
+							nearestTurretLocation = m.location;
+						}
+					}
+					enemyTurrets.add(nearestTurretLocation);
 				}
 				else if (m.type == Message.TURRETKILLED) {
 					enemyTurrets.remove(m.location);
+					if (nearestTurretLocation == m.location) {
+						if (enemyTurrets.size() > 0) {
+							nearestTurretLocation = enemyTurrets.getClosest(myLoc);
+						}
+						else {
+							nearestTurretLocation = null;
+						}
+					}
 				}
 				else if (m.type==Message.ZOMBIEDEN) {
 					if (nearestDenLocation == null) {
@@ -210,6 +226,7 @@ public class TurretPlayer {
 			RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
 			boolean existEnemiesNotTooClose = false;
 
+			
 			//process messages
 			List<Message> messages = Message.readMessageSignals(rc);
 			for (Message m : messages) {
@@ -236,10 +253,26 @@ public class TurretPlayer {
 					rushing = true;
 				}
 				else if (m.type == Message.TURRET) {
-					enemyTurrets.add(m.location);
+					if (nearestTurretLocation == null) {
+						nearestTurretLocation = m.location;
+					}
+					else {
+						if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
+							nearestTurretLocation = m.location;
+						}
+					}
+					enemyTurrets.add(nearestTurretLocation);
 				}
 				else if (m.type == Message.TURRETKILLED) {
 					enemyTurrets.remove(m.location);
+					if (nearestTurretLocation == m.location) {
+						if (enemyTurrets.size() > 0) {
+							nearestTurretLocation = enemyTurrets.getClosest(myLoc);
+						}
+						else {
+							nearestTurretLocation = null;
+						}
+					}
 				}
 				else if (m.type == Message.ZOMBIEDEN) {
 					if (nearestDenLocation == null) {
@@ -335,14 +368,8 @@ public class TurretPlayer {
 						}
 						if (nearestTurretLocation!=null && myLoc.distanceSquaredTo(nearestTurretLocation) <= 24) {
 							RobotInfo r = rc.senseRobotAtLocation(nearestTurretLocation);
-							if (r != null) {
-								if (r.team == otherTeam && r.type==RobotType.TURRET) {
-									nearestTurretLocation = null;
-									destination = null;
-									bugging = null;
-								}
-							}
-							else {
+							if (r==null || !((r.team == otherTeam) && (r.type == RobotType.TURRET))) {
+								enemyTurrets.remove(nearestTurretLocation);
 								nearestTurretLocation = null;
 								destination = null;
 								bugging = null;
@@ -350,14 +377,8 @@ public class TurretPlayer {
 						}
 						if (nearestDenLocation!=null && myLoc.distanceSquaredTo(nearestDenLocation) <= 24) {
 							RobotInfo r = rc.senseRobotAtLocation(nearestDenLocation);
-							if (r != null) {
-								if (r.team == Team.ZOMBIE && r.type==RobotType.ZOMBIEDEN) {
-									nearestDenLocation = null;
-									destination = null;
-									bugging = null;
-								}
-							}
-							else {
+							if (r==null || r.type != RobotType.ZOMBIEDEN) {
+								denLocs.remove(nearestDenLocation);
 								nearestDenLocation = null;
 								destination = null;
 								bugging = null;
@@ -389,10 +410,18 @@ public class TurretPlayer {
 						if (nearestDenLocation != null) {
 							destination = nearestDenLocation;
 						}
+						else if (denLocs.size() > 0) {
+							nearestDenLocation = denLocs.getClosest(myLoc);
+							destination = nearestDenLocation;
+						}
 						else if (nearestEnemyLocation != null) {
 							destination = nearestEnemyLocation;
 						}
 						else if (nearestTurretLocation != null) {
+							destination = nearestTurretLocation;
+						}
+						else if (enemyTurrets.size() > 0) {
+							nearestTurretLocation = enemyTurrets.getClosest(myLoc);
 							destination = nearestTurretLocation;
 						}
 						else if (nearestArchonLocation != null) {
@@ -407,7 +436,7 @@ public class TurretPlayer {
 				}
 			}
 			
-			//if nowhere to move, move to archon
+			//if nowhere to move, move to archon; is this code necessary?
 			if (rc.isCoreReady() && enemiesWithinRange.length > 0 && !existEnemiesNotTooClose && nearestArchonLocation!=null) {
 				if (destination==null) {
 					destination = nearestArchonLocation;
