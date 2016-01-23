@@ -59,6 +59,7 @@ public class ScoutPlayer2 {
 				rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + 
 						", min = (" + Message.getLowerX() + "," + Message.getLowerY() + 
 						") and max = (" + Message.getUpperX() + "," + Message.getUpperY() + ")");
+				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
 				
 				// Compute pairing.
 				computePairing(rc, allies);
@@ -515,7 +516,6 @@ public class ScoutPlayer2 {
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		if (rc.getRoundNum() > 300) {
 			if (denLocations.size() == 0) {
-				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are no dens");
 				turnsSinceRushSignal++;
 				if (turnsSinceRushSignal > 200) {
 					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
@@ -527,7 +527,6 @@ public class ScoutPlayer2 {
 					}
 				}
 			} else {
-				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
 				turnsSinceRushSignal = 0;
 			}
 		}
@@ -649,11 +648,11 @@ public class ScoutPlayer2 {
 						rc.move(mainDir);
 					}
 				} else {
-					if (!rc.canMove(mainDir)) {
+					if (!rc.canMove(mainDir) || inEnemyAttackRange(myLoc.add(mainDir), hostiles)) {
 						int[] disps = { 1, -1, 3, -3 };
 						for (int disp : disps) {
 							Direction dir = RobotPlayer.directions[((mainDir.ordinal() + disp) % 8 + 8) % 8];
-							if (rc.canMove(dir)) {
+							if (rc.canMove(dir) && !inEnemyAttackRange(myLoc.add(dir), hostiles)) {
 								mainDir = dir; break;
 							}
 						}
