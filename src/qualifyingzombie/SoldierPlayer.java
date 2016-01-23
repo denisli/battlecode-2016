@@ -97,8 +97,14 @@ public class SoldierPlayer {
 				else if (healing) {
 					if (rc.isCoreReady()) {
 						if (nearestArchonLocation != null) {
-							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 8) {
+							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 13) {
 								bugging.enemyAvoidMove(nearbyEnemies);
+							} else if (myLoc.distanceSquaredTo(nearestArchonLocation) <= 2) {
+								Direction radialDir = nearestArchonLocation.directionTo(myLoc);
+								Direction awayDir = Movement.getBestMoveableDirection(radialDir, rc, 2);
+								if (awayDir != Direction.NONE) {
+									rc.move(awayDir);
+								}
 							}
 						}
 					}
