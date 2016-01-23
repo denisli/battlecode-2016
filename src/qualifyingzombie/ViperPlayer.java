@@ -53,8 +53,8 @@ public class ViperPlayer {
 	private static int distressedArchonTurns = 0;
 	
 	public static void run(RobotController rc) {
-		sightRadius = RobotType.VIPER.sensorRadiusSquared;
-		attackRadius = RobotType.VIPER.attackRadiusSquared;
+		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
+		attackRadius = RobotType.SOLDIER.attackRadiusSquared;
 		myTeam = rc.getTeam();
 		enemyTeam = myTeam.opponent();
 		while (true) {
@@ -514,12 +514,10 @@ public class ViperPlayer {
 				} else {
 					bestEnemy = hostile;
 				}
-			// Can't attack the enemy...
 			} else {
-				// Only update best enemy in this case if you can't attack best enemy
+				// Only update best enemy if you can't attack best enemy
 				if (!canAttackBestEnemy) {
 					if (bestEnemy != null) {
-						// Make sure to pick the closest enemy possible so we can walk closer
 						if (bestEnemyDist > dist) {
 							bestEnemyDist = dist; bestEnemy = hostile;
 						}
@@ -708,6 +706,72 @@ public class ViperPlayer {
 	
 	private static boolean countsAsTurret(RobotType type) {
 		return (type == RobotType.TURRET || type == RobotType.TTM);
+	}
+	
+	private static class TargetPrioritizer implements Prioritizer<RobotInfo> {
+
+		private boolean insideAttackRange(RobotInfo r) {
+			return myLoc.distanceSquaredTo(r.location) <= attackRadius;
+		}
+		
+		// Returns whether or not r1 is higher priority than r0.
+		@Override
+		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
+			if (r0 == null) return true;
+			if (r1 == null) return false;
+			// Highest priority are those within attack range.
+			// 		Highest priority is lowest health viper infected.
+			// 		Then lowest health zombie infected
+			// 		Then lowest health
+			
+			// Outside attack range, prioritize closest.
+			if (insideAttackRange(r0)) {
+				if (insideAttackRange(r1)) {
+					if (isViperInfected(r0)) {
+						if (isViperInfected(r1)) {
+							return r1.health < r0.health;
+						} else {
+							return false;
+						}
+					} else {
+						if (isViperInfected(r1)) {
+							return true;
+						} else { // both not viper infected
+							if (isInfected(r0)) {
+								if (isInfected(r1)) {
+									return r1.health < r0.health;
+								} else {
+									return false;
+								}
+							} else {
+								if (isInfected(r1)) {
+									return true;
+								} else {
+									return r1.health < r0.health;
+								}
+							}
+						}
+					}
+				} else {
+					return false;
+				}
+			} else {
+				if (insideAttackRange(r1)) {
+					return true;
+				} else { // both outside of attack range
+					return myLoc.distanceSquaredTo(r1.location) < myLoc.distanceSquaredTo(r0.location); 
+				}
+			}
+		}
+		
+		private boolean isInfected(RobotInfo r) {
+			return r.zombieInfectedTurns > 0;
+		}
+		
+		private boolean isViperInfected(RobotInfo r) {
+			return r.viperInfectedTurns > 0;
+		}
+		
 	}
 	
 	private static void broadcastingAttack(RobotController rc, RobotInfo enemy) throws GameActionException {

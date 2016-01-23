@@ -560,16 +560,33 @@ public class SoldierPlayer {
 		for (RobotInfo hostile : hostiles) {
 			// Can attack this enemy.
 			int dist = myLoc.distanceSquaredTo(hostile.location);
+			// Summary:
+			// Prioritizes enemies over zombies.
+			// Prioritizes turret enemies over other enemies.
+			// Prioritizes lowest health enemy last
 			if (dist <= attackRadius) {
 				if (bestEnemy != null) {
-					if (countsAsTurret(bestEnemy.type)) {
-						if (countsAsTurret(hostile.type)) {
-							if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+					if (bestEnemy.team == enemyTeam) { // best is already enemy
+						if (hostile.team == enemyTeam) { // found an enemy
+							if (countsAsTurret(bestEnemy.type)) {
+								if (countsAsTurret(hostile.type)) {
+									// Take lowest health
+									if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+								}
+							} else {
+								if (countsAsTurret(hostile.type)) {
+									bestEnemy = hostile;
+								} else {
+									// Take lowest health
+									if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+								}
+							}
 						}
-					} else {
-						if (countsAsTurret(hostile.type)) {
+					} else { // best is not an enemy!
+						if (hostile.team == enemyTeam) { // found an enemy
 							bestEnemy = hostile;
 						} else {
+							// Take lowest health
 							if (bestEnemy.health > hostile.health) bestEnemy = hostile;
 						}
 					}
@@ -580,6 +597,7 @@ public class SoldierPlayer {
 				// Only update best enemy if you can't attack best enemy
 				if (!canAttackBestEnemy) {
 					if (bestEnemy != null) {
+						// Pick the closest one
 						if (bestEnemyDist > dist) {
 							bestEnemyDist = dist; bestEnemy = hostile;
 						}
