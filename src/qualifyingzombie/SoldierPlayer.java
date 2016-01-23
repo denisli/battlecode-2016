@@ -203,6 +203,7 @@ public class SoldierPlayer {
 				MapLocation reference = m.signal.getLocation();
 				MapLocation closestDen = denLocations.getClosest(reference);
 				denLocations.remove(closestDen);
+				nearestDenLocation = denLocations.getClosest(myLoc);
 			}
 		}
 		// if we actually have a destination, set it to currentDestination
@@ -753,6 +754,7 @@ public class SoldierPlayer {
 				rc.attackLocation(enemy.location);
 				Message.sendBasicGivenRange(rc, Message.FULL_MAP_RANGE);
 				denLocations.remove(enemy.location);
+				nearestDenLocation = denLocations.getClosest(myLoc);
 			} else {
 				rc.attackLocation(enemy.location);
 			}
