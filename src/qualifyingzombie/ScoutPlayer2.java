@@ -54,6 +54,12 @@ public class ScoutPlayer2 {
 				// Read messages
 				readMessages(rc);
 				
+				// Figure out the map dimensions
+				figureOutMapDimensions(rc);
+				rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + 
+						", min = (" + Message.getLowerX() + "," + Message.getLowerY() + 
+						") and max = (" + Message.getUpperX() + "," + Message.getUpperY() + ")");
+				
 				// Compute pairing.
 				computePairing(rc, allies);
 				
@@ -116,6 +122,83 @@ public class ScoutPlayer2 {
 			} else if (m.type == Message.BASIC) {
 				MapLocation closestDen = denLocations.getClosest(m.signal.getLocation());
 				denLocations.remove(closestDen);
+			} else if (m.type == Message.MIN_CORNER) {
+				if (m.location.x != Message.DEFAULT_LOW) {
+					Message.setLowerX(m.location.x);
+				}
+				if (m.location.y != Message.DEFAULT_LOW) {
+					Message.setLowerY(m.location.y);
+				}
+			} else if (m.type == Message.MAX_CORNER) {
+				if (m.location.x != Message.DEFAULT_LOW) {
+					Message.setUpperX(m.location.x);
+				}
+				if (m.location.y != Message.DEFAULT_HIGH) {
+					Message.setUpperY(m.location.y);
+				}
+			}
+		}
+	}
+	
+	private static void figureOutMapDimensions(RobotController rc) throws GameActionException {
+		// Determine x bounds
+		boolean lowerXFound = false;
+		boolean upperXFound = false;
+		if (!rc.onTheMap(myLoc.add(Direction.WEST, 8))) { // found lower X
+			if (Message.getLowerX() != Message.DEFAULT_LOW) {
+				int i = 7;
+				while (!rc.onTheMap(myLoc.add(Direction.WEST, i--)));
+				int lowerX = myLoc.x - i;
+				Message.setLowerX(lowerX);
+				lowerXFound = true;
+			}
+		} else if (!rc.onTheMap(myLoc.add(Direction.EAST, 8))) { // found upper X
+			if (Message.getUpperX() != Message.DEFAULT_HIGH) {
+				int i = 7;
+				while (!rc.onTheMap(myLoc.add(Direction.WEST, i--)));
+				int upperX = myLoc.x + i;
+				Message.setUpperX(upperX);
+				upperXFound = true;
+			}
+		}
+		
+		// Determine y bounds
+		boolean lowerYFound = false;
+		boolean upperYFound = false;
+		if (!rc.onTheMap(myLoc.add(Direction.NORTH, 8))) { // found lower Y
+			if (Message.getLowerY() != Message.DEFAULT_LOW) {
+				int i = 7;
+				while (!rc.onTheMap(myLoc.add(Direction.NORTH, i--)));
+				int lowerY = myLoc.y - i;
+				Message.setLowerY(lowerY);
+				lowerYFound = true;
+			}
+		} else if (!rc.onTheMap(myLoc.add(Direction.SOUTH, 8))) { // found upper Y
+			if (Message.getUpperY() != Message.DEFAULT_HIGH) {
+				int i = 7;
+				while (!rc.onTheMap(myLoc.add(Direction.SOUTH, i--)));
+				int upperY = myLoc.y + i;
+				Message.setUpperY(upperY);
+				upperYFound = true;
+			}
+		}
+		
+		if (lowerXFound && lowerYFound) {
+			Message.sendMessageGivenRange(rc, new MapLocation(Message.getLowerX(), Message.getLowerY()), Message.MIN_CORNER, Message.FULL_MAP_RANGE);
+		} else if (upperXFound && upperYFound) {
+			Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperX()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
+		} else {
+			// Only one of the lower bounds is found
+			if (lowerXFound) {
+				Message.sendMessageGivenRange(rc, new MapLocation(Message.getLowerX(), Message.getLowerY()), Message.MIN_CORNER, Message.FULL_MAP_RANGE);
+			} else if (lowerYFound) {
+				Message.sendMessageGivenRange(rc, new MapLocation(Message.getLowerX(), Message.getLowerY()), Message.MIN_CORNER, Message.FULL_MAP_RANGE);
+			}
+			// Only one of the upper bounds is found
+			if (upperXFound) {
+				Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperX()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
+			} else if (upperYFound) {
+				Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperX()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
 			}
 		}
 	}
