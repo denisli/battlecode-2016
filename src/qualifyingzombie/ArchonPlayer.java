@@ -36,7 +36,17 @@ public class ArchonPlayer {
 		MapLocation closestDen = null;
 		MapLocation closestEnemy = null;
 		MapLocation closestTurret = null;
+		//add this
 		MapLocation closestNeutralArchon = null;
+		boolean prepareRush = false;
+		MapLocation enemyTurtle = null;
+		//location furthest from turtle
+		MapLocation safeSpot = null;
+		//min/max x/y for map;
+		int minx = Message.DEFAULT_LOW;
+		int miny = Message.DEFAULT_LOW;
+		int maxx = Message.DEFAULT_HIGH;
+		int maxy = Message.DEFAULT_HIGH;
 
 		while (true) {
 			//things that change every turn
@@ -138,7 +148,27 @@ public class ArchonPlayer {
 					else if (m.type==Message.ARCHONSIGHT) {
 						hostileInSight.add(m.location);
 					}
-
+					else if (m.type==Message.PREPARERUSH) {
+						prepareRush = true;
+					}
+					else if (m.type==Message.MIN_CORNER) {
+						MapLocation boundLoc = m.location;
+						if (boundLoc.x != Message.DEFAULT_LOW) {
+							minx = boundLoc.x;
+						}
+						if (boundLoc.y != Message.DEFAULT_LOW) {
+							miny = boundLoc.y;
+						}
+					}
+					else if (m.type==Message.MAX_CORNER) {
+						MapLocation boundLoc = m.location;
+						if (boundLoc.x != Message.DEFAULT_HIGH) {
+							maxx = boundLoc.x;
+						}
+						if (boundLoc.y != Message.DEFAULT_HIGH) {
+							maxy = boundLoc.y;
+						}
+					}
 				}
 
 				//check if it is close to the den, enemy, or turret; if archon doesnt see it, remove it from storage
@@ -292,8 +322,11 @@ public class ArchonPlayer {
 						}
 						
 						rc.activate(toActivate.location);
+						MapLocation minCorner = new MapLocation(minx, miny);
+						MapLocation maxCorner = new MapLocation(maxx, maxy);
+						Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
+						Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
 						giveLocs(rc, denLocs);
-						giveLocs(rc, enemyTurrets);
 						bug = null;
 						nearestParts = null;
 					}
@@ -330,6 +363,10 @@ public class ArchonPlayer {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
 								giveLocs(rc, denLocs);
+								MapLocation minCorner = new MapLocation(minx, miny);
+								MapLocation maxCorner = new MapLocation(maxx, maxy);
+								Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
+								Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
 								numScoutsBuilt++;
 							}
 						}
@@ -418,7 +455,16 @@ public class ArchonPlayer {
 					
 					
 					if (rc.isCoreReady()) {
-						if (nearestParts != null) {
+						if (prepareRush) {
+							if (safeSpot==null) {
+								//create safespot
+								bug = new Bugging(rc, safeSpot);	
+							}
+							else {
+								bug.move();
+							}
+						}
+						else if (nearestParts != null) {
 							if (bug == null) {
 								bug = new Bugging(rc, nearestParts);
 								bug.move();
