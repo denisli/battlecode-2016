@@ -99,7 +99,7 @@ public class ArchonPlayer {
 								closestDen = m.location;
 							}
 						}
-						denLocs.add(closestDen);
+						denLocs.add(m.location);
 					}
 					else if (m.type==Message.ZOMBIEDENKILLED) {
 						denLocs.remove(m.location);
@@ -132,7 +132,7 @@ public class ArchonPlayer {
 								closestTurret = m.location;
 							}
 						}
-						enemyTurrets.add(closestTurret);
+						enemyTurrets.add(m.location);
 					}
 					else if (m.type == Message.TURRETKILLED) {
 						enemyTurrets.remove(m.location);
@@ -149,6 +149,7 @@ public class ArchonPlayer {
 						hostileInSight.add(m.location);
 					}
 					else if (m.type==Message.PREPARERUSH) {
+						enemyTurtle = m.location;
 						prepareRush = true;
 					}
 					else if (m.type==Message.MIN_CORNER) {
@@ -295,7 +296,6 @@ public class ArchonPlayer {
 					//					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
-						rc.setIndicatorString(0, roundNum+"sending message");
 						Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONLOC, 2.8);
 						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
@@ -303,7 +303,6 @@ public class ArchonPlayer {
 					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
-						rc.setIndicatorString(0, "activate neutral");
 						RobotInfo toActivate = adjNeutralRobots[0];
 						if (toActivate.type == RobotType.SCOUT) {
 							numScoutsBuilt++;
@@ -487,6 +486,7 @@ public class ArchonPlayer {
 					}
 
 				}
+				rc.setIndicatorString(0, roundNum+"numDens"+denLocs.size());
 
 				turnsWithoutMessaging++;
 				prevHealth = curHealth;

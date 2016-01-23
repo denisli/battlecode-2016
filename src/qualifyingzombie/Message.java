@@ -24,6 +24,7 @@ public class Message {
 	//only used for scout archon pairing; scout uses for telling archons of nearby enemies
 	public static final int ARCHONSIGHT = 10;
 	public static final int ZOMBIEDENKILLED = 11;
+	//preparerush sends location of expected center of turrets
 	public static final int PREPARERUSH = 12;
 	public static final int ZOMBIERUSH = 13;
 	public static final int MIN_CORNER = 14;
