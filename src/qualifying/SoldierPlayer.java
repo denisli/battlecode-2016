@@ -6,6 +6,8 @@ import battlecode.common.*;
 
 public class SoldierPlayer {
 	
+	private static final int FIFTY_TURN_MINE = 3049;
+	
 	// Keeping track of locations.
 	private static LocationSet turretLocations = new LocationSet();
 	private static LocationSet denLocations = new LocationSet();
@@ -356,11 +358,23 @@ public class SoldierPlayer {
 			Direction dir = Movement.getBestMoveableDirection(d.opposite(), rc, 2);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
+    		} else if (shouldMine(rc, dir)) {
+    			rc.clearRubble(dir);
+    		} else if (shouldMine(rc, dir.rotateLeft())) {
+    			rc.clearRubble(dir.rotateLeft());
+    		} else if (shouldMine(rc, dir.rotateRight())) {
+    			rc.clearRubble(dir.rotateRight());
     		}
     	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
     		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
+    		} else if (shouldMine(rc, dir)) {
+    			rc.clearRubble(dir);
+    		} else if (shouldMine(rc, dir.rotateLeft())) {
+    			rc.clearRubble(dir.rotateLeft());
+    		} else if (shouldMine(rc, dir.rotateRight())) {
+    			rc.clearRubble(dir.rotateRight());
     		}
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
@@ -745,6 +759,14 @@ public class SoldierPlayer {
 		} else {
 			rc.attackLocation(enemy.location);
 		}
+	}
+	
+	// Assumes that you cannot move in that location
+	private static boolean shouldMine(RobotController rc, Direction dir) {
+		MapLocation myLoc = rc.getLocation();
+		MapLocation dirLoc = myLoc.add(dir);
+		double rubble = rc.senseRubble(dirLoc);
+		return rubble >= 50 && rubble <= FIFTY_TURN_MINE;
 	}
 	
 }
