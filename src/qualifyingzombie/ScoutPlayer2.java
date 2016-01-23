@@ -70,9 +70,6 @@ public class ScoutPlayer2 {
 				// Broadcast dens that are no longer there.
 				broadcastDenKilled(rc);
 				
-				// Remove enemy turret locations.
-				removeEnemyTurretLocations(rc);
-				
 				// Broadcast turrets that are no longer there.
 				broadcastTurretKilled(rc);
 				
@@ -312,19 +309,6 @@ public class ScoutPlayer2 {
 					removedLocations[removedLength++] = location;
 					Message.sendMessageGivenRange(rc, location, Message.TURRETKILLED, Message.FULL_MAP_RANGE);
 				}
-			}
-		}
-		for (int i = 0; i < removedLength; i++) {
-			enemyTurretLocations.remove(removedLocations[i]);
-		}
-	}
-	
-	private static void removeEnemyTurretLocations(RobotController rc) {
-		MapLocation[] removedLocations = new MapLocation[enemyTurretLocations.size()];
-		int removedLength = 0;
-		for (MapLocation location : enemyTurretLocations) {
-			if (4 * RobotType.TURRET.attackRadiusSquared < myLoc.distanceSquaredTo(location)) {
-				removedLocations[removedLength++] = location;
 			}
 		}
 		for (int i = 0; i < removedLength; i++) {
