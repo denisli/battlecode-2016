@@ -151,4 +151,21 @@ public class Message {
 			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
 		}
 	}
+	
+	public static int getLowerX() {
+		return lowerX;
+	}
+	
+	public static int getUpperX() {
+		return upperX;
+	}
+	
+	public static int getLowerY() {
+		return lowerY;
+	}
+	
+	public static int getUpperY() {
+		return upperY;
+	}
+	
 }
