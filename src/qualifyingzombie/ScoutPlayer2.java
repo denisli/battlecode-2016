@@ -144,17 +144,17 @@ public class ScoutPlayer2 {
 		// Determine x bounds
 		boolean lowerXFound = false;
 		boolean upperXFound = false;
-		if (!rc.onTheMap(myLoc.add(Direction.WEST, 8))) { // found lower X
-			if (Message.getLowerX() != Message.DEFAULT_LOW) {
-				int i = 7;
+		if (!rc.onTheMap(myLoc.add(Direction.WEST, 7))) { // found lower X
+			if (Message.getLowerX() == Message.DEFAULT_LOW) {
+				int i = 6;
 				while (!rc.onTheMap(myLoc.add(Direction.WEST, i--)));
 				int lowerX = myLoc.x - i;
 				Message.setLowerX(lowerX);
 				lowerXFound = true;
 			}
-		} else if (!rc.onTheMap(myLoc.add(Direction.EAST, 8))) { // found upper X
-			if (Message.getUpperX() != Message.DEFAULT_HIGH) {
-				int i = 7;
+		} else if (!rc.onTheMap(myLoc.add(Direction.EAST, 7))) { // found upper X
+			if (Message.getUpperX() == Message.DEFAULT_HIGH) {
+				int i = 6;
 				while (!rc.onTheMap(myLoc.add(Direction.WEST, i--)));
 				int upperX = myLoc.x + i;
 				Message.setUpperX(upperX);
@@ -165,17 +165,17 @@ public class ScoutPlayer2 {
 		// Determine y bounds
 		boolean lowerYFound = false;
 		boolean upperYFound = false;
-		if (!rc.onTheMap(myLoc.add(Direction.NORTH, 8))) { // found lower Y
-			if (Message.getLowerY() != Message.DEFAULT_LOW) {
-				int i = 7;
+		if (!rc.onTheMap(myLoc.add(Direction.NORTH, 7))) { // found lower Y
+			if (Message.getLowerY() == Message.DEFAULT_LOW) {
+				int i = 6;
 				while (!rc.onTheMap(myLoc.add(Direction.NORTH, i--)));
 				int lowerY = myLoc.y - i;
 				Message.setLowerY(lowerY);
 				lowerYFound = true;
 			}
-		} else if (!rc.onTheMap(myLoc.add(Direction.SOUTH, 8))) { // found upper Y
-			if (Message.getUpperY() != Message.DEFAULT_HIGH) {
-				int i = 7;
+		} else if (!rc.onTheMap(myLoc.add(Direction.SOUTH, 7))) { // found upper Y
+			if (Message.getUpperY() == Message.DEFAULT_HIGH) {
+				int i = 6;
 				while (!rc.onTheMap(myLoc.add(Direction.SOUTH, i--)));
 				int upperY = myLoc.y + i;
 				Message.setUpperY(upperY);
@@ -186,7 +186,7 @@ public class ScoutPlayer2 {
 		if (lowerXFound && lowerYFound) {
 			Message.sendMessageGivenRange(rc, new MapLocation(Message.getLowerX(), Message.getLowerY()), Message.MIN_CORNER, Message.FULL_MAP_RANGE);
 		} else if (upperXFound && upperYFound) {
-			Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperX()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
+			Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperY()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
 		} else {
 			// Only one of the lower bounds is found
 			if (lowerXFound) {
@@ -196,9 +196,9 @@ public class ScoutPlayer2 {
 			}
 			// Only one of the upper bounds is found
 			if (upperXFound) {
-				Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperX()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperY()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
 			} else if (upperYFound) {
-				Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperX()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
+				Message.sendMessageGivenRange(rc, new MapLocation(Message.getUpperX(), Message.getUpperY()), Message.MAX_CORNER, Message.FULL_MAP_RANGE);
 			}
 		}
 	}
