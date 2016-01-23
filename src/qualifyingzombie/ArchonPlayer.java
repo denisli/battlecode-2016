@@ -357,7 +357,7 @@ public class ArchonPlayer {
 					//else build mode
 					else {
 						int freeScouts = numScoutsBuilt-numTurretsBuilt;
-						if (freeScouts < 2 && roundNum > 150) {
+						if (freeScouts < 3 && roundNum > 150) {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 								buildRandomDir(rc, RobotType.SCOUT, rand);
 								giveLocs(rc, denLocs);

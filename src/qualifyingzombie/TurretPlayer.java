@@ -351,27 +351,13 @@ public class TurretPlayer {
 					if (destination != null && myLoc.distanceSquaredTo(destination) <= 24) {
 						//check for whatever it was supposed to go to and set it to null if it isnt there
 						if (nearestEnemyLocation!=null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 24) {
-							RobotInfo r = rc.senseRobotAtLocation(nearestEnemyLocation);
-							if (r != null) {
-								if (r.team == otherTeam && r.type!=RobotType.TURRET) {
-									nearestEnemyLocation = null;
-									destination = null;
-									bugging = null;
-								}
-							}
-							else {
-								nearestEnemyLocation = null;
-								destination = null;
-								bugging = null;
-							}
+							nearestEnemyLocation = null;
 						}
 						if (nearestTurretLocation!=null && myLoc.distanceSquaredTo(nearestTurretLocation) <= 24) {
 							RobotInfo r = rc.senseRobotAtLocation(nearestTurretLocation);
 							if (r==null || !((r.team == otherTeam) && (r.type == RobotType.TURRET))) {
 								enemyTurrets.remove(nearestTurretLocation);
 								nearestTurretLocation = null;
-								destination = null;
-								bugging = null;
 							}
 						}
 						if (nearestDenLocation!=null && myLoc.distanceSquaredTo(nearestDenLocation) <= 24) {
@@ -379,23 +365,17 @@ public class TurretPlayer {
 							if (r==null || r.type != RobotType.ZOMBIEDEN) {
 								denLocs.remove(nearestDenLocation);
 								nearestDenLocation = null;
-								destination = null;
-								bugging = null;
 							}
 						}
-						if (nearestArchonLocation!= null && myLoc.distanceSquaredTo(nearestArchonLocation) <= 13) {
+						if (nearestArchonLocation!= null && myLoc.distanceSquaredTo(nearestArchonLocation) <= 24) {
 							RobotInfo r = rc.senseRobotAtLocation(nearestArchonLocation);
 							if (r != null) {
 								if (r.team == myTeam && r.type==RobotType.ARCHON) {
 									nearestArchonLocation = null;
-									destination = null;
-									bugging = null;
 								}
 							}
 							else {
 								nearestArchonLocation = null;
-								destination = null;
-								bugging = null;
 							}
 						}
 						destination = null;
