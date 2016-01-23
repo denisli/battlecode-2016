@@ -38,7 +38,7 @@ public class ArchonPlayer {
 		MapLocation closestTurret = null;
 		//add this
 		MapLocation closestNeutralArchon = null;
-		boolean prepareRush = false;
+		//once enemyTurtle is set to non null, that means go find a safe spot becuase rush about to happen
 		MapLocation enemyTurtle = null;
 		//location furthest from turtle
 		MapLocation safeSpot = null;
@@ -150,7 +150,6 @@ public class ArchonPlayer {
 					}
 					else if (m.type==Message.PREPARERUSH) {
 						enemyTurtle = m.location;
-						prepareRush = true;
 					}
 					else if (m.type==Message.MIN_CORNER) {
 						MapLocation boundLoc = m.location;
@@ -454,9 +453,26 @@ public class ArchonPlayer {
 					
 					
 					if (rc.isCoreReady()) {
-						if (prepareRush) {
+						if (enemyTurtle!=null) {
 							if (safeSpot==null) {
 								//create safespot
+								int enemyTurtleX = enemyTurtle.x;
+								int enemyTurtleY = enemyTurtle.y;
+								int safespotX = minx;
+								int safespotY = miny;
+								if (maxx-enemyTurtleX>enemyTurtleX-minx) {
+									safespotX = maxx;
+								}
+								if (maxy-enemyTurtleY>enemyTurtleY-miny) {
+									safespotY = maxy;
+								}
+								
+								if (minx==Message.DEFAULT_LOW || miny==Message.DEFAULT_LOW || maxx==Message.DEFAULT_HIGH || maxy==Message.DEFAULT_HIGH) {
+									safeSpot = rc.getInitialArchonLocations(myTeam)[0];
+								}
+								else {
+									safeSpot = new MapLocation(safespotX, safespotY);
+								}
 								bug = new Bugging(rc, safeSpot);	
 							}
 							else {
@@ -486,7 +502,7 @@ public class ArchonPlayer {
 					}
 
 				}
-				rc.setIndicatorString(0, roundNum+"numDens"+denLocs.size());
+				rc.setIndicatorString(0, roundNum+"numEnemyTurrets"+enemyTurrets.size());
 
 				turnsWithoutMessaging++;
 				prevHealth = curHealth;
