@@ -99,6 +99,7 @@ public class SoldierPlayer {
 						if (nearestArchonLocation != null) {
 							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 13) {
 								bugging.enemyAvoidMove(nearbyEnemies);
+							// Get away from archons that are not too close together.
 							} else if (myLoc.distanceSquaredTo(nearestArchonLocation) <= 2) {
 								Direction radialDir = nearestArchonLocation.directionTo(myLoc);
 								Direction awayDir = Movement.getBestMoveableDirection(radialDir, rc, 2);
@@ -106,6 +107,50 @@ public class SoldierPlayer {
 									rc.move(awayDir);
 								}
 							}
+						}
+					}
+					// Make sure to attack people even when retreating.
+					// Prioritize the closest enemy. Then the closest zombie.
+					if (rc.isWeaponReady()) {
+						// Attack the closest enemy. If there is not one, then attack the closest zombie
+						int closestDist = 10000;
+						RobotInfo target = null;
+						for (RobotInfo hostile : nearbyEnemies) {
+							int dist = myLoc.distanceSquaredTo(hostile.location);
+							if (rc.canAttackLocation(hostile.location)) {
+								// There is already is a target
+								if (target != null) {
+									if (target.team == enemyTeam) {
+										// Target is already enemy, so prioritize the closest
+										if (hostile.team == enemyTeam) {
+											if (dist < closestDist) {
+												target = hostile;
+												closestDist = dist;
+											}
+										} // If hostile is not an enemy, not worth considering.
+									} else {
+										// Target is not on enemy team, so hostile is best choice!
+										if (hostile.team == enemyTeam) {
+											target = hostile;
+											closestDist = dist;
+										// Both are zombies, so just pick the closest.
+										} else {
+											if (dist < closestDist) {
+												target = hostile;
+												closestDist = dist;
+											}
+										}
+									}
+								// Set a target when there is not one.
+								} else {
+									target = hostile;
+									closestDist = dist;
+								}
+							}
+						}
+						// We know that if there is a target, we can attack it.
+						if (target != null) {
+							rc.attackLocation(target.location);
 						}
 					}
 				}
