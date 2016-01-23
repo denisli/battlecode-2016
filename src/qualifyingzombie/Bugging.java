@@ -13,8 +13,6 @@ import battlecode.common.RobotType;
 
 public class Bugging {
 	
-	private static final int FIFTY_TURN_MINE = 3049;
-
 	private final RobotController rc;
 	final MapLocation destination;
 	private Hugging hugging = Hugging.NONE;
@@ -435,7 +433,7 @@ public class Bugging {
 			MapLocation myLoc = rc.getLocation();
 			MapLocation dirLoc = myLoc.add(dir);
 			double rubble = rc.senseRubble(dirLoc);
-			return rubble >= 50 && rubble <= FIFTY_TURN_MINE;
+			return rubble >= 50;
 		}
 		return false;
 	}
