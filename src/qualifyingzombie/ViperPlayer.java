@@ -495,6 +495,7 @@ public class ViperPlayer {
 		boolean canAttackBestEnemy = false;
 		int bestEnemyDist = 10000; // only care if can't hit
 		for (RobotInfo hostile : hostiles) {
+			if (hostile.type == RobotType.ARCHON) continue;
 			// Can attack this enemy.
 			int dist = myLoc.distanceSquaredTo(hostile.location);
 			if (dist <= attackRadius) {
