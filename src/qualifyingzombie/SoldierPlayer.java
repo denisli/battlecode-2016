@@ -160,11 +160,7 @@ public class SoldierPlayer {
 				}
 				// if there are enemies in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					// get the best enemy and do stuff based on this
-					RobotInfo bestEnemy = getBestEnemy(rc);
-					// if it's not a soldier and we aren't going to move in range of enemy, kite it
-					micro(rc, nearbyEnemies, bestEnemy);
-					
+					micro(rc, nearbyEnemies);
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
 				}
@@ -396,13 +392,54 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void micro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
-		if (useSoldierMicro) {
-			soldierMicro(rc, hostiles, bestEnemy);
-		} else {
-			nonSoldierMicro(rc, bestEnemy);
+	public static void micro(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+		// Single archon micro (consider what happens when there is more than 1 later)
+		if (hostiles.length == 1 && hostiles[0].type == RobotType.ARCHON) {
+			RobotInfo enemyArchon = hostiles[0];
+			archonMicro(rc, enemyArchon);
+		}
+		// Any other micro...
+		else {
+			RobotInfo bestEnemy = getBestEnemy(rc);
+			if (useSoldierMicro) {
+				soldierMicro(rc, hostiles, bestEnemy);
+			} else {
+				nonSoldierMicro(rc, bestEnemy);
+			}
 		}
 	}
+	
+	private static void archonMicro(RobotController rc, RobotInfo enemyArchon) throws GameActionException {
+		int dist = myLoc.distanceSquaredTo(enemyArchon.location);
+		// When not adjacent to the archon, walk/mine through to him.
+		if (dist > 2) {
+			Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(enemyArchon.location), rc, 2);
+    		if (dir != Direction.NONE) {
+    			rc.move(dir);
+    		} else if (shouldMine(rc, dir)) {
+    			rc.clearRubble(dir);
+    		} else if (shouldMine(rc, dir.rotateLeft())) {
+    			rc.clearRubble(dir.rotateLeft());
+    		} else if (shouldMine(rc, dir.rotateRight())) {
+    			rc.clearRubble(dir.rotateRight());
+    		}
+		}
+		// When adjacent to archon, rotate to the left/right when possible.
+		else {
+			Direction dir = myLoc.directionTo(enemyArchon.location);
+			if (rc.canMove(dir.rotateLeft())) {
+				rc.move(dir.rotateLeft());
+			} else if (rc.canMove(dir.rotateRight())) {
+				rc.move(dir.rotateRight());
+			}
+		}
+		if (rc.isWeaponReady()) {
+			if (rc.canAttackLocation(enemyArchon.location)) {
+				rc.attackLocation(enemyArchon.location);
+			}
+		}
+	}
+	
 	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
