@@ -105,9 +105,14 @@ public class ViperPlayer {
 				// When viper infected, do special micro
 				else if (isViperInfected(rc)) {
 					viperInfectedMicro(rc);
+				} else if (nearbyEnemies.length == 1 && !nearbyEnemies[0].team.equals(Team.ZOMBIE)) { // if there's only one enemy, don't attack and move opposite direction
+					RobotInfo oneEnemy = nearbyEnemies[0];
+					if (rc.isCoreReady() && rc.canMove(oneEnemy.location.directionTo(myLoc))) {
+						rc.move(oneEnemy.location.directionTo(myLoc));
+					}
 				}
-				// if there are enemies in range, we should focus on attack and micro
-				else if (nearbyEnemies.length > 0) {
+				// if there are more than one enemy in range, we should focus on attack and micro
+				else if (nearbyEnemies.length > 1) {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
@@ -267,7 +272,7 @@ public class ViperPlayer {
 
 	// loops through the nearbyEnemies and gets the best one
 	public static RobotInfo getBestEnemy(RobotController rc) {
-		RobotInfo bestEnemy = nearbyEnemies[0];
+		RobotInfo bestEnemy = null;
 		List<RobotInfo> nonInfected = new ArrayList<>();
 		List<RobotInfo> infected = new ArrayList<>();
 		List<RobotInfo> zombies = new ArrayList<>();
@@ -283,13 +288,13 @@ public class ViperPlayer {
 			
 			// adding to the lists
 			
-			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0) { // we want to target uninfected
+			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0 && r.type != RobotType.ARCHON) { // we want to target uninfected
 				nonInfected.add(r);
-			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0) { // then, want to target least infected
+			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0 && r.type != RobotType.ARCHON) { // then, want to target least infected
 				infected.add(r);
 			} else if (r.team.equals(Team.ZOMBIE)) { // want to then target zombies
 				zombies.add(r);
-			} else { // target whatever else
+			} else if (r.type != RobotType.ARCHON) { // target whatever else
 				other.add(r);
 			}
 		}
