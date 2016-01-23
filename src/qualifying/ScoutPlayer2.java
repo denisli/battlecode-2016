@@ -105,7 +105,11 @@ public class ScoutPlayer2 {
 	private static void readMessages(RobotController rc) {
 		List<Message> messages = Message.readMessageSignals(rc);
 		for (Message m : messages) {
-			if (m.type == Message.ZOMBIEDEN) {
+			if (m.type == Message.TURRET) {
+				enemyTurretLocations.add(m.location);
+			} else if (m.type == Message.TURRETKILLED) {
+				enemyTurretLocations.remove(m.location);
+			} else if (m.type == Message.ZOMBIEDEN) {
 				denLocations.add(m.location);
 			} else if (m.type == Message.ZOMBIEDENKILLED) {
 				denLocations.remove(m.location);

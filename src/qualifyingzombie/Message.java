@@ -26,10 +26,24 @@ public class Message {
 	public static final int ZOMBIEDENKILLED = 11;
 	public static final int PREPARERUSH = 12;
 	public static final int ZOMBIERUSH = 13;
+	public static final int MIN_CORNER = 14;
+	public static final int MAX_CORNER = 15;
 	
 	private static final int AYY = 2000;
 	
-	public static final int FULL_MAP_RANGE = 80 * 80 * 2;
+	public static final int DEFAULT_LOW = -1;
+	public static final int DEFAULT_HIGH = 1000;
+	private static final int DEFAULT_MAX = 80;
+	
+	private static int lowerX = DEFAULT_LOW;
+	private static int upperX = DEFAULT_HIGH;
+	private static int maxWidth = DEFAULT_MAX;
+	
+	private static int lowerY = DEFAULT_LOW;
+	private static int upperY = DEFAULT_HIGH;
+	private static int maxHeight = DEFAULT_MAX;
+	
+	public static int FULL_MAP_RANGE = DEFAULT_MAX * DEFAULT_MAX * 2;
 	
 	public final Signal signal;
 	public final MapLocation location;
@@ -102,8 +116,39 @@ public class Message {
 		return location.hashCode() + type;
 	}
 	
-	private static int getRangeGivenDelay(RobotController rc, double delay) {
+	public static int getRangeGivenDelay(RobotController rc, double delay) {
 		return (int) ((delay - 0.05) / 0.03 + 2) * rc.getType().sensorRadiusSquared;
 	}
 	
+	public static void setLowerX(int x) {
+		lowerX = x;
+		if (upperX != DEFAULT_HIGH) {
+			maxWidth = upperX - lowerX;
+			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
+		}
+	}
+	
+	public static void setUpperX(int x) {
+		upperX = x;
+		if (lowerX != DEFAULT_LOW) {
+			maxWidth = upperX - lowerX;
+			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
+		}
+	}
+	
+	public static void setLowerY(int y) {
+		lowerY = y;
+		if (upperY != DEFAULT_HIGH) {
+			maxHeight = upperY - lowerY;
+			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
+		}
+	}
+	
+	public static void setUpperY(int y) {
+		upperY = y;
+		if (lowerY != DEFAULT_LOW) {
+			maxHeight = upperY - lowerY;
+			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
+		}
+	}
 }
