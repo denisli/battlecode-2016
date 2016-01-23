@@ -17,8 +17,6 @@ public class ScoutPlayer2 {
 	private static Team team;
 	private static MapLocation myLoc;
 	
-	private static double ourPower = 0;
-	private static double enemyPower = 0;
 	private static int turnsSinceRushSignal = 0; // only increments when no dens
 	
 	private static boolean inDanger = false;
@@ -75,9 +73,6 @@ public class ScoutPlayer2 {
 				
 				// Broadcast enemies.
 				broadcastEnemies(rc, hostiles);
-				
-				// Compute power.
-				computePower(rc, allies, hostiles);
 				
 				// Broadcast collectibles
 				if (!inDanger && rc.isCoreReady()) {
@@ -257,7 +252,7 @@ public class ScoutPlayer2 {
 								inDanger = true;
 							}
 						} else if (hostile.team == Team.ZOMBIE) {
-							// Just pretend zombie sight radius is 24
+							// Just pretend zombie sight radius is 35
 							if (dist <= 35) inDanger = true;
 						} else if (hostile.type != RobotType.SCOUT) {
 							if (dist <= hostile.type.sensorRadiusSquared) inDanger = true;
@@ -342,7 +337,7 @@ public class ScoutPlayer2 {
 						}
 					}
 					// Then find the closest turret
-					if (closestTurretDist > dist && hostile.type == RobotType.TURRET && hostile.location.distanceSquaredTo(pairedTurret) > 5) {
+					if (closestTurretDist > dist && hostile.type == RobotType.TURRET) {
 						closestTurretDist = dist;
 						closestTurretLoc = hostile.location;
 					}
@@ -359,8 +354,7 @@ public class ScoutPlayer2 {
 							turnsSinceTurretBroadcast = 0;
 							enemyTurretLocations.add(closestTurretLoc);
 						}
-						
-						if (bestEnemy != null && turnsSinceEnemyBroadcast > 20 && rc.isCoreReady()) {
+						else if (bestEnemy != null && turnsSinceEnemyBroadcast > 20 && rc.isCoreReady()) {
 							Message.sendMessageGivenDelay(rc, bestEnemy.location, Message.ENEMY, 1);
 							turnsSinceEnemyBroadcast = 0;
 						}
@@ -407,6 +401,9 @@ public class ScoutPlayer2 {
 						}
 					}
 				}
+				// If found a turret there was never there, circle for 30 turns
+				
+				
 				if (rc.isCoreReady()) {
 					if (!inDanger && turnsSinceEnemyBroadcast > 20) {
 						if (closestEnemy != null) {
@@ -427,32 +424,6 @@ public class ScoutPlayer2 {
 			} else if (enemy.type != RobotType.SCOUT) {
 				Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
 				turnsSinceEnemyBroadcast = 0;
-			}
-		}
-	}
-	
-	private static void computePower(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) {
-		// Compute ally power
-		ourPower = 0;
-		for (RobotInfo ally : allies) {
-			// Add to power
-			RobotType type = ally.type;
-			ourPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower) / type.attackDelay;
-		}
-		
-		// Compute enemy power
-		enemyPower = 0;
-		if (pairing == Pairing.TURRET) {
-		} else {
-			if (hostiles.length > 0) {
-				for (RobotInfo hostile : hostiles) {
-					if (hostile.type == RobotType.ZOMBIEDEN) {
-					} else {
-						// Add to enemy power
-						RobotType type = hostile.type;
-						enemyPower += (Math.sqrt(type.attackRadiusSquared) * type.attackPower) / type.attackDelay;
-					}
-				}
 			}
 		}
 	}
