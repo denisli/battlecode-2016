@@ -430,7 +430,7 @@ public class ScoutPlayer2 {
 			if (denLocations.size() == 0) {
 				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are no dens");
 				turnsSinceRushSignal++;
-				if (turnsSinceRushSignal > 100) {
+				if (turnsSinceRushSignal > 200) {
 					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
 					rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
 					if (closestTurret != null) {
