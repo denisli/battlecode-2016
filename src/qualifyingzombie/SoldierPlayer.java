@@ -693,6 +693,14 @@ public class SoldierPlayer {
 		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
 			if (r0 == null) return true;
 			if (r1 == null) return false;
+			
+			// want to prioritize enemies higher than zombies
+			if (r1.team.equals(Team.ZOMBIE)) {
+				if (r0.team.equals(Team.ZOMBIE)) {
+					return r1.health < r0.health;
+				}
+				return false;
+			}
 			// Highest priority are those within attack range.
 			// 		Highest priority is lowest health viper infected.
 			// 		Then lowest health zombie infected
