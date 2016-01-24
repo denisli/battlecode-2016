@@ -36,7 +36,7 @@ public class ArchonPlayer {
 		MapLocation closestDen = null;
 		MapLocation closestEnemy = null;
 		MapLocation closestTurret = null;
-		//add this
+		//add this?
 		MapLocation closestNeutralArchon = null;
 		//once enemyTurtle is set to non null, that means go find a safe spot becuase rush about to happen
 		MapLocation enemyTurtle = null;
@@ -498,10 +498,20 @@ public class ArchonPlayer {
 
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
-								bug.move();
+								if (destination == closestTurret) {
+									bug.turretAvoidMove(enemyTurrets);
+								}
+								else {
+									bug.move();	
+								}
 							}
 							else {
-								bug.move();
+								if (destination == closestTurret) {
+									bug.turretAvoidMove(enemyTurrets);
+								}
+								else {
+									bug.move();	
+								}
 							}
 						}
 					}
