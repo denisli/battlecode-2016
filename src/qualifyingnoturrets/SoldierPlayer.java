@@ -322,7 +322,7 @@ public class SoldierPlayer {
 				bugging = new Bugging(rc, nearestFriend.location);
 				storedDestination = nearestFriend.location;
 			}
-			if (rc.isCoreReady() && myLoc.distanceSquaredTo(nearestFriend.location) > 5) { // don't want to get too close to archon
+			if (rc.isCoreReady()) { // don't want to get too close to archon
 				bugging.move();
 			}
 		}
