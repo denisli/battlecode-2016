@@ -306,7 +306,7 @@ public class SoldierPlayer {
 				bugging = new Bugging(rc, nearestFriend.location);
 				storedDestination = nearestFriend.location;
 			}
-			if (rc.isCoreReady()) {
+			if (rc.isCoreReady() && myLoc.distanceSquaredTo(nearestFriend.location) > 5) { // don't want to get too close to archon
 				bugging.move();
 			}
 		}
@@ -381,7 +381,7 @@ public class SoldierPlayer {
 			if (rc.isCoreReady() && bugging != null) {
 				if (nearestTurretLocation != null) {
 					bugging.turretAvoidMove(turretLocations);
-				} else {
+				} else if (nearestArchonLocation.equals(bugging.destination) && myLoc.distanceSquaredTo(nearestArchonLocation) > 5){ // don't want to get too close to archon
 					bugging.move();
 				}
 			}
