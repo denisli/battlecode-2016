@@ -58,7 +58,7 @@ public class ScoutPlayer2 {
 						", min = (" + Message.getLowerX() + "," + Message.getLowerY() + 
 						") and max = (" + Message.getUpperX() + "," + Message.getUpperY() + ")");
 				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
-				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", FULL_MAP_RANGE: " + Message.FULL_MAP_RANGE);
+				//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", FULL_MAP_RANGE: " + Message.FULL_MAP_RANGE);
 				
 				// Compute pairing.
 				computePairing(rc, allies);
@@ -477,7 +477,7 @@ public class ScoutPlayer2 {
 				turnsSinceRushSignal++;
 				if (turnsSinceRushSignal > 200) {
 					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
-					rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
+					//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
 					if (closestTurret != null) {
 						rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
 						Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
@@ -593,7 +593,7 @@ public class ScoutPlayer2 {
 							int minDist = 10000;
 							for (RobotInfo hostile : hostiles) {
 								int dist = dirLoc.distanceSquaredTo(hostile.location);
-								if (hostile.type == RobotType.ARCHON || hostile.type == RobotType.SCOUT) continue;
+								if (!isDangerous(hostile.type)) continue;
 								minDist = Math.min(dist, minDist);
 							}
 							if (maxMinDist < minDist) {
