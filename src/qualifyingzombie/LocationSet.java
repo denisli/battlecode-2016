@@ -88,4 +88,13 @@ public class LocationSet implements Iterable<MapLocation> {
 		return iterator;
 	}
 	
+	@Override
+	public String toString() {
+		String string = "";
+		for (MapLocation location : this) {
+			string += location + "; ";
+		}
+		return string;
+	}
+	
 }

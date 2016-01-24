@@ -88,7 +88,7 @@ public class Bugging {
 				}
 
 				// Complete the move.
-				if (rc.canMove(dirWhileHugging)) {
+				if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
 					rc.move(dirWhileHugging);
 				}
 			}

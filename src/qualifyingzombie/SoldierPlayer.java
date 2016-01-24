@@ -475,9 +475,11 @@ public class SoldierPlayer {
 	    				// If coincidence, set new bugging.
 	    				} else {
 	    					bugging = new Bugging(rc, bestEnemy.location);
+	    					bugging.turretAvoidMove(turretLocations);
 	    				}
     				} else {
     					bugging = new Bugging(rc, bestEnemy.location);
+    					bugging.turretAvoidMove(turretLocations);
     				}
     			}
     		}
