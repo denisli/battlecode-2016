@@ -1,5 +1,6 @@
 package qualifyingzombie;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import battlecode.common.*;
@@ -76,6 +77,9 @@ public class SoldierPlayer {
 				// Remove turret locations that you can see are not there.
 				// Does NOT remove turret locations due to broadcasts. Already done in read messages.
 				removeTurretLocations(rc);
+				
+				// try to move away from nearest archon
+				moveAwayFromArchon(rc);
 				
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
@@ -166,6 +170,22 @@ public class SoldierPlayer {
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+		}
+	}
+	
+	public static void moveAwayFromArchon(RobotController rc) throws GameActionException {
+		RobotInfo[] friendly = rc.senseNearbyRobots(sightRadius, myTeam);
+		ArrayList<RobotInfo> archons = new ArrayList<>();
+		for (RobotInfo r : friendly) {
+			if (r.type == RobotType.ARCHON) {
+				archons.add(r);
+			}
+		}
+		if (archons.size() > 0) {
+			RobotInfo archonToAvoid = archons.get(0);
+			if (rc.isCoreReady() && myLoc.distanceSquaredTo(archonToAvoid.location) < 5 && rc.canMove(archonToAvoid.location.directionTo(myLoc))) {
+				rc.move(archonToAvoid.location.directionTo(myLoc));
 			}
 		}
 	}
