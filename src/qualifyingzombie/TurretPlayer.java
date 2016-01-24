@@ -25,6 +25,8 @@ public class TurretPlayer {
 	public static LocationSet denLocs = new LocationSet();
 	public static LocationSet enemyTurrets = new LocationSet();
 	public static MapLocation pairedAttackLoc = null;
+	public static boolean rush = false;
+	public static int lastTurnBroadcastPairedAttack = 0;
 
 	public static void run(RobotController rc) {
 		//rand = new Random(rc.getID());
@@ -56,8 +58,12 @@ public class TurretPlayer {
 			MapLocation toAttackLoc = null;
 			boolean attacked = false;
 			boolean enemiesTooClose = true;
-			pairedAttackLoc = null;
+			int roundNum = rc.getRoundNum();
 
+			if (roundNum-lastTurnBroadcastPairedAttack > 1) {
+				pairedAttackLoc = null;
+			}
+			
 			//process messages
 			List<Message> messages = Message.readMessageSignals(rc);
 			for (Message m : messages) {
@@ -78,6 +84,7 @@ public class TurretPlayer {
 				}
 				else if (m.type == Message.PAIREDATTACK) {
 					if (myLoc.distanceSquaredTo(m.location) <= 40 && myLoc.distanceSquaredTo(m.location) > 5) {
+						lastTurnBroadcastPairedAttack = roundNum;
 						pairedAttackLoc = m.location;
 					}
 				}
@@ -136,6 +143,9 @@ public class TurretPlayer {
 					} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonDangerLocation)) {
 						nearestArchonDangerLocation = m.location;
 					}
+				}
+				else if (m.type==Message.RUSH) {
+					rush = true;
 				}
 			}
 
@@ -305,6 +315,9 @@ public class TurretPlayer {
 						nearestArchonDangerLocation = m.location;
 					}
 				}
+				else if (m.type==Message.RUSH) {
+					rush = true;
+				}
 			}
 
 			rc.setIndicatorString(1, pairedAttackLoc+" ");
@@ -383,7 +396,12 @@ public class TurretPlayer {
 					}
 
 					if (destination != null && bugging != null) {
-						bugging.move();
+//						if (rush) {
+							bugging.move();
+//						}
+//						else {
+//							bugging.turretAvoidMove(enemyTurrets);
+//						}
 					}
 					else {
 						if (nearestDenLocation != null && myLoc.distanceSquaredTo(nearestDenLocation)>5) {
@@ -411,36 +429,17 @@ public class TurretPlayer {
 
 						if (destination != null) {
 							bugging = new Bugging(rc, destination);
-							bugging.move();
+//							if (rush) {
+								bugging.move();
+//							}
+//							else {
+//								bugging.turretAvoidMove(enemyTurrets);
+//							}
 						}
 					}
 				}
 			}
 			
-			//if nowhere to move, move to archon; is this code necessary?
-			if (rc.isCoreReady() && enemiesWithinRange.length > 0 && !existEnemiesNotTooClose && nearestArchonLocation!=null) {
-				if (destination==null) {
-					destination = nearestArchonLocation;
-					bugging = new Bugging(rc, destination);
-					bugging.move();
-				}
-				else {
-					if (destination == myLoc) {
-						destination = nearestArchonLocation;
-						bugging = new Bugging(rc, destination);
-						bugging.move();
-					}
-					else {
-						if (bugging == null) {
-							bugging = new Bugging(rc, destination);
-							bugging.move(); 
-						}
-						else {
-							bugging.move();
-						}
-					}
-				}
-			}
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
