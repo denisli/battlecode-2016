@@ -282,17 +282,6 @@ public class ArchonPlayer {
 						}
 						//}
 					}
-					//no other place to go when getting attacked
-					//					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
-					//						rc.setIndicatorString(2, roundNum+"here1");
-					//						if (nearestParts != startLoc) {
-					//							nearestParts = startLoc;
-					//							bug = new Bugging(rc, startLoc);
-					//						}
-					//						if (bug != null) {
-					//							bug.move();							
-					//						}
-					//					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
 						Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONLOC, 2.8);
@@ -481,16 +470,16 @@ public class ArchonPlayer {
 								bug = new Bugging(rc, safeSpot);	
 							}
 							else {
-								bug.move();
+								bug.turretAvoidMove(enemyTurrets);
 							}
 						}
 						else if (nearestParts != null) {
 							if (bug == null) {
 								bug = new Bugging(rc, nearestParts);
-								bug.move();
+								bug.turretAvoidMove(enemyTurrets);
 							}
 							else {
-								bug.move();
+								bug.turretAvoidMove(enemyTurrets);
 							}
 						}
 						else if (destination != null) {
@@ -498,20 +487,10 @@ public class ArchonPlayer {
 
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
-								if (destination == closestTurret) {
-									bug.turretAvoidMove(enemyTurrets);
-								}
-								else {
-									bug.move();	
-								}
+								bug.turretAvoidMove(enemyTurrets);
 							}
 							else {
-								if (destination == closestTurret) {
-									bug.turretAvoidMove(enemyTurrets);
-								}
-								else {
-									bug.move();	
-								}
+								bug.turretAvoidMove(enemyTurrets);
 							}
 						}
 					}
