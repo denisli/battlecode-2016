@@ -58,6 +58,7 @@ public class ScoutPlayer2 {
 						", min = (" + Message.getLowerX() + "," + Message.getLowerY() + 
 						") and max = (" + Message.getUpperX() + "," + Message.getUpperY() + ")");
 				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", FULL_MAP_RANGE: " + Message.FULL_MAP_RANGE);
 				
 				// Compute pairing.
 				computePairing(rc, allies);
@@ -123,7 +124,7 @@ public class ScoutPlayer2 {
 					Message.setLowerY(m.location.y);
 				}
 			} else if (m.type == Message.MAX_CORNER) {
-				if (m.location.x != Message.DEFAULT_LOW) {
+				if (m.location.x != Message.DEFAULT_HIGH) {
 					Message.setUpperX(m.location.x);
 				}
 				if (m.location.y != Message.DEFAULT_HIGH) {
@@ -454,18 +455,20 @@ public class ScoutPlayer2 {
 			}
 		}
 		if (closestCollectible != null && rc.isCoreReady()) {
-			if (pairing != Pairing.ARCHON) {
-				if (thereAreEnemies) {
-					Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
+			//if (turnsSinceCollectibleBroadcast > 20) {
+				if (pairing != Pairing.ARCHON) {
+					if (thereAreEnemies) {
+						Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
+					} else {
+						Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, Message.FULL_MAP_RANGE);
+					}
 				} else {
-					Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, Message.FULL_MAP_RANGE);
+					Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, 5);
 				}
-			} else {
-				Message.sendMessageGivenRange(rc, closestCollectible, Message.COLLECTIBLES, 5);
-			}
-			previouslyBroadcastedPartLoc = closestCollectible;
+				turnsSinceCollectibleBroadcast = 0;
+				previouslyBroadcastedPartLoc = closestCollectible;
+			//}
 		}
-		turnsSinceCollectibleBroadcast = 0;
 	}
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
