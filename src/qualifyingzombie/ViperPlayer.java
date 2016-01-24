@@ -461,14 +461,14 @@ public class ViperPlayer {
     	}
 	}
 
-	// if soldier is in range of stuff but doesn't see it, sets it to null
+	// if viper is in range of stuff but doesn't see it, sets it to null
 	public static void resetLocations(RobotController rc) throws GameActionException {
-		if (nearestTurretLocation != null && rc.canSense(nearestTurretLocation) && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
+		if (nearestTurretLocation != null && myLoc.distanceSquaredTo(nearestTurretLocation) <= 13 && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
 				|| !rc.senseRobotAtLocation(nearestTurretLocation).team.equals(enemyTeam))) {
 			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
 			nearestTurretLocation = null;
 		}
-		if (nearestEnemyLocation != null && rc.canSense(nearestEnemyLocation) && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
+		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 13 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
 			if (nearestEnemyLocation.equals(currentDestination)) currentDestination = null;
 			nearestEnemyLocation = null;
 		}
@@ -476,7 +476,7 @@ public class ViperPlayer {
 			if (nearestDenLocation.equals(currentDestination)) currentDestination = null;
 			nearestDenLocation = null;
 		}
-		if (nearestDistressedArchon != null && rc.canSense(nearestDistressedArchon) && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))
+		if (nearestDistressedArchon != null && myLoc.distanceSquaredTo(nearestDistressedArchon) <= 13 && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))
 				|| distressedArchonTurns > 5) {
 			if (nearestDistressedArchon != null && nearestDistressedArchon.equals(currentDestination)) currentDestination = null;
 			nearestDistressedArchon = null;
