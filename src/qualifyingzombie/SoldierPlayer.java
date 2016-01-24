@@ -444,7 +444,7 @@ public class SoldierPlayer {
 		// if we're too close, move further away
 		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
 			Direction desired = d.opposite();
-			Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
+			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
     		} else if (shouldMine(rc, desired)) {
@@ -456,7 +456,7 @@ public class SoldierPlayer {
     		}
     	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
     		// Desired direction is d.
-    		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
+    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
     		} else if (shouldMine(rc, d)) {
@@ -465,6 +465,17 @@ public class SoldierPlayer {
     			rc.clearRubble(d.rotateLeft());
     		} else if (shouldMine(rc, d.rotateRight())) {
     			rc.clearRubble(d.rotateRight());
+    		} else { // probably meaning you are blocked by allies
+    			if (bestEnemy.type == RobotType.ZOMBIEDEN) {
+    				// It is likely that we wanted to go to that den, but possibly coincidence
+    				// If not a coincidence, bug there.
+    				if (bugging.destination.equals(bestEnemy.location)) {
+    					bugging.turretAvoidMove(turretLocations);
+    				// If coincidence, set new bugging.
+    				} else {
+    					bugging = new Bugging(rc, bestEnemy.location);
+    				}
+    			}
     		}
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
