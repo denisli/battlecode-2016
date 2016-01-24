@@ -231,10 +231,7 @@ public class SoldierPlayer {
 			// if we get a rush signal, we want to rush towards the nearest turret
 			if (m.type == Message.RUSH) {
 				rush = true;
-				// if the location contains an actual location, update the nearest turret with that location
-				if (m.type == Message.RUSH) {
-					nearestTurretLocation = m.location;
-				}
+				nearestTurretLocation = turretLocations.getClosest(myLoc);
 			} else
 			// if we get an archon in distressed signal, needs to take priority
 			if (m.type == Message.ARCHONINDANGER) {
