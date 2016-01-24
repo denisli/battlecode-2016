@@ -625,16 +625,65 @@ public class SoldierPlayer {
 		}
 		
 		if (rc.isCoreReady()) {
-			// If have destination get closer.
-			if (currentDestination != null) {
-				RobotInfo info = null;
-				if (rc.canSenseLocation(currentDestination)) {
-					info = rc.senseRobotAtLocation(currentDestination);
+			// If there is a best enemy, attack him.
+			if (bestEnemy != null) {
+				// Move closer only if blocking someone.
+				if (rc.canAttackLocation(bestEnemy.location)) {
+					if (isBlockingSomeone(rc, bestEnemy.location)) {
+						Direction desired = myLoc.directionTo(bestEnemy.location);
+						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
+						if (dir != Direction.NONE) {
+							rc.move(dir);
+						} else if (shouldMine(rc, desired)) {
+							rc.clearRubble(desired);
+						} else if (shouldMine(rc, desired.rotateLeft())) {
+							rc.clearRubble(desired.rotateLeft());
+						} else if (shouldMine(rc, desired.rotateRight())) {
+							rc.clearRubble(desired.rotateRight());
+						}
+					}
 				}
-				if (info != null) {
-					// If can attack it, just only move closer if blocking someone behind.
-					if (rc.canAttackLocation(info.location)) {
-						if (isBlockingSomeone(rc, currentDestination)) {
+				// If can't attack it, move closer!
+				else {
+					Direction desired = myLoc.directionTo(bestEnemy.location);
+					Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
+					if (dir != Direction.NONE) {
+						rc.move(dir);
+					} else if (shouldMine(rc, desired)) {
+						rc.clearRubble(desired);
+					} else if (shouldMine(rc, desired.rotateLeft())) {
+						rc.clearRubble(dir.rotateLeft());
+					} else if (shouldMine(rc, desired.rotateRight())) {
+						rc.clearRubble(desired.rotateRight());
+					}
+				}
+			}
+			// Otherwise move closer to destination
+			else {
+				if (currentDestination != null) {
+					RobotInfo info = null;
+					if (rc.canSenseLocation(currentDestination)) {
+						info = rc.senseRobotAtLocation(currentDestination);
+					}
+					if (info != null) {
+						// If can attack it, just only move closer if blocking someone behind.
+						if (rc.canAttackLocation(info.location)) {
+							if (isBlockingSomeone(rc, currentDestination)) {
+								Direction desired = myLoc.directionTo(currentDestination);
+								Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
+								if (dir != Direction.NONE) {
+									rc.move(dir);
+								} else if (shouldMine(rc, desired)) {
+									rc.clearRubble(desired);
+								} else if (shouldMine(rc, desired.rotateLeft())) {
+									rc.clearRubble(desired.rotateLeft());
+								} else if (shouldMine(rc, desired.rotateRight())) {
+									rc.clearRubble(desired.rotateRight());
+								}
+							}
+						}
+						// If can't attack it, move closer!
+						else {
 							Direction desired = myLoc.directionTo(currentDestination);
 							Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 							if (dir != Direction.NONE) {
@@ -648,7 +697,7 @@ public class SoldierPlayer {
 							}
 						}
 					}
-					// If can't attack it, move closer!
+					// If not there, just move closer.
 					else {
 						Direction desired = myLoc.directionTo(currentDestination);
 						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
@@ -658,55 +707,6 @@ public class SoldierPlayer {
 							rc.clearRubble(desired);
 						} else if (shouldMine(rc, desired.rotateLeft())) {
 							rc.clearRubble(desired.rotateLeft());
-						} else if (shouldMine(rc, desired.rotateRight())) {
-							rc.clearRubble(desired.rotateRight());
-						}
-					}
-				}
-				// If not there, just move closer.
-				else {
-					Direction desired = myLoc.directionTo(currentDestination);
-					Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
-					if (dir != Direction.NONE) {
-						rc.move(dir);
-					} else if (shouldMine(rc, desired)) {
-						rc.clearRubble(desired);
-					} else if (shouldMine(rc, desired.rotateLeft())) {
-						rc.clearRubble(desired.rotateLeft());
-					} else if (shouldMine(rc, desired.rotateRight())) {
-						rc.clearRubble(desired.rotateRight());
-					}
-				}
-			}
-			// Otherwise move closer to best enemy.
-			else {
-				if (bestEnemy != null) {
-					// Move closer only if blocking someone.
-					if (rc.canAttackLocation(bestEnemy.location)) {
-						if (isBlockingSomeone(rc, bestEnemy.location)) {
-							Direction desired = myLoc.directionTo(bestEnemy.location);
-							Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
-							if (dir != Direction.NONE) {
-								rc.move(dir);
-							} else if (shouldMine(rc, desired)) {
-								rc.clearRubble(desired);
-							} else if (shouldMine(rc, desired.rotateLeft())) {
-								rc.clearRubble(desired.rotateLeft());
-							} else if (shouldMine(rc, desired.rotateRight())) {
-								rc.clearRubble(desired.rotateRight());
-							}
-						}
-					}
-					// If can't attack it, move closer!
-					else {
-						Direction desired = myLoc.directionTo(bestEnemy.location);
-						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
-						if (dir != Direction.NONE) {
-							rc.move(dir);
-						} else if (shouldMine(rc, desired)) {
-							rc.clearRubble(desired);
-						} else if (shouldMine(rc, desired.rotateLeft())) {
-							rc.clearRubble(dir.rotateLeft());
 						} else if (shouldMine(rc, desired.rotateRight())) {
 							rc.clearRubble(desired.rotateRight());
 						}
