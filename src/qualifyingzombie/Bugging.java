@@ -1,6 +1,5 @@
 package qualifyingzombie;
 
-import java.util.Set;
 import java.util.function.Predicate;
 
 import battlecode.common.Clock;
@@ -423,7 +422,7 @@ public class Bugging {
 			MapLocation myLoc = rc.getLocation();
 			MapLocation dirLoc = myLoc.add(dir);
 			double rubble = rc.senseRubble(dirLoc);
-			return rc.canMove(dir) && rubble >= 50 && rubble < 100;
+			return rc.canMove(dir) && rubble < 50;
 		}
 	}
 	
