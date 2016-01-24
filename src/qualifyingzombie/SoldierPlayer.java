@@ -6,8 +6,6 @@ import battlecode.common.*;
 
 public class SoldierPlayer {
 	
-	private static final int FIFTY_TURN_MINE = 3049;
-	
 	// Keeping track of locations.
 	private static LocationSet turretLocations = new LocationSet();
 	private static LocationSet denLocations = new LocationSet();
@@ -407,29 +405,33 @@ public class SoldierPlayer {
 	}
 	
 	private static void archonMicro(RobotController rc, RobotInfo enemyArchon) throws GameActionException {
-		int dist = myLoc.distanceSquaredTo(enemyArchon.location);
-		// When not adjacent to the archon, walk/mine through to him.
-		if (dist > 2) {
-			Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(enemyArchon.location), rc, 2);
-    		if (dir != Direction.NONE) {
-    			rc.move(dir);
-    		} else if (shouldMine(rc, dir)) {
-    			rc.clearRubble(dir);
-    		} else if (shouldMine(rc, dir.rotateLeft())) {
-    			rc.clearRubble(dir.rotateLeft());
-    		} else if (shouldMine(rc, dir.rotateRight())) {
-    			rc.clearRubble(dir.rotateRight());
-    		}
-		}
-		// When adjacent to archon, rotate to the left/right when possible.
-		else {
-			Direction dir = myLoc.directionTo(enemyArchon.location);
-			if (rc.canMove(dir.rotateLeft())) {
-				rc.move(dir.rotateLeft());
-			} else if (rc.canMove(dir.rotateRight())) {
-				rc.move(dir.rotateRight());
+		if (rc.isCoreReady()) {
+			int dist = myLoc.distanceSquaredTo(enemyArchon.location);
+			// When not adjacent to the archon, walk/mine through to him.
+			if (dist > 2) {
+				Direction desired = myLoc.directionTo(enemyArchon.location);
+				Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
+	    		if (dir != Direction.NONE) {
+	    			rc.move(dir);
+	    		} else if (shouldMine(rc, desired)) {
+	    			rc.clearRubble(desired);
+	    		} else if (shouldMine(rc, desired.rotateLeft())) {
+	    			rc.clearRubble(desired.rotateLeft());
+	    		} else if (shouldMine(rc, desired.rotateRight())) {
+	    			rc.clearRubble(desired.rotateRight());
+	    		}
+			}
+			// When adjacent to archon, rotate to the left/right when possible.
+			else {
+				Direction dir = myLoc.directionTo(enemyArchon.location);
+				if (rc.canMove(dir.rotateLeft())) {
+					rc.move(dir.rotateLeft());
+				} else if (rc.canMove(dir.rotateRight())) {
+					rc.move(dir.rotateRight());
+				}
 			}
 		}
+		
 		if (rc.isWeaponReady()) {
 			if (rc.canAttackLocation(enemyArchon.location)) {
 				rc.attackLocation(enemyArchon.location);
@@ -441,26 +443,28 @@ public class SoldierPlayer {
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
 		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
-			Direction dir = Movement.getBestMoveableDirection(d.opposite(), rc, 2);
+			Direction desired = d.opposite();
+			Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
-    		} else if (shouldMine(rc, dir)) {
-    			rc.clearRubble(dir);
-    		} else if (shouldMine(rc, dir.rotateLeft())) {
-    			rc.clearRubble(dir.rotateLeft());
-    		} else if (shouldMine(rc, dir.rotateRight())) {
-    			rc.clearRubble(dir.rotateRight());
+    		} else if (shouldMine(rc, desired)) {
+    			rc.clearRubble(desired);
+    		} else if (shouldMine(rc, desired.rotateLeft())) {
+    			rc.clearRubble(desired.rotateLeft());
+    		} else if (shouldMine(rc, desired.rotateRight())) {
+    			rc.clearRubble(desired.rotateRight());
     		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
+    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
+    		// Desired direction is d.
     		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
-    		} else if (shouldMine(rc, dir)) {
-    			rc.clearRubble(dir);
-    		} else if (shouldMine(rc, dir.rotateLeft())) {
-    			rc.clearRubble(dir.rotateLeft());
-    		} else if (shouldMine(rc, dir.rotateRight())) {
-    			rc.clearRubble(dir.rotateRight());
+    		} else if (shouldMine(rc, d)) {
+    			rc.clearRubble(d);
+    		} else if (shouldMine(rc, d.rotateLeft())) {
+    			rc.clearRubble(d.rotateLeft());
+    		} else if (shouldMine(rc, d.rotateRight())) {
+    			rc.clearRubble(d.rotateRight());
     		}
     	} else { // otherwise we want to try to attack
     		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
@@ -616,25 +620,46 @@ public class SoldierPlayer {
 					// If can attack it, just only move closer if blocking someone behind.
 					if (rc.canAttackLocation(info.location)) {
 						if (isBlockingSomeone(rc, currentDestination)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+							Direction desired = myLoc.directionTo(currentDestination);
+							Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 							if (dir != Direction.NONE) {
 								rc.move(dir);
+							} else if (shouldMine(rc, desired)) {
+								rc.clearRubble(desired);
+							} else if (shouldMine(rc, desired.rotateLeft())) {
+								rc.clearRubble(desired.rotateLeft());
+							} else if (shouldMine(rc, desired.rotateRight())) {
+								rc.clearRubble(desired.rotateRight());
 							}
 						}
 					}
 					// If can't attack it, move closer!
 					else {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+						Direction desired = myLoc.directionTo(currentDestination);
+						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
+						} else if (shouldMine(rc, desired)) {
+							rc.clearRubble(desired);
+						} else if (shouldMine(rc, desired.rotateLeft())) {
+							rc.clearRubble(desired.rotateLeft());
+						} else if (shouldMine(rc, desired.rotateRight())) {
+							rc.clearRubble(desired.rotateRight());
 						}
 					}
 				}
 				// If not there, just move closer.
 				else {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+					Direction desired = myLoc.directionTo(currentDestination);
+					Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 					if (dir != Direction.NONE) {
 						rc.move(dir);
+					} else if (shouldMine(rc, desired)) {
+						rc.clearRubble(desired);
+					} else if (shouldMine(rc, desired.rotateLeft())) {
+						rc.clearRubble(desired.rotateLeft());
+					} else if (shouldMine(rc, desired.rotateRight())) {
+						rc.clearRubble(desired.rotateRight());
 					}
 				}
 			}
@@ -644,17 +669,31 @@ public class SoldierPlayer {
 					// Move closer only if blocking someone.
 					if (rc.canAttackLocation(bestEnemy.location)) {
 						if (isBlockingSomeone(rc, bestEnemy.location)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
+							Direction desired = myLoc.directionTo(bestEnemy.location);
+							Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 							if (dir != Direction.NONE) {
 								rc.move(dir);
+							} else if (shouldMine(rc, desired)) {
+								rc.clearRubble(desired);
+							} else if (shouldMine(rc, desired.rotateLeft())) {
+								rc.clearRubble(desired.rotateLeft());
+							} else if (shouldMine(rc, desired.rotateRight())) {
+								rc.clearRubble(desired.rotateRight());
 							}
 						}
 					}
 					// If can't attack it, move closer!
 					else {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
+						Direction desired = myLoc.directionTo(bestEnemy.location);
+						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
+						} else if (shouldMine(rc, desired)) {
+							rc.clearRubble(desired);
+						} else if (shouldMine(rc, desired.rotateLeft())) {
+							rc.clearRubble(dir.rotateLeft());
+						} else if (shouldMine(rc, desired.rotateRight())) {
+							rc.clearRubble(desired.rotateRight());
 						}
 					}
 				}
@@ -879,7 +918,7 @@ public class SoldierPlayer {
 		MapLocation myLoc = rc.getLocation();
 		MapLocation dirLoc = myLoc.add(dir);
 		double rubble = rc.senseRubble(dirLoc);
-		return rubble >= 50 && rubble <= FIFTY_TURN_MINE;
+		return rubble >= 50;
 	}
 	
 }
