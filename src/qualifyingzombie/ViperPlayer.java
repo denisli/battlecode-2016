@@ -2,7 +2,6 @@ package qualifyingzombie;
 
 import java.util.List;
 
-import sprintplus.Movement;
 import battlecode.common.*;
 
 public class ViperPlayer {
@@ -101,7 +100,7 @@ public class ViperPlayer {
 				else if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
-					micro(rc, nearbyEnemies);
+					micro(rc, nearbyEnemies, nearbyAllies);
 					
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
@@ -315,14 +314,20 @@ public class ViperPlayer {
 		}
 	}
 	
-	public static void micro(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+	public static void micro(RobotController rc, RobotInfo[] hostiles, RobotInfo[] allies) throws GameActionException {
 		// Decide plan of action.
 		int numZombies = 0;
+		int enemyPower = 0;
 		for (RobotInfo hostile : hostiles) {
 			if (hostile.team == Team.ZOMBIE) numZombies++;
 			else if (hostile.zombieInfectedTurns > 0 || hostile.viperInfectedTurns > 0) numZombies++;
+			enemyPower++;
 		}
-		boolean shouldInfect = numZombies < zombieThreshold(zombieLevel(rc.getRoundNum()));
+		int ourPower = 0;
+		for (RobotInfo ally : allies) {
+			if (isDangerous(ally.type)) ourPower++;
+		}
+		boolean shouldInfect = numZombies < zombieThreshold(zombieLevel(rc.getRoundNum())) && ourPower < 2 * enemyPower;
 		
 		// If should infect, then prioritize enemies over zombies.
 		if (shouldInfect) {
@@ -749,8 +754,6 @@ public class ViperPlayer {
 		
 		@Override
 		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
-			if (r1.type == RobotType.ARCHON) return false;
-			if (r0 == null) return true;
 			// Priority:
 			// Attackable folks.
 			// 		Uninfected.
@@ -767,64 +770,74 @@ public class ViperPlayer {
 			//				Highest health
 			// Unattackable folks.
 			//		Closest
-			int dist0 = myLoc.distanceSquaredTo(r0.location);
-			int dist1 = myLoc.distanceSquaredTo(r1.location);
-			if (dist0 <= attackRadius) {
-				if (dist1 <= attackRadius) {
-					if (!isInfected(r0)) {
-						if (!isInfected(r1)) {
-							// Pick by type priority, then health
-							int typePriority0 = typePriority(r0.type);
-							int typePriority1 = typePriority(r1.type);
-							if (typePriority0 < typePriority1) { // Pick uninfected of best type.
-								return true;
-							} else if (typePriority0 == typePriority1) {
-								return r1.health > r0.health; // Pick highest health
-							} else {
+			if (r0 == null) {
+				if (r1.type == RobotType.ARCHON) return false;
+				return true;
+			} 
+			else {
+				int dist0 = myLoc.distanceSquaredTo(r0.location);
+				int dist1 = myLoc.distanceSquaredTo(r1.location);
+				if (dist0 <= attackRadius) {
+					if (dist1 <= attackRadius) {
+						if (!isInfected(r0)) {
+							if (!isInfected(r1)) {
+								// Pick by type priority, then health
+								int typePriority0 = typePriority(r0);
+								int typePriority1 = typePriority(r1);
+								if (typePriority0 < typePriority1) { // Pick uninfected of best type.
+									return true;
+								} else if (typePriority0 == typePriority1) {
+									return r1.health < r0.health; // Pick highest health
+								} else {
+									return false;
+								}
+							} else { // r0 is not infected but r1 is
 								return false;
 							}
-						} else { // r0 is not infected but r1 is
-							return false;
-						}
-					} else {
-						if (!isInfected(r1)) { // r1 is uninfected, but r0 is, so r1 is higher priority
-							return true;
-						} else { // both r0 and r1 infected
-							// Pick by type priority, then health
-							int typePriority0 = typePriority(r0.type);
-							int typePriority1 = typePriority(r1.type);
-							if (typePriority0 < typePriority1) { // Pick uninfected of best type.
+						} else {
+							if (!isInfected(r1)) { // r1 is uninfected, but r0 is, so r1 is higher priority
 								return true;
-							} else if (typePriority0 == typePriority1) {
-								return r1.health > r0.health; // Pick highest health
-							} else {
-								return false;
+							} else { // both r0 and r1 infected
+								// Pick by type priority, then health
+								int typePriority0 = typePriority(r0);
+								int typePriority1 = typePriority(r1);
+								if (typePriority0 < typePriority1) { // Pick uninfected of best type.
+									return true;
+								} else if (typePriority0 == typePriority1) {
+									return r1.health < r0.health; // Pick highest health
+								} else {
+									return false;
+								}
 							}
 						}
+					} else { // r1 not in attack radius, but r0 is, so not higher priority
+						return false;
 					}
-				} else { // r1 not in attack radius, but r0 is, so not higher priority
-					return false;
-				}
-			} else {
-				if (dist1 <= attackRadius) { // r1 in attack radius but r0 is not, so higher priority
-					return true; 
-				} else { // pick the closer one since both not in attack radius
-					return dist1 < dist0;
+				} else {
+					if (dist1 <= attackRadius) { // r1 in attack radius but r0 is not, so higher priority
+						return true; 
+					} else { // pick the closer one since both not in attack radius
+						return dist1 < dist0;
+					}
 				}
 			}
 		}
 		
-		private static int typePriority(RobotType type) {
-			if (countsAsTurret(type)) {
+		private int typePriority(RobotInfo r) {
+			if (countsAsTurret(r.type)) {
 				return 3;
-			} else if (type == RobotType.SCOUT) {
-				return 2;
-			} else if (type == RobotType.SOLDIER) {
+			} else if (r.type == RobotType.SCOUT) {
+				RobotInfo[] noobs = rc.senseNearbyRobots(r.location, 10, enemyTeam);
+				for (RobotInfo noob : noobs) {
+					if (countsAsTurret(noob.type)) return 2;
+				}
+				return -1;
+			} else if (r.type == RobotType.SOLDIER) {
 				return 1;
-			} else if (type == RobotType.GUARD) {
+			} else if (r.type == RobotType.GUARD) {
 				return 0;
 			}
-			return -1; // zombies over here
+			return -2; // zombies over here
 		}
 		
 		private static boolean isInfected(RobotInfo r) {
