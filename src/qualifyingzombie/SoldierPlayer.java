@@ -253,21 +253,25 @@ public class SoldierPlayer {
 	}
 	
 	private static void setCurrentDestination(RobotController rc) {
-		// Distressed archons
-		if (nearestDistressedArchon != null) {
-			currentDestination = nearestDistressedArchon;
-		} else 
-		// Dens
-		if (nearestDenLocation != null) {
-			currentDestination = nearestDenLocation;
-		} else
-		// Enemies
-		if (nearestEnemyLocation != null) {
-			currentDestination = nearestEnemyLocation;
-		} else
-		// Turrets
-		if (nearestTurretLocation != null) {
+		if (rush && nearestTurretLocation != null) {
 			currentDestination = nearestTurretLocation;
+		} else {
+			// Distressed archons
+			if (nearestDistressedArchon != null) {
+				currentDestination = nearestDistressedArchon;
+			} else 
+			// Dens
+			if (nearestDenLocation != null) {
+				currentDestination = nearestDenLocation;
+			} else
+			// Enemies
+			if (nearestEnemyLocation != null) {
+				currentDestination = nearestEnemyLocation;
+			} else
+			// Turrets
+			if (nearestTurretLocation != null) {
+				currentDestination = nearestTurretLocation;
+			}
 		}
 	}
 	
