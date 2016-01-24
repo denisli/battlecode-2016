@@ -623,7 +623,7 @@ public class SoldierPlayer {
 				}
 			}
 		}
-		
+		rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Best enemy: " + bestEnemy);
 		if (rc.isCoreReady()) {
 			// If there is a best enemy, attack him.
 			if (bestEnemy != null) {
