@@ -105,14 +105,9 @@ public class ViperPlayer {
 				// When viper infected, do special micro
 				else if (isViperInfected(rc)) {
 					viperInfectedMicro(rc);
-				} else if (nearbyEnemies.length == 1 && !nearbyEnemies[0].team.equals(Team.ZOMBIE)) { // if there's only one enemy, don't attack and move opposite direction
-					RobotInfo oneEnemy = nearbyEnemies[0];
-					if (rc.isCoreReady() && rc.canMove(oneEnemy.location.directionTo(myLoc))) {
-						rc.move(oneEnemy.location.directionTo(myLoc));
-					}
-				}
+				} 
 				// if there are more than one enemy in range, we should focus on attack and micro
-				else if (nearbyEnemies.length > 1) {
+				else if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
 					// if it's not a soldier and we aren't going to move in range of enemy, kite it
