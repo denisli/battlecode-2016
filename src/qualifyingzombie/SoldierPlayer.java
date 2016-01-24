@@ -469,9 +469,13 @@ public class SoldierPlayer {
     			if (bestEnemy.type == RobotType.ZOMBIEDEN) {
     				// It is likely that we wanted to go to that den, but possibly coincidence
     				// If not a coincidence, bug there.
-    				if (bugging.destination.equals(bestEnemy.location)) {
-    					bugging.turretAvoidMove(turretLocations);
-    				// If coincidence, set new bugging.
+    				if (bugging != null) {
+	    				if (bugging.destination.equals(bestEnemy.location)) {
+	    					bugging.turretAvoidMove(turretLocations);
+	    				// If coincidence, set new bugging.
+	    				} else {
+	    					bugging = new Bugging(rc, bestEnemy.location);
+	    				}
     				} else {
     					bugging = new Bugging(rc, bestEnemy.location);
     				}
