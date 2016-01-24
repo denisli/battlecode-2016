@@ -53,8 +53,8 @@ public class ViperPlayer {
 	private static int distressedArchonTurns = 0;
 	
 	public static void run(RobotController rc) {
-		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
-		attackRadius = RobotType.SOLDIER.attackRadiusSquared;
+		sightRadius = RobotType.VIPER.sensorRadiusSquared;
+		attackRadius = RobotType.VIPER.attackRadiusSquared;
 		myTeam = rc.getTeam();
 		enemyTeam = myTeam.opponent();
 		while (true) {
@@ -392,7 +392,7 @@ public class ViperPlayer {
     		if (dir != Direction.NONE) {
     			rc.move(dir);
     		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
+    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
     		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
