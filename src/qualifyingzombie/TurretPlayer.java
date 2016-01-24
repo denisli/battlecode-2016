@@ -404,12 +404,12 @@ public class TurretPlayer {
 //						}
 					}
 					else {
-						if (nearestDenLocation != null && myLoc.distanceSquaredTo(nearestDenLocation)>5) {
+						if (nearestDenLocation != null && myLoc.distanceSquaredTo(nearestDenLocation)>13) {
 							destination = nearestDenLocation;
 						}
 						else if (denLocs.size() > 0) {
 							nearestDenLocation = denLocs.getClosest(myLoc);
-							if (myLoc.distanceSquaredTo(nearestDenLocation)>5) {
+							if (myLoc.distanceSquaredTo(nearestDenLocation)>13) {
 								destination = nearestDenLocation;
 							}
 						}

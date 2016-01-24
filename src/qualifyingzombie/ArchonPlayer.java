@@ -203,6 +203,9 @@ public class ArchonPlayer {
 						closestDen = null;
 						destination = null;
 						bug = null;
+						if (denLocs.size() > 0) {
+							closestDen = denLocs.getClosest(myLoc);
+						}
 					}
 				}
 				
@@ -382,9 +385,9 @@ public class ArchonPlayer {
 							}
 							//build turrets/soldiers/vipers in 3/15, 1/15
 							else if (rc.hasBuildRequirements(RobotType.TURRET)) {
-								int buildFate = rand.nextInt(20);
+								int buildFate = rand.nextInt(15);
 								RobotType toBuild = null;
-								if (buildFate < 5) {
+								if (buildFate < 3) {
 									toBuild = RobotType.TURRET;
 								} 
 								else if (buildFate == 5) {
