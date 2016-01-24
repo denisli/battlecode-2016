@@ -339,40 +339,45 @@ public class ArchonPlayer {
 					else if (roundNum < 14) {
 						//rc.setIndicatorString(2, "build scout");
 						if (rc.hasBuildRequirements(RobotType.SCOUT)) {
-							buildRandomDir(rc, RobotType.SCOUT, rand);
-							numScoutsBuilt++;
+							if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
+								numScoutsBuilt++;
+							}
 						}
 					}
 					//else build mode
 					else {
 						int freeScouts = numScoutsBuilt-numTurretsBuilt;
 						if (roundNum > 1000) {
-							freeScouts = (freeScouts/2) + 1;
+							freeScouts = (freeScouts/2)+1;
 						}
+						rc.setIndicatorString(0, "freemyscouts"+freeScouts);
 						if (freeScouts < 3 && roundNum > 150) {
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
-								buildRandomDir(rc, RobotType.SCOUT, rand);
-								giveLocs(rc, denLocs);
-								MapLocation minCorner = new MapLocation(minx, miny);
-								MapLocation maxCorner = new MapLocation(maxx, maxy);
-								Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
-								Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
-								numScoutsBuilt++;
+								if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
+									giveLocs(rc, denLocs);
+									MapLocation minCorner = new MapLocation(minx, miny);
+									MapLocation maxCorner = new MapLocation(maxx, maxy);
+									Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
+									Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
+									numScoutsBuilt++;	
+								}
 							}
 						}
 						else if (numVipersBuilt < 1 && numSoldiersBuilt > 12) {
 							if (rc.hasBuildRequirements(RobotType.VIPER)) {
-								buildRandomDir(rc, RobotType.VIPER, rand);
-								giveLocs(rc, denLocs);
-								numVipersBuilt++;
+								if (buildRandomDir(rc, RobotType.VIPER, rand)) {
+									giveLocs(rc, denLocs);
+									numVipersBuilt++;	
+								}
 							}
 						}
 						else {
 							if (numSoldiersBuilt <= 12) {
 								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
-									buildRandomDir(rc, RobotType.SOLDIER, rand);
-									giveLocs(rc, denLocs);
-									numSoldiersBuilt++;
+									if (buildRandomDir(rc, RobotType.SOLDIER, rand)) {
+										giveLocs(rc, denLocs);
+										numSoldiersBuilt++;	
+									}
 								}
 							}
 							//build turrets/soldiers/vipers in 3/15, 1/15
@@ -381,23 +386,27 @@ public class ArchonPlayer {
 								RobotType toBuild = null;
 								if (buildFate < 5) {
 									toBuild = RobotType.TURRET;
-									numTurretsBuilt++;
 								} 
 								else if (buildFate == 5) {
 									toBuild = RobotType.VIPER;
-									numVipersBuilt++;
 								}
 								else {
 									toBuild = RobotType.SOLDIER;
-									numSoldiersBuilt++;
 								}
-								buildRandomDir(rc, toBuild, rand);
-								giveLocs(rc, denLocs);
+								if (buildRandomDir(rc, toBuild, rand)) {
+									if (toBuild == RobotType.TURRET) {
+										numTurretsBuilt++;
+									}
+									if (toBuild == RobotType.VIPER) {
+										numVipersBuilt++;
+									}
+									if (toBuild == RobotType.SOLDIER) {
+										numSoldiersBuilt++;
+									}
+									giveLocs(rc, denLocs);
+								}
 							}
-
 						}
-
-
 					}
 
 					//if core is ready, find nearest parts within sight range
@@ -486,7 +495,7 @@ public class ArchonPlayer {
 							}
 						}
 						else if (destination != null) {
-							rc.setIndicatorString(1, roundNum+"here0"+destination);
+							//rc.setIndicatorString(1, roundNum+"here0"+destination);
 
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
@@ -499,7 +508,7 @@ public class ArchonPlayer {
 					}
 
 				}
-				rc.setIndicatorString(0, roundNum+"numEnemyTurrets"+enemyTurrets.size());
+				//rc.setIndicatorString(0, roundNum+"numEnemyTurrets"+enemyTurrets.size());
 
 				turnsWithoutMessaging++;
 				prevHealth = curHealth;
