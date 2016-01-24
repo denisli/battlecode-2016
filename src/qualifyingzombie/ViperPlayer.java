@@ -102,10 +102,6 @@ public class ViperPlayer {
 						}
 					}
 				}
-				// When viper infected, do special micro
-				else if (isViperInfected(rc)) {
-					viperInfectedMicro(rc);
-				} 
 				// if there are more than one enemy in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
@@ -330,10 +326,6 @@ public class ViperPlayer {
 			}
 		}
 		return false;
-	}
-	
-	private static boolean isViperInfected(RobotController rc) {
-		return rc.getViperInfectedTurns() > 0;
 	}
 	
 	private static void moveSoldier(RobotController rc) throws GameActionException {
@@ -591,7 +583,7 @@ public class ViperPlayer {
 	public static void setRetreatingStatus(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		// Retreating is when your first hit less than a third health or when you were retreating already and is not max health yet.
 		// But you should not be retreating if you are infected. That's not a good idea!
-		healing = (3 * rc.getHealth() < RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.SOLDIER.maxHealth)) && !isViperInfected(rc);
+		healing = (3 * rc.getHealth() < RobotType.VIPER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.VIPER.maxHealth)) && (rc.getHealth() > 2 * rc.getViperInfectedTurns());
 		if (!healing) {
 			if (wasHealing) bugging = null;
 			wasHealing = false;
@@ -613,160 +605,8 @@ public class ViperPlayer {
     	}
 	}
 	
-	private static void viperInfectedMicro(RobotController rc) throws GameActionException {
-		// If there are enemies, consider moving closer to them then to us.
-		RobotInfo closestEnemy = null;
-		int enemyDist = 10000;
-		RobotInfo[] enemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
-		for (RobotInfo enemy : enemies) {
-			int dist = myLoc.distanceSquaredTo(enemy.location);
-			if (dist < enemyDist) {
-				closestEnemy = enemy;
-				enemyDist = dist;
-			}
-		}
-		
-		RobotInfo closestAlly = null;
-		int allyDist = 10000;
-		for (RobotInfo ally : nearbyAllies) {
-			int dist = myLoc.distanceSquaredTo(ally.location);
-			if (dist < allyDist) {
-				closestAlly = ally;
-				allyDist = dist;
-			}
-		}
-		
-		
-		if (closestEnemy != null && closestAlly != null) {
-			if (rc.isCoreReady()) {
-				// When enemy is further than (or same dist) as ally, move closer to enemy.
-				if (enemyDist >= allyDist) {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 1);
-					// Move closer to enemy obviously
-					if (dir != Direction.NONE) {
-						rc.move(dir);
-					}
-					// If you could not move, see if you can attack the enemy and attack him.
-					else {
-						if (rc.isWeaponReady()) {
-							if (rc.canAttackLocation(closestEnemy.location)) {
-								broadcastingAttack(rc, closestEnemy);
-							}
-						}
-					}
-				}
-				// If closer to the enemy, then just attack them if possible. Otherwise move closer.
-				else {
-					if (rc.isCoreReady()) {
-						if (!rc.canAttackLocation(closestEnemy.location)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
-							if (dir != Direction.NONE) {
-								rc.move(dir);
-							}
-						}
-					}
-					if (rc.isWeaponReady()) {
-						if (rc.canAttackLocation(closestEnemy.location)) {
-							broadcastingAttack(rc, closestEnemy);
-						}
-					}
-				}
-			}
-		} else if (closestEnemy != null) {
-			// Move closer if can't hit closest. Otherwise attack closest.
-			if (rc.isCoreReady()) {
-				if (!rc.canAttackLocation(closestEnemy.location)) {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
-					if (dir != Direction.NONE) {
-						rc.move(dir);
-					}
-				}
-			}
-			if (rc.isWeaponReady()) {
-				if (rc.canAttackLocation(closestEnemy.location)) {
-					broadcastingAttack(rc, closestEnemy);
-				}
-			}
-		}
-		// Get the hell away from ally!
-		else if (closestAlly != null) {
-			if (rc.isCoreReady()) {
-				Direction dir = Movement.getBestMoveableDirection(closestAlly.location.directionTo(myLoc), rc, 2);
-				if (dir != Direction.NONE) {
-					rc.move(dir);
-				}
-			}
-		}
-	}
-	
 	private static boolean countsAsTurret(RobotType type) {
 		return (type == RobotType.TURRET || type == RobotType.TTM);
-	}
-	
-	private static class TargetPrioritizer implements Prioritizer<RobotInfo> {
-
-		private boolean insideAttackRange(RobotInfo r) {
-			return myLoc.distanceSquaredTo(r.location) <= attackRadius;
-		}
-		
-		// Returns whether or not r1 is higher priority than r0.
-		@Override
-		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
-			if (r0 == null) return true;
-			if (r1 == null) return false;
-			// Highest priority are those within attack range.
-			// 		Highest priority is lowest health viper infected.
-			// 		Then lowest health zombie infected
-			// 		Then lowest health
-			
-			// Outside attack range, prioritize closest.
-			if (insideAttackRange(r0)) {
-				if (insideAttackRange(r1)) {
-					if (isViperInfected(r0)) {
-						if (isViperInfected(r1)) {
-							return r1.health < r0.health;
-						} else {
-							return false;
-						}
-					} else {
-						if (isViperInfected(r1)) {
-							return true;
-						} else { // both not viper infected
-							if (isInfected(r0)) {
-								if (isInfected(r1)) {
-									return r1.health < r0.health;
-								} else {
-									return false;
-								}
-							} else {
-								if (isInfected(r1)) {
-									return true;
-								} else {
-									return r1.health < r0.health;
-								}
-							}
-						}
-					}
-				} else {
-					return false;
-				}
-			} else {
-				if (insideAttackRange(r1)) {
-					return true;
-				} else { // both outside of attack range
-					return myLoc.distanceSquaredTo(r1.location) < myLoc.distanceSquaredTo(r0.location); 
-				}
-			}
-		}
-		
-		private boolean isInfected(RobotInfo r) {
-			return r.zombieInfectedTurns > 0;
-		}
-		
-		private boolean isViperInfected(RobotInfo r) {
-			return r.viperInfectedTurns > 0;
-		}
-		
 	}
 	
 	private static void broadcastingAttack(RobotController rc, RobotInfo enemy) throws GameActionException {
