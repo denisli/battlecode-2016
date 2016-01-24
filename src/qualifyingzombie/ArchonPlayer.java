@@ -432,6 +432,11 @@ public class ArchonPlayer {
 									if (myLoc.distanceSquaredTo(n.location) < myLoc.distanceSquaredTo(nearestParts)) {
 										nearestParts = n.location;
 									}
+									//prioritize neutral archons it sees
+									if (n.type == RobotType.ARCHON) {
+										nearestParts = n.location;
+										break;
+									}
 								}
 							}
 						}					

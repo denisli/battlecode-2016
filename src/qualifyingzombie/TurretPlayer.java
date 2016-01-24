@@ -386,12 +386,14 @@ public class TurretPlayer {
 						bugging.move();
 					}
 					else {
-						if (nearestDenLocation != null) {
+						if (nearestDenLocation != null && myLoc.distanceSquaredTo(nearestDenLocation)>5) {
 							destination = nearestDenLocation;
 						}
 						else if (denLocs.size() > 0) {
 							nearestDenLocation = denLocs.getClosest(myLoc);
-							destination = nearestDenLocation;
+							if (myLoc.distanceSquaredTo(nearestDenLocation)>5) {
+								destination = nearestDenLocation;
+							}
 						}
 						else if (nearestEnemyLocation != null) {
 							destination = nearestEnemyLocation;
