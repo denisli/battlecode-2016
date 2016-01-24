@@ -609,6 +609,7 @@ public class SoldierPlayer {
 				} else {
 					bestEnemy = hostile;
 				}
+				canAttackBestEnemy = true;
 			} else {
 				// Only update best enemy if you can't attack best enemy
 				if (!canAttackBestEnemy) {
