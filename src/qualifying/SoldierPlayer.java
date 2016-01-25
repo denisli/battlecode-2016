@@ -201,14 +201,21 @@ public class SoldierPlayer {
 		}
 					
 		if (rc.getRoundNum() > 2100) {
+			// Move toward s enemy 
 			if (closestEnemy != null) {
-				// Move closer if can't hit closest. Otherwise attack closest.
 				if (rc.isCoreReady()) {
-					if (!rc.canAttackLocation(closestEnemy.location)) {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
-						if (dir != Direction.NONE) {
-							rc.move(dir);
-						}
+					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
+					if (dir != Direction.NONE) {
+						rc.move(dir);
+					}
+				}
+			}
+			// Move away from allies.
+			if (closestAlly != null) {
+				if (rc.isCoreReady()) {
+					Direction dir = Movement.getBestMoveableDirection(closestAlly.location.directionTo(myLoc), rc, 2);
+					if (dir != Direction.NONE) {
+						rc.move(dir);
 					}
 				}
 			}
