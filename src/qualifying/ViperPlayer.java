@@ -48,6 +48,7 @@ public class ViperPlayer {
 	// Whether or not the soldier is retreating
 	private static boolean healing = false;
 	private static boolean wasHealing = false;
+	private static boolean luring = false;
 	
 	// Used for helping an archon in danger
 	private static int distressedArchonTurns = 0;
@@ -93,7 +94,7 @@ public class ViperPlayer {
 					rushMicro(rc, nearbyEnemies);
 				}
 				// When retreating, retreat
-				else if (healing) {
+				else if (healing && !luring) {
 					if (rc.isCoreReady()) {
 						if (nearestArchonLocation != null) {
 							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 13) {
@@ -109,20 +110,25 @@ public class ViperPlayer {
 						}
 					}
 				}
-				
 				// When viper infected and will die from the infection, do special micro
 				else if (isViperInfected(rc) && (rc.getHealth() < rc.getViperInfectedTurns() * 2 || rc.getRoundNum() > 2100)) {
+					luring = false;
 					viperInfectedMicro(rc);
 				}
 				
 				// if there are more than one enemy in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					// get the best enemy and do stuff based on this
-					RobotInfo bestEnemy = getBestEnemy(rc);
-					// if it's not a soldier and we aren't going to move in range of enemy, kite it
-					micro(rc, nearbyEnemies, bestEnemy);
-					
+					luring = false;
+					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) {
+						luringMicro(rc);
+					} else {
+						// get the best enemy and do stuff based on this
+						RobotInfo bestEnemy = getBestEnemy(rc);
+						// if it's not a soldier and we aren't going to move in range of enemy, kite it
+						micro(rc, nearbyEnemies, bestEnemy);
+					}
 				} else { // otherwise, we should always be moving somewhere
+					luring = false;
 					moveSoldier(rc);
 				}
 				
@@ -130,6 +136,100 @@ public class ViperPlayer {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	// check whether or not you should lure zombies to the enemy
+	private static boolean shouldLure(RobotController rc, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyAllies) {
+		int zombieCount = 0, enemyCount = 0;
+		for (RobotInfo r : nearbyEnemies) {
+			if (r.team.equals(Team.ZOMBIE)) zombieCount++;
+			else if (r.team.equals(enemyTeam)) enemyCount++;
+		}
+		return rc.getRoundNum() > 1500 && nearbyAllies.length < 3 && zombieCount > enemyCount;
+	}
+	
+	private static void luringMicro(RobotController rc) throws GameActionException {
+		luring = true;
+		boolean thereIsNonKitableZombie = false;
+		RobotInfo closestEnemy = null;
+		MapLocation closestOpponent = null;
+		int closestDist = 10000;
+		for (RobotInfo hostile : nearbyEnemies) {
+			if (hostile.type == RobotType.FASTZOMBIE || hostile.type == RobotType.RANGEDZOMBIE) {
+				thereIsNonKitableZombie = true;
+			}
+			int dist = myLoc.distanceSquaredTo(hostile.location);
+			if (dist < closestDist) {
+				closestDist = dist; closestEnemy = hostile;
+			}
+		}
+		
+		// try to get the closest place to lure zombie
+		for (MapLocation loc : turretLocations) {
+			if (closestOpponent == null) closestOpponent = loc;
+			else if (myLoc.distanceSquaredTo(loc) < myLoc.distanceSquaredTo(closestOpponent)) closestOpponent = null;
+		}
+		if (closestOpponent == null) closestOpponent = nearestEnemyLocation;
+		Direction d = null;
+		if (closestOpponent != null) d = myLoc.directionTo(closestOpponent);
+		else d = myLoc.directionTo(rc.getInitialArchonLocations(enemyTeam)[0]);
+		
+		// if we are moving directly into the zombie, try to move to the side
+		Direction temp = myLoc.directionTo(closestEnemy.location);
+		if (d.equals(temp)) d = d.rotateLeft().rotateLeft();
+		else if (d.equals(temp.rotateLeft())) d = d.rotateLeft();
+		else if (d.equals(temp.rotateRight())) d = d.rotateRight();
+				
+		// if we're too close, move further away towards the closest turret location or the closest enemy
+		if (myLoc.distanceSquaredTo(closestEnemy.location) < 10 && rc.isCoreReady()) {
+			Direction desired = d;
+			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
+    		if (dir != Direction.NONE) {
+    			rc.move(dir);
+    		} else if (shouldMine(rc, desired)) {
+    			rc.clearRubble(desired);
+    		} else if (shouldMine(rc, desired.rotateLeft())) {
+    			rc.clearRubble(desired.rotateLeft());
+    		} else if (shouldMine(rc, desired.rotateRight())) {
+    			rc.clearRubble(desired.rotateRight());
+    		}
+    	}
+		if (!thereIsNonKitableZombie) {
+			// Only move in closer if there is no non-kitable zombie
+			if (myLoc.distanceSquaredTo(closestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
+	    		// Desired direction is d.
+	    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
+	    		if (dir != Direction.NONE) {
+	    			rc.move(dir);
+	    		} else if (shouldMine(rc, d)) {
+	    			rc.clearRubble(d);
+	    		} else if (shouldMine(rc, d.rotateLeft())) {
+	    			rc.clearRubble(d.rotateLeft());
+	    		} else if (shouldMine(rc, d.rotateRight())) {
+	    			rc.clearRubble(d.rotateRight());
+	    		} else { // probably meaning you are blocked by allies
+	    			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+	    				// It is likely that we wanted to go to that den, but possibly coincidence
+	    				// If not a coincidence, bug there.
+	    				if (bugging != null) {
+		    				if (bugging.destination.equals(closestEnemy.location)) {
+		    					bugging.turretAvoidMove(turretLocations);
+		    				// If coincidence, set new bugging.
+		    				} else {
+		    					bugging = new Bugging(rc, closestOpponent);
+		    					bugging.turretAvoidMove(turretLocations);
+		    				}
+	    				} else {
+	    					bugging = new Bugging(rc, closestOpponent);
+	    					bugging.turretAvoidMove(turretLocations);
+	    				}
+	    			}
+	    		}
+			}
+		}
+		if (rc.isWeaponReady() && rc.canAttackLocation(closestEnemy.location)) {
+			broadcastingAttack(rc, closestEnemy);
 		}
 	}
 	
@@ -737,6 +837,14 @@ public class ViperPlayer {
 		} else {
 			rc.attackLocation(enemy.location);
 		}
+	}
+	
+	// Assumes that you cannot move in that location
+	private static boolean shouldMine(RobotController rc, Direction dir) {
+		MapLocation myLoc = rc.getLocation();
+		MapLocation dirLoc = myLoc.add(dir);
+		double rubble = rc.senseRubble(dirLoc);
+		return rubble >= 50;
 	}
 	
 }

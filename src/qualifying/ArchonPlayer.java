@@ -37,7 +37,7 @@ public class ArchonPlayer {
 		MapLocation closestTurret = null;
 		//add this?
 		MapLocation closestNeutralArchon = null;
-		//once enemyTurtle is set to non null, that means go find a safe spot becuase rush about to happen
+		//once enemyTurtle is set to non null, that means go find a safe spot because rush about to happen
 		MapLocation enemyTurtle = null;
 		//location furthest from turtle
 		MapLocation safeSpot = null;
@@ -46,6 +46,7 @@ public class ArchonPlayer {
 		int miny = Message.DEFAULT_LOW;
 		int maxx = Message.DEFAULT_HIGH;
 		int maxy = Message.DEFAULT_HIGH;
+		boolean detectedTurtle = false;
 
 		while (true) {
 			//things that change every turn
@@ -55,9 +56,13 @@ public class ArchonPlayer {
 				RobotInfo[] hostileSightRangeArray = rc.senseHostileRobots(myLoc, sightRadius);
 				//hostileSightRange also adds stuff from scout pairing
 				ArrayList<RobotInfo> hostileInSight = new ArrayList<>();
+				boolean enemyScoutNearby = false;
 				for (RobotInfo h : hostileSightRangeArray) {
-					if (h.type != RobotType.ARCHON && h.type != RobotType.ZOMBIEDEN) {
+					if (h.type != RobotType.ARCHON && h.type != RobotType.ZOMBIEDEN && h.type!=RobotType.SCOUT) {
 						hostileInSight.add(h);
+					}
+					if (h.type == RobotType.SCOUT) {
+						enemyScoutNearby = true;
 					}
 				}
 				ArrayList<MapLocation> nearbyEnemyTurrets = new ArrayList<>();
@@ -74,6 +79,13 @@ public class ArchonPlayer {
 				rc.setIndicatorString(0,Arrays.toString(z.getRounds())+"");
 				rc.setIndicatorString(1,z0[0].getType()+""+z0[0].getCount()+"");*/
 
+				if (!detectedTurtle) {
+					detectedTurtle = detectTurtle(rc.getInitialArchonLocations(enemyTeam), enemyTurrets);
+				}
+				if (detectedTurtle && (roundNum%100==0) && roundNum > 300 && denLocs.size()==0 && minx>Message.DEFAULT_LOW && miny>Message.DEFAULT_LOW && maxx<Message.DEFAULT_HIGH && maxy<Message.DEFAULT_HIGH) {
+					Message.sendMessageGivenRange(rc, myLoc, Message.TURTLEDETECTED, (maxx-minx)*(maxx-minx) + (maxy-miny)*(maxy-miny));
+				}
+				
 				//process messages- for each unpaired scout message, increment unpairedScouts
 				List<Message> messages = Message.readMessageSignals(rc);
 				for (Message m : messages) {
@@ -169,6 +181,9 @@ public class ArchonPlayer {
 							maxy = boundLoc.y;
 						}
 					}
+					else if (m.type==Message.TURTLEDETECTED) {
+						detectedTurtle = true;
+					}
 				}
 
 				//check if it is close to the den, enemy, or turret; if archon doesnt see it, remove it from storage
@@ -252,14 +267,7 @@ public class ArchonPlayer {
 					else {
 						consecutiveSafeTurns = 0;
 					}
-
-					//					if (consecutiveSafeTurns > 10) {
-					//						if (nearestParts == startLoc) {
-					//							nearestParts = null;
-					//							bug = null;	
-					//						}
-					//					}
-
+					
 					//if sees enemies nearby, run away
 					if (hostileInSight.size()+nearbyEnemyTurrets.size() > 0) {
 						Direction safestDir = moveSafestDir(rc, hostileInSight, nearbyEnemyTurrets, enemyTurrets);
@@ -287,7 +295,6 @@ public class ArchonPlayer {
 						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
 					}
-					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
 						RobotInfo toActivate = adjNeutralRobots[0];
@@ -349,7 +356,16 @@ public class ArchonPlayer {
 							if (roundNum > 1000) {
 								freeScouts = (freeScouts/2)+1;
 							}
-							if (freeScouts < 3 && roundNum > 150) {
+							
+							if (enemyScoutNearby) {
+								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
+									if (buildRandomDir(rc, RobotType.SOLDIER, rand)) {
+										giveLocs(rc, denLocs);
+										numSoldiersBuilt++;	
+									}
+								}
+							}
+							else if (freeScouts < 3 && roundNum > 150) {
 								if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 									if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
 										giveLocs(rc, denLocs);
@@ -382,7 +398,7 @@ public class ArchonPlayer {
 								else if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									int buildFate = rand.nextInt(15);
 									RobotType toBuild = null;
-									if (buildFate < 3) {
+									if (buildFate < 4) {
 										toBuild = RobotType.TURRET;
 									} 
 									else if (buildFate == 5) {
@@ -686,6 +702,37 @@ public class ArchonPlayer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	//detect turtle
+	public static boolean detectTurtle(MapLocation[] initialEnemyLocations, LocationSet turretLocations) {
+		// Check the enemy initial archon locations and add up number of turrets nearby. If >= 7, then it's turtle.
+		int numNearbyTurrets = 0;
+		for (MapLocation enemyLoc : initialEnemyLocations) {
+			for (MapLocation enemyTurret : turretLocations) {
+				int dist = enemyTurret.distanceSquaredTo(enemyLoc);
+				if (dist <= 53) numNearbyTurrets++;
+				if (numNearbyTurrets >= 7) {
+					return true;
+				}
+			}
+		}
+		
+		// Check the first 6 turrets. If they are all close to each other, then 
+		int centerX = 0;
+		int centerY = 0;
+		int i = 0;
+		for (MapLocation enemyTurret : turretLocations) {
+			centerX += enemyTurret.x; centerY += enemyTurret.y; 
+			if (++i >= 6) break;
+		}
+		centerX = centerX / 6; centerY = centerY / 6;
+		MapLocation center = new MapLocation(centerX, centerY);
+		for (MapLocation enemyTurret : turretLocations) {
+			int dist = center.distanceSquaredTo(enemyTurret);
+			if (dist > 53) return false;
+		}
+		return true; // all 6 turrets are nearby
 	}
 
 	public static boolean buildRandomDir(RobotController rc, RobotType type, Random rand) {
