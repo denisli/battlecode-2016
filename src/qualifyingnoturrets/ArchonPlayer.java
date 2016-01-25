@@ -278,7 +278,7 @@ public class ArchonPlayer {
 						if (safestDir != Direction.NONE) {
 							rc.move(safestDir);
 							if (hostileInSight.size() > 0) {
-								Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, 199);
+								Message.sendMessageGivenRange(rc, hostileInSight.get(0).location, Message.ARCHONINDANGER, 199);
 							}
 						}
 						else {
@@ -287,9 +287,9 @@ public class ArchonPlayer {
 									rc.activate(adjNeutralRobots[0].location);
 								}
 								if (consecutiveSafeTurns == 0) {
-									Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
+									int fullmaprange = (maxx-minx)*(maxx-minx) + (maxy-miny)*(maxy-miny)
+									Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Math.min(fullmaprange, Message.FULL_MAP_RANGE));
 								}
-
 							}
 						}
 					}
