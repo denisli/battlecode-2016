@@ -25,6 +25,7 @@ public class TurretPlayer {
 	public static LocationSet denLocs = new LocationSet();
 	public static LocationSet enemyTurrets = new LocationSet();
 	public static MapLocation pairedAttackLoc = null;
+	public static MapLocation lastPairedAttackLoc = null;
 	public static boolean rush = false;
 	public static int lastTurnBroadcastPairedAttack = 0;
 
@@ -86,6 +87,7 @@ public class TurretPlayer {
 					if (myLoc.distanceSquaredTo(m.location) <= 40 && myLoc.distanceSquaredTo(m.location) > 5) {
 						lastTurnBroadcastPairedAttack = roundNum;
 						pairedAttackLoc = m.location;
+						lastPairedAttackLoc = m.location;
 					}
 				}
 				//useless as of now
@@ -207,7 +209,6 @@ public class TurretPlayer {
 				}
 			}
 
-
 			if (enemiesWithinRange.length==0 && !attacked) {
 				turnsNoEnemy++;
 			}
@@ -219,7 +220,11 @@ public class TurretPlayer {
 			if (rc.isCoreReady() && enemiesWithinRange.length > 0 && enemiesTooClose && pairedAttackLoc == null) {
 				rc.pack();
 			}
+			if (rc.isWeaponReady() && lastPairedAttackLoc!=null && enemyTurrets.contains(lastPairedAttackLoc)) {
+				rc.attackLocation(lastPairedAttackLoc);
+			}
 
+			
 			rc.setIndicatorString(1, pairedAttackLoc+" ");
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
