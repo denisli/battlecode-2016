@@ -29,6 +29,7 @@ public class Message {
 	public static final int ZOMBIERUSH = 13;
 	public static final int MIN_CORNER = 14;
 	public static final int MAX_CORNER = 15;
+	public static final int TURTLEDETECTED=16;
 	
 	private static final int AYY = 2000;
 	
@@ -43,6 +44,8 @@ public class Message {
 	private static int lowerY = DEFAULT_LOW;
 	private static int upperY = DEFAULT_HIGH;
 	private static int maxHeight = DEFAULT_MAX;
+	
+	private static LocationSet knownCorners = new LocationSet();
 	
 	public static int FULL_MAP_RANGE = DEFAULT_MAX * DEFAULT_MAX * 2;
 	
@@ -127,6 +130,12 @@ public class Message {
 			maxWidth = upperX - lowerX;
 			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
 		}
+		if (lowerY != DEFAULT_LOW) {
+			knownCorners.add(new MapLocation(lowerX, lowerY));
+		}
+		if (upperY != DEFAULT_HIGH) {
+			knownCorners.add(new MapLocation(lowerX, upperY));
+		}
 	}
 	
 	public static void setUpperX(int x) {
@@ -134,6 +143,12 @@ public class Message {
 		if (lowerX != DEFAULT_LOW) {
 			maxWidth = upperX - lowerX;
 			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
+		}
+		if (lowerY != DEFAULT_LOW) {
+			knownCorners.add(new MapLocation(upperX, lowerY));
+		}
+		if (upperY != DEFAULT_HIGH) {
+			knownCorners.add(new MapLocation(upperX, upperY));
 		}
 	}
 	
@@ -143,6 +158,12 @@ public class Message {
 			maxHeight = upperY - lowerY;
 			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
 		}
+		if (lowerX != DEFAULT_LOW) {
+			knownCorners.add(new MapLocation(lowerX, lowerY));
+		}
+		if (upperX != DEFAULT_HIGH) {
+			knownCorners.add(new MapLocation(upperX, lowerY));
+		}
 	}
 	
 	public static void setUpperY(int y) {
@@ -150,6 +171,12 @@ public class Message {
 		if (lowerY != DEFAULT_LOW) {
 			maxHeight = upperY - lowerY;
 			FULL_MAP_RANGE = maxWidth * maxWidth + maxHeight * maxHeight;
+		}
+		if (lowerX != DEFAULT_LOW) {
+			knownCorners.add(new MapLocation(lowerX, upperY));
+		}
+		if (upperX != DEFAULT_HIGH) {
+			knownCorners.add(new MapLocation(upperX, upperY));
 		}
 	}
 	
@@ -167,6 +194,48 @@ public class Message {
 	
 	public static int getUpperY() {
 		return upperY;
+	}
+	
+	public static boolean detectTurtle(MapLocation[] initialEnemyLocations, LocationSet turretLocations) {
+		// Check the enemy initial archon locations and add up number of turrets nearby. If >= 7, then it's turtle.
+		int numNearbyTurrets = 0;
+		for (MapLocation enemyLoc : initialEnemyLocations) {
+			for (MapLocation enemyTurret : turretLocations) {
+				int dist = enemyTurret.distanceSquaredTo(enemyLoc);
+				if (dist <= 53) numNearbyTurrets++;
+				if (numNearbyTurrets >= 7) {
+					return true;
+				}
+			}
+		}
+		
+		// Check the corners and see if there are 3 enemy turrets total.
+		int numCornerTurrets = 0;
+		for (MapLocation corner : knownCorners) {
+			for (MapLocation enemyTurret : turretLocations) {
+				int dist = enemyTurret.distanceSquaredTo(corner);
+				if (dist <= 53) numCornerTurrets++;
+				if (numCornerTurrets >= 3) {
+					return true;
+				}
+			}
+		}
+		
+		// Check the first 6 turrets. If they are all close to each other, then 
+		int centerX = 0;
+		int centerY = 0;
+		int i = 0;
+		for (MapLocation enemyTurret : turretLocations) {
+			centerX += enemyTurret.x; centerY += enemyTurret.y; 
+			if (++i >= 6) break;
+		}
+		centerX = centerX / 6; centerY = centerY / 6;
+		MapLocation center = new MapLocation(centerX, centerY);
+		for (MapLocation enemyTurret : turretLocations) {
+			int dist = center.distanceSquaredTo(enemyTurret);
+			if (dist > 53) return false;
+		}
+		return true; // all 6 turrets are nearby
 	}
 	
 }

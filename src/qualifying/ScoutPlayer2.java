@@ -13,6 +13,7 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public class ScoutPlayer2 {
+	private static MapLocation[] initialEnemyLocations = null;
 	private static int sightRange = RobotType.SCOUT.sensorRadiusSquared;
 	private static Team team;
 	private static MapLocation myLoc;
@@ -32,6 +33,8 @@ public class ScoutPlayer2 {
 	private static MapLocation previouslyBroadcastedPartLoc;
 	private static int turnsSinceCollectibleBroadcast = 0;
 	
+	private static boolean turtleDetected = false;
+	
 	private static MapLocation circledEnemyTurret;
 	private static int turnsCirclingEnemyTurret;
 	private static int maxTurnsCirclingEnemyTurret = 50;
@@ -44,6 +47,7 @@ public class ScoutPlayer2 {
 	
 	public static void run(RobotController rc) {
 		team = rc.getTeam();
+		initialEnemyLocations = rc.getInitialArchonLocations(team.opponent());
 		while (true) {
 			try {
 				turnsSinceCollectibleBroadcast++;
@@ -491,19 +495,33 @@ public class ScoutPlayer2 {
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		if (rc.getRoundNum() > 300) {
-			if (denLocations.size() == 0) {
-				turnsSinceRushSignal++;
-				if (turnsSinceRushSignal > 200) {
-					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
-					//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
-					if (closestTurret != null) {
-						rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
-						Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
-						turnsSinceRushSignal = 0;
-					}
-				}
+			
+			// Detect whether or not there is a turtle.
+			boolean enemyIsTurtling = false;
+			if (turtleDetected) {
+				enemyIsTurtling = true;
 			} else {
-				turnsSinceRushSignal = 0;
+				turtleDetected = Message.detectTurtle(initialEnemyLocations, enemyTurretLocations);
+				enemyIsTurtling = turtleDetected;
+			}
+			
+			// Decide whether or not to broadcast rush.
+			if (enemyIsTurtling) {
+				boolean forceRush = rc.getRoundNum() > 2850;
+				if (forceRush || denLocations.size() == 0) {
+					turnsSinceRushSignal++;
+					if ((forceRush && turnsSinceRushSignal > 10) || turnsSinceRushSignal > 250) {
+						MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
+						//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
+						if (closestTurret != null) {
+							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
+							Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
+							turnsSinceRushSignal = 0;
+						}
+					}
+				} else {
+					turnsSinceRushSignal = 0;
+				}
 			}
 		}
 	}
