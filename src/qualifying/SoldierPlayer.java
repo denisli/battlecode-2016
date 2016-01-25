@@ -40,7 +40,6 @@ public class SoldierPlayer {
 	// Statistics for determining how to micro
 	private static int numEnemySoldiers = 0;
 	private static double totalEnemySoldierHealth = 0;
-	private static boolean useSoldierMicro = false;
 	
 	// Properties for how to fight against turrets
 	private static boolean rush = false;
@@ -61,7 +60,6 @@ public class SoldierPlayer {
 			try {
 				numEnemySoldiers = 0;
 				totalEnemySoldierHealth = 0;
-				useSoldierMicro = false;
 				myLoc = rc.getLocation();
 				nearbyAllies = rc.senseNearbyRobots(sightRadius, myTeam);
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
@@ -161,7 +159,7 @@ public class SoldierPlayer {
 				
 				// if there are enemies in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					micro(rc, nearbyEnemies);
+					micro(rc);
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
 				}
@@ -413,7 +411,6 @@ public class SoldierPlayer {
 		RobotInfo bestEnemy = nearbyEnemies[0];
 		for (RobotInfo r : nearbyEnemies) {
 			if (r.type == RobotType.SOLDIER) {
-				useSoldierMicro = true;
 				numEnemySoldiers++;
 				if (r.health > RobotType.SOLDIER.attackPower) {
 					totalEnemySoldierHealth += r.health;
@@ -487,19 +484,30 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void micro(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+	public static void micro(RobotController rc) throws GameActionException {
 		// Single archon micro (consider what happens when there is more than 1 later)
-		if (hostiles.length == 1 && hostiles[0].type == RobotType.ARCHON) {
-			RobotInfo enemyArchon = hostiles[0];
+		if (nearbyEnemies.length == 1 && nearbyEnemies[0].type == RobotType.ARCHON) {
+			RobotInfo enemyArchon = nearbyEnemies[0];
 			archonMicro(rc, enemyArchon);
 		}
 		// Any other micro...
 		else {
-			RobotInfo bestEnemy = getBestEnemy(rc);
-			if (useSoldierMicro) {
-				soldierMicro(rc, hostiles, bestEnemy);
-			} else {
-				nonSoldierMicro(rc, bestEnemy);
+			RobotInfo closestZombie = null;
+			int closestDist = 10000;
+			for (RobotInfo hostile : nearbyEnemies) {
+				if (hostile.team == Team.ZOMBIE) {
+					int dist = myLoc.distanceSquaredTo(hostile.location);
+					if (dist < closestDist) {
+						closestDist = dist; closestZombie = hostile;
+					}
+				}
+			}
+			if (closestZombie != null) {
+				zombieMicro(rc);
+			}
+			else {
+				RobotInfo bestEnemy = getBestEnemy(rc);
+				enemyMicro(rc, bestEnemy);
 			}
 		}
 	}
@@ -539,10 +547,23 @@ public class SoldierPlayer {
 		}
 	}
 	
-	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
-		Direction d = myLoc.directionTo(bestEnemy.location);
+	public static void zombieMicro(RobotController rc) throws GameActionException {
+		boolean thereIsNonKitableZombie = false;
+		RobotInfo closestEnemy = null;
+		int closestDist = 10000;
+		for (RobotInfo hostile : nearbyEnemies) {
+			if (hostile.type == RobotType.FASTZOMBIE || hostile.type == RobotType.RANGEDZOMBIE) {
+				thereIsNonKitableZombie = true;
+			}
+			int dist = myLoc.distanceSquaredTo(hostile.location);
+			if (dist < closestDist) {
+				closestDist = dist; closestEnemy = hostile;
+			}
+		}
+		
+		Direction d = myLoc.directionTo(closestEnemy.location);
 		// if we're too close, move further away
-		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
+		if (myLoc.distanceSquaredTo(closestEnemy.location) < 5 && rc.isCoreReady()) {
 			Direction desired = d.opposite();
 			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
     		if (dir != Direction.NONE) {
@@ -554,43 +575,46 @@ public class SoldierPlayer {
     		} else if (shouldMine(rc, desired.rotateRight())) {
     			rc.clearRubble(desired.rotateRight());
     		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
-    		// Desired direction is d.
-    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
-    		if (dir != Direction.NONE) {
-    			rc.move(dir);
-    		} else if (shouldMine(rc, d)) {
-    			rc.clearRubble(d);
-    		} else if (shouldMine(rc, d.rotateLeft())) {
-    			rc.clearRubble(d.rotateLeft());
-    		} else if (shouldMine(rc, d.rotateRight())) {
-    			rc.clearRubble(d.rotateRight());
-    		} else { // probably meaning you are blocked by allies
-    			if (bestEnemy.type == RobotType.ZOMBIEDEN) {
-    				// It is likely that we wanted to go to that den, but possibly coincidence
-    				// If not a coincidence, bug there.
-    				if (bugging != null) {
-	    				if (bugging.destination.equals(bestEnemy.location)) {
-	    					bugging.turretAvoidMove(turretLocations);
-	    				// If coincidence, set new bugging.
+    	}
+		if (!thereIsNonKitableZombie) {
+			// Only move in closer if there is no non-kitable zombie
+			if (myLoc.distanceSquaredTo(closestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
+	    		// Desired direction is d.
+	    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
+	    		if (dir != Direction.NONE) {
+	    			rc.move(dir);
+	    		} else if (shouldMine(rc, d)) {
+	    			rc.clearRubble(d);
+	    		} else if (shouldMine(rc, d.rotateLeft())) {
+	    			rc.clearRubble(d.rotateLeft());
+	    		} else if (shouldMine(rc, d.rotateRight())) {
+	    			rc.clearRubble(d.rotateRight());
+	    		} else { // probably meaning you are blocked by allies
+	    			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+	    				// It is likely that we wanted to go to that den, but possibly coincidence
+	    				// If not a coincidence, bug there.
+	    				if (bugging != null) {
+		    				if (bugging.destination.equals(closestEnemy.location)) {
+		    					bugging.turretAvoidMove(turretLocations);
+		    				// If coincidence, set new bugging.
+		    				} else {
+		    					bugging = new Bugging(rc, closestEnemy.location);
+		    					bugging.turretAvoidMove(turretLocations);
+		    				}
 	    				} else {
-	    					bugging = new Bugging(rc, bestEnemy.location);
+	    					bugging = new Bugging(rc, closestEnemy.location);
 	    					bugging.turretAvoidMove(turretLocations);
 	    				}
-    				} else {
-    					bugging = new Bugging(rc, bestEnemy.location);
-    					bugging.turretAvoidMove(turretLocations);
-    				}
-    			}
-    		}
-    	} else { // otherwise we want to try to attack
-    		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
-    			broadcastingAttack(rc, bestEnemy);
-    		}
-    	}
+	    			}
+	    		}
+			}
+		}
+		if (rc.isWeaponReady() && rc.canAttackLocation(closestEnemy.location)) {
+			broadcastingAttack(rc, closestEnemy);
+		}
 	}
 	
-	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
+	public static void enemyMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		// Prioritize movement
 		Direction d = myLoc.directionTo(bestEnemy.location);
     	if (rc.isCoreReady()) {
