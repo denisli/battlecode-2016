@@ -1,4 +1,4 @@
-package qualifyingnoturrets;
+package qualifying;
 
 import battlecode.common.*;
 import java.util.ArrayList;
