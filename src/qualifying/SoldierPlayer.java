@@ -159,7 +159,8 @@ public class SoldierPlayer {
 				
 				// if there are enemies in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					micro(rc);
+					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) luringMicro(rc);
+					else micro(rc);
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
 				}
@@ -168,6 +169,99 @@ public class SoldierPlayer {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+		}
+	}
+	
+	// check whether or not you should lure zombies to the enemy
+	private static boolean shouldLure(RobotController rc, RobotInfo[] nearbyEnemies, RobotInfo[] nearbyAllies) {
+		int zombieCount = 0, enemyCount = 0;
+		for (RobotInfo r : nearbyEnemies) {
+			if (r.team.equals(Team.ZOMBIE)) zombieCount++;
+			else if (r.team.equals(enemyTeam)) enemyCount++;
+		}
+		return rc.getRoundNum() > 1500 && nearbyAllies.length < 3 && zombieCount > enemyCount;
+	}
+	
+	private static void luringMicro(RobotController rc) throws GameActionException {
+		boolean thereIsNonKitableZombie = false;
+		RobotInfo closestEnemy = null;
+		MapLocation closestOpponent = null;
+		int closestDist = 10000;
+		for (RobotInfo hostile : nearbyEnemies) {
+			if (hostile.type == RobotType.FASTZOMBIE || hostile.type == RobotType.RANGEDZOMBIE) {
+				thereIsNonKitableZombie = true;
+			}
+			int dist = myLoc.distanceSquaredTo(hostile.location);
+			if (dist < closestDist) {
+				closestDist = dist; closestEnemy = hostile;
+			}
+		}
+		
+		// try to get the closest place to lure zombie
+		for (MapLocation loc : turretLocations) {
+			if (closestOpponent == null) closestOpponent = loc;
+			else if (myLoc.distanceSquaredTo(loc) < myLoc.distanceSquaredTo(closestOpponent)) closestOpponent = null;
+		}
+		if (closestOpponent == null) closestOpponent = nearestEnemyLocation;
+		Direction d = null;
+		if (closestOpponent != null) d = myLoc.directionTo(closestOpponent);
+		else d = myLoc.directionTo(rc.getInitialArchonLocations(enemyTeam)[0]);
+		
+		// if we are moving directly into the zombie, try to move to the side
+		Direction temp = myLoc.directionTo(closestEnemy.location);
+		if (d.equals(temp)) d = d.rotateLeft().rotateLeft();
+		else if (d.equals(temp.rotateLeft())) d = d.rotateLeft();
+		else if (d.equals(temp.rotateRight())) d = d.rotateRight();
+		
+		// if we're too close, move further away towards the closest turret location or the closest enemy
+		if (myLoc.distanceSquaredTo(closestEnemy.location) < 10 && rc.isCoreReady()) {
+			Direction desired = d;
+			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
+    		if (dir != Direction.NONE) {
+    			rc.move(dir);
+    		} else if (shouldMine(rc, desired)) {
+    			rc.clearRubble(desired);
+    		} else if (shouldMine(rc, desired.rotateLeft())) {
+    			rc.clearRubble(desired.rotateLeft());
+    		} else if (shouldMine(rc, desired.rotateRight())) {
+    			rc.clearRubble(desired.rotateRight());
+    		}
+    	}
+		if (!thereIsNonKitableZombie) {
+			// Only move in closer if there is no non-kitable zombie
+			if (myLoc.distanceSquaredTo(closestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
+	    		// Desired direction is d.
+	    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
+	    		if (dir != Direction.NONE) {
+	    			rc.move(dir);
+	    		} else if (shouldMine(rc, d)) {
+	    			rc.clearRubble(d);
+	    		} else if (shouldMine(rc, d.rotateLeft())) {
+	    			rc.clearRubble(d.rotateLeft());
+	    		} else if (shouldMine(rc, d.rotateRight())) {
+	    			rc.clearRubble(d.rotateRight());
+	    		} else { // probably meaning you are blocked by allies
+	    			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+	    				// It is likely that we wanted to go to that den, but possibly coincidence
+	    				// If not a coincidence, bug there.
+	    				if (bugging != null) {
+		    				if (bugging.destination.equals(closestEnemy.location)) {
+		    					bugging.turretAvoidMove(turretLocations);
+		    				// If coincidence, set new bugging.
+		    				} else {
+		    					bugging = new Bugging(rc, closestOpponent);
+		    					bugging.turretAvoidMove(turretLocations);
+		    				}
+	    				} else {
+	    					bugging = new Bugging(rc, closestOpponent);
+	    					bugging.turretAvoidMove(turretLocations);
+	    				}
+	    			}
+	    		}
+			}
+		}
+		if (rc.isWeaponReady() && rc.canAttackLocation(closestEnemy.location)) {
+			broadcastingAttack(rc, closestEnemy);
 		}
 	}
 	
