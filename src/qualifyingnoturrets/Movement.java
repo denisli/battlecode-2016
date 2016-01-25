@@ -1,7 +1,5 @@
 package qualifyingnoturrets;
 
-import java.util.Set;
-
 import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
@@ -11,6 +9,10 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public class Movement {
+	
+	public static int getFanDist(Direction dir1, Direction dir2) {
+		return Math.abs(getDirTurnsAwayFrom4(dir1) - getDirTurnsAwayFrom4(dir2));
+	}
 
 	public static Direction getBestMoveableDirection(Direction dir, RobotController rc, int fan) {
 		int ordinal = dir.ordinal();
@@ -180,6 +182,11 @@ public class Movement {
 	
 	private static int mod8(int num) {
 		return ((num % 8) + 8) % 8;
+	}
+	
+	// Number of turns away from the 4 dir.
+	private static int getDirTurnsAwayFrom4(Direction dir) {
+		return Math.abs(dir.ordinal() - 4);
 	}
 
 }

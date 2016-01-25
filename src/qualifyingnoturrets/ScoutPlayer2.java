@@ -494,7 +494,7 @@ public class ScoutPlayer2 {
 	
 	private static void moveScout(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) throws GameActionException {
 		// Correct main direction according to ally scouts.
-		correctMainDirection(allies);
+		correctMainDirection(rc, allies, hostiles);
 		
 		// When paired, move along with the turret
 		// Otherwise move in your main direction, and change it accordingly if you cannot move.
@@ -625,7 +625,93 @@ public class ScoutPlayer2 {
 		}
 	}
 	
-	private static void correctMainDirection(RobotInfo[] allies) {
+	private static void correctMainDirection(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) throws GameActionException {
+		for (RobotInfo hostile : hostiles) {
+			if (hostile.type == RobotType.ZOMBIEDEN) {
+				int randInt = rand.nextInt(3);
+				if (randInt == 0) {
+					mainDir = hostile.location.directionTo(myLoc);
+				} else if (randInt == 1) {
+					mainDir = hostile.location.directionTo(myLoc).rotateLeft();
+				} else {
+					mainDir = hostile.location.directionTo(myLoc).rotateRight();
+				}
+				return;
+			}
+		}
+		
+		int boundThreshold = 5;
+		boolean eastBound = !rc.onTheMap(myLoc.add(Direction.EAST, boundThreshold));
+		boolean westBound = !rc.onTheMap(myLoc.add(Direction.WEST, boundThreshold));
+		boolean northBound = !rc.onTheMap(myLoc.add(Direction.NORTH, boundThreshold));
+		boolean southBound = !rc.onTheMap(myLoc.add(Direction.SOUTH, boundThreshold));
+		
+		if (eastBound && northBound) {
+			mainDir = Direction.SOUTH_WEST;
+			return;
+		} else if (eastBound && southBound) {
+			mainDir = Direction.NORTH_WEST;
+			return;
+		} else if (westBound && northBound) {
+			mainDir = Direction.SOUTH_EAST;
+			return;
+		} else if (westBound && southBound) {
+			mainDir = Direction.NORTH_EAST;
+			return;
+		} else if (eastBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.EAST, boundThreshold - 1))) {
+				mainDir = Direction.WEST;
+				return;
+			}
+			
+			Direction verticalDirection = getVerticalDirection(mainDir);
+			if (verticalDirection != Direction.NONE) {
+				mainDir = verticalDirection;
+			} else {
+				mainDir = Direction.WEST;
+			}
+			return;
+		} else if (westBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.WEST, boundThreshold - 1))) {
+				mainDir = Direction.EAST;
+				return;
+			}
+			
+			Direction verticalDirection = getVerticalDirection(mainDir);
+			if (verticalDirection != Direction.NONE) {
+				mainDir = verticalDirection;
+			} else {
+				mainDir = Direction.EAST;
+			}
+			return;
+		} else if (southBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.SOUTH, boundThreshold - 1))) {
+				mainDir = Direction.SOUTH;
+				return;
+			}
+			
+			Direction horizontalDirection = getHorizontalDirection(mainDir);
+			if (horizontalDirection != Direction.NONE) {
+				mainDir = horizontalDirection;
+			} else {
+				mainDir = Direction.NORTH;
+			}
+			return;
+		} else if (northBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.NORTH, boundThreshold - 1))) {
+				mainDir = Direction.NORTH;
+				return;
+			}
+			
+			Direction horizontalDirection = getHorizontalDirection(mainDir);
+			if (horizontalDirection != Direction.NONE) {
+				mainDir = horizontalDirection;
+			} else {
+				mainDir = Direction.SOUTH;
+			}
+			return;
+		}
+		
 		for (RobotInfo ally : allies) {
 			if (ally.type == RobotType.SCOUT) {
 				int randInt = rand.nextInt(3);
@@ -636,8 +722,31 @@ public class ScoutPlayer2 {
 				} else {
 					mainDir = ally.location.directionTo(myLoc).rotateRight();
 				}
+				return;
 			}
-		}		
+		}
+	}
+	
+	private static Direction getVerticalDirection(Direction dir) {
+		int northFanDist = Movement.getFanDist(dir, Direction.NORTH);
+		if (northFanDist <= 1) {
+			return Direction.NORTH;
+		} else if (northFanDist == 0) {
+			return Direction.NONE;
+		} else {
+			return Direction.SOUTH;
+		}
+	}
+	
+	private static Direction getHorizontalDirection(Direction dir) {
+		int eastFanDist = Movement.getFanDist(dir, Direction.EAST);
+		if (eastFanDist <= 1) {
+			return Direction.EAST;
+		} else if (eastFanDist == 0) {
+			return Direction.NONE;
+		} else {
+			return Direction.WEST;
+		}
 	}
 	
 	private static boolean inEnemyAttackRange(MapLocation location, RobotInfo[] hostiles) {

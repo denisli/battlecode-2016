@@ -530,7 +530,6 @@ public class ArchonPlayer {
 		
 		//if possible to not get hit
 		//move in direction maxes the distance from <closest enemy after movment> 
-		
 		MapLocation myLoc = rc.getLocation();
 		Direction bestDir = Direction.NONE;
 		int maxInclination = Integer.MIN_VALUE;
