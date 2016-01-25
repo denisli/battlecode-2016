@@ -241,19 +241,7 @@ public class ArchonPlayer {
 
 				//if sees friendly robot in need of repair, repair it
 				if (friendlyRobotsAttackRange.length > 0) {
-					RobotInfo toRepair = friendlyRobotsAttackRange[0];
-					double mostLostHealth = 0;
-					if (toRepair.type != RobotType.ARCHON) {
-						mostLostHealth = toRepair.maxHealth-toRepair.health;
-					}
-					for (RobotInfo f : friendlyRobotsAttackRange) {
-						if (f.type != RobotType.ARCHON && f.maxHealth-f.health>mostLostHealth) {
-							toRepair = f;
-						}
-					}
-					if (toRepair.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>0) {
-						rc.repair(toRepair.location);
-					}
+					doRepair(rc, friendlyRobotsAttackRange);
 				}
 				//these are all in the same if else loop because they require core delay
 				if (rc.isCoreReady()) {
@@ -665,6 +653,38 @@ public class ArchonPlayer {
 		}
 		else {
 			return 4;
+		}
+	}
+
+	//healing order
+	public static void doRepair(RobotController rc, RobotInfo[] friendlyRobotsAttackRange) {
+		try {
+			RobotInfo toRepair = friendlyRobotsAttackRange[0];
+			RobotInfo mostDamagedTurret = null;
+			double mostLostTurretHealth = 0;
+			double mostLostHealth = 0;
+			if (toRepair.type != RobotType.ARCHON) {
+				mostLostHealth = toRepair.maxHealth-toRepair.health;
+			}
+			for (RobotInfo f : friendlyRobotsAttackRange) {
+				if (f.type != RobotType.ARCHON && f.maxHealth-f.health>mostLostHealth) {
+					mostLostHealth = f.maxHealth-f.health;
+					toRepair = f;
+				}
+				if (f.type == RobotType.TURRET && f.maxHealth-f.health>mostLostTurretHealth) {
+					mostLostTurretHealth = f.maxHealth-f.health;
+					mostDamagedTurret = f;
+				}
+			}
+			if (mostDamagedTurret!=null) {
+				toRepair = mostDamagedTurret;
+			}
+			if (toRepair.type != RobotType.ARCHON && toRepair.maxHealth-toRepair.health>0) {
+				rc.repair(toRepair.location);
+			}
+		} catch (GameActionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
