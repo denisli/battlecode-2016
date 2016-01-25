@@ -287,7 +287,7 @@ public class ArchonPlayer {
 									rc.activate(adjNeutralRobots[0].location);
 								}
 								if (consecutiveSafeTurns == 0) {
-									int fullmaprange = (maxx-minx)*(maxx-minx) + (maxy-miny)*(maxy-miny)
+									int fullmaprange = (maxx-minx)*(maxx-minx) + (maxy-miny)*(maxy-miny);
 									Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Math.min(fullmaprange, Message.FULL_MAP_RANGE));
 								}
 							}
@@ -394,13 +394,19 @@ public class ArchonPlayer {
 								else if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									int buildFate = rand.nextInt(15);
 									RobotType toBuild = null;
-									if (buildFate == 5) {
+									if (buildFate < 3) {
+										toBuild = RobotType.TURRET;
+									} 
+									else if (buildFate == 5) {
 										toBuild = RobotType.VIPER;
 									}
 									else {
 										toBuild = RobotType.SOLDIER;
 									}
 									if (buildRandomDir(rc, toBuild, rand)) {
+										if (toBuild == RobotType.TURRET) {
+											numTurretsBuilt++;
+										}
 										if (toBuild == RobotType.VIPER) {
 											numVipersBuilt++;
 										}
