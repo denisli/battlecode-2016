@@ -401,7 +401,8 @@ public class ViperPlayer {
 		if (nonInfected.size() > 0) { // if there are non infected, pick the lowest health one
 			bestEnemy = nonInfected.get(0);
 			for (RobotInfo r : nonInfected) {
-				if (myLoc.distanceSquaredTo(r.location) > myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
+				if (r.type == RobotType.VIPER) bestEnemy = r;
+				else if (r.type != RobotType.VIPER && myLoc.distanceSquaredTo(r.location) > myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
 			}
 		} else if (infected.size() > 0) { // if there are only infected, pick the least infected
 			bestEnemy = infected.get(0);
