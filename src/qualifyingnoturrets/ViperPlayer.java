@@ -264,6 +264,7 @@ public class ViperPlayer {
 	// loops through the nearbyEnemies and gets the best one
 	public static RobotInfo getBestEnemy(RobotController rc) {
 		RobotInfo bestEnemy = null;
+		boolean zombieNear = false;
 		List<RobotInfo> nonInfected = new ArrayList<>();
 		List<RobotInfo> infected = new ArrayList<>();
 		List<RobotInfo> zombies = new ArrayList<>();
@@ -275,17 +276,18 @@ public class ViperPlayer {
 				if (r.health > RobotType.SOLDIER.attackPower) {
 					totalEnemySoldierHealth += r.health;
 				}
+				if (r.team.equals(Team.ZOMBIE)) zombieNear = true;
 			}
 			
 			// adding to the lists
-			
-			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0 && r.type != RobotType.ARCHON) { // we want to target uninfected
+			// we want to target uninfected and healthy archons or target anything if a zombie is near
+			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0 && (r.type != RobotType.ARCHON || r.health > 500 || zombieNear)) {
 				nonInfected.add(r);
-			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0 && r.type != RobotType.ARCHON) { // then, want to target least infected
+			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0 && (r.type != RobotType.ARCHON || r.health > 500 || zombieNear)) { // then, want to target least infected
 				infected.add(r);
 			} else if (r.team.equals(Team.ZOMBIE)) { // want to then target zombies
 				zombies.add(r);
-			} else if (r.type != RobotType.ARCHON) { // target whatever else
+			} else if (r.type != RobotType.ARCHON || r.health > 500 || zombieNear) { // target whatever else
 				other.add(r);
 			}
 		}
