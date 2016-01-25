@@ -43,6 +43,8 @@ public class SoldierPlayer {
 	
 	// Properties for how to fight against turrets
 	private static boolean rush = false;
+	private static int turnsSinceRush = 0;
+	private static MapLocation rushLocation = null;
 	
 	// Whether or not the soldier is retreating
 	private static boolean healing = false;
@@ -81,11 +83,14 @@ public class SoldierPlayer {
 				}
 
 				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
-				// Reset rushing if there is a den.
-				if (denLocations.size() > 0) {
-					rush = false;
+				// Reset rushing if turns since rush is > 20 and see no more enemies.
+				if (rush && myLoc.distanceSquaredTo(rushLocation) <= 100) turnsSinceRush++;
+				if (turnsSinceRush > 20) {
+					if (rc.senseNearbyRobots(sightRadius, enemyTeam).length == 0) {
+						turnsSinceRush = 0; rush = false;
+					}
 				}
-				
+					
 				// When rushing, be mad aggressive.
 				if (rush) {
 					rushMicro(rc, nearbyEnemies);
@@ -341,8 +346,13 @@ public class SoldierPlayer {
 			} else 
 			// if we get a rush signal, we want to rush towards the nearest turret
 			if (m.type == Message.RUSH) {
-				rush = true;
-				nearestTurretLocation = turretLocations.getClosest(myLoc);
+				MapLocation closestTurret = turretLocations.getClosest(myLoc);
+				if (closestTurret != null) {
+					if (myLoc.distanceSquaredTo(closestTurret) <= 400) {
+						rush = true;
+						rushLocation = closestTurret;
+					}
+				}
 			} else
 			// if we get an archon in distressed signal, needs to take priority
 			if (m.type == Message.ARCHONINDANGER) {
@@ -366,8 +376,8 @@ public class SoldierPlayer {
 	}
 	
 	private static void setCurrentDestination(RobotController rc) {
-		if (rush && nearestTurretLocation != null) {
-			currentDestination = nearestTurretLocation;
+		if (rush && rushLocation != null) {
+			currentDestination = rushLocation;
 		} else {
 			// Distressed archons
 			if (nearestDistressedArchon != null) {
