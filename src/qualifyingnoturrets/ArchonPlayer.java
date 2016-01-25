@@ -1,7 +1,6 @@
 package qualifyingnoturrets;
 
 import battlecode.common.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -61,6 +60,7 @@ public class ArchonPlayer {
 						hostileInSight.add(h.location);
 					}
 				}
+				//ArrayList<MapLocation> nearbyEnemyTurrets = new ArrayList<>();
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 				RobotInfo[] neutralRobotsInSight = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
 				MapLocation[] adjParts = rc.sensePartLocations(2);
@@ -523,6 +523,81 @@ public class ArchonPlayer {
 	}
 
 	//move to safest direction
+//	public static Direction moveSafestDir(RobotController rc, ArrayList<RobotInfo> hostileInSight, ArrayList<MapLocation> nearbyEnemyTurrets) {
+//		//if can get hit
+//		//get hit least damage
+//		
+//		//if possible to not get hit
+//		//move in direction maxes the distance from <closest enemy after movment> 
+//		
+//		MapLocation myLoc = rc.getLocation();
+//		Direction toMoveDir = Direction.NONE;
+//		int maxDist = 0;
+//		double minDamage = 999;
+//		for (Direction d : RobotPlayer.directions) {
+//			if (rc.canMove(d)) {
+//				MapLocation expectedLoc = myLoc.add(d);
+//				int distFromClosestEnemy = 99;
+//				double expectedDamage = 0;
+//				for (RobotInfo h : hostileInSight) {
+//					if (h.type==RobotType.GUARD && h.location.distanceSquaredTo(expectedLoc)<=RobotType.GUARD.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+h.attackPower;
+//					}
+//					else if (h.type==RobotType.SOLDIER && h.location.distanceSquaredTo(expectedLoc)<=RobotType.SOLDIER.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+h.attackPower;					
+//					}
+//					else if (h.type==RobotType.VIPER && h.location.distanceSquaredTo(expectedLoc)<=RobotType.VIPER.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+((20-rc.getViperInfectedTurns())*h.attackPower);
+//					}
+//					else if (h.type==RobotType.TURRET && h.location.distanceSquaredTo(expectedLoc)<=RobotType.TURRET.attackRadiusSquared && h.location.distanceSquaredTo(expectedLoc)>5) {
+//						expectedDamage = expectedDamage+h.attackPower;
+//					}
+//					else if (h.type==RobotType.BIGZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.BIGZOMBIE.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+h.attackPower;
+//					}
+//					else if (h.type==RobotType.FASTZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.FASTZOMBIE.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+h.attackPower;
+//					}
+//					else if (h.type==RobotType.STANDARDZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.STANDARDZOMBIE.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+h.attackPower;
+//					}
+//					else if (h.type==RobotType.RANGEDZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.RANGEDZOMBIE.attackRadiusSquared) {
+//						expectedDamage = expectedDamage+h.attackPower;
+//					}
+//					
+//					if (expectedLoc.distanceSquaredTo(h.location) < distFromClosestEnemy) {
+//						distFromClosestEnemy = expectedLoc.distanceSquaredTo(h.location);
+//					}
+//				}
+//				for (MapLocation t : nearbyEnemyTurrets) {
+//					if (t.distanceSquaredTo(expectedLoc)<=40 && t.distanceSquaredTo(expectedLoc)>5) {
+//						expectedDamage = expectedDamage+13;
+//					}
+//					
+//					if (expectedLoc.distanceSquaredTo(t) < distFromClosestEnemy) {
+//						distFromClosestEnemy = expectedLoc.distanceSquaredTo(t);
+//					}					
+//				}
+//				
+//				if (expectedDamage == 0) {
+//					if ((distFromClosestEnemy > maxDist)) {
+//						maxDist = distFromClosestEnemy;
+//						toMoveDir = d;
+//					}
+//					minDamage = 0;
+//				}
+//				else {
+//					if (expectedDamage < minDamage) {
+//						minDamage = expectedDamage;
+//						toMoveDir = d;
+//					}
+//				}
+//			}
+//		}
+//		return toMoveDir;
+//	}
+	
+	//move to safest direction
 	public static Direction moveSafestDir(RobotController rc, ArrayList<MapLocation> hostileInSight) {
 		MapLocation myLoc = rc.getLocation();
 		Direction toMoveDir = null;
@@ -541,6 +616,40 @@ public class ArchonPlayer {
 			}
 		}
 		return toMoveDir;
+	}
+	
+	public static double getOutbreakMultiplier(int roundNum) {
+		int level = (roundNum/300) + 1;
+		if (level == 1) {
+			return 1.1;
+		}
+		else if (level == 2) {
+			return 1.2;
+		}
+		else if (level == 3) {
+			return 1.3;
+		}
+		else if (level == 4) {
+			return 1.5;
+		}
+		else if (level == 5) {
+			return 1.7;
+		}
+		else if (level == 6) {
+			return 2;
+		}
+		else if (level == 7) {
+			return 2.3;
+		}
+		else if (level == 8) {
+			return 2.6;
+		}
+		else if (level == 9) {
+			return 3;
+		}
+		else {
+			return 4;
+		}
 	}
 
 	public static boolean buildRandomDir(RobotController rc, RobotType type, Random rand) {
