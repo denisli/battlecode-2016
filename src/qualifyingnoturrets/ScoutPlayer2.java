@@ -691,16 +691,44 @@ public class ScoutPlayer2 {
 		boolean southBound = !rc.onTheMap(myLoc.add(Direction.SOUTH, boundThreshold));
 		
 		if (eastBound && northBound) {
-			mainDir = Direction.SOUTH_WEST;
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.SOUTH_WEST;
+			} else if (randInt == 1) {
+				mainDir = Direction.SOUTH;
+			} else {
+				mainDir = Direction.WEST;
+			}
 			return;
 		} else if (eastBound && southBound) {
-			mainDir = Direction.NORTH_WEST;
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.NORTH_WEST;
+			} else if (randInt == 1) {
+				mainDir = Direction.NORTH;
+			} else {
+				mainDir = Direction.WEST;
+			}
 			return;
 		} else if (westBound && northBound) {
-			mainDir = Direction.SOUTH_EAST;
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.SOUTH_EAST;
+			} else if (randInt == 1) {
+				mainDir = Direction.SOUTH;
+			} else {
+				mainDir = Direction.EAST;
+			}
 			return;
 		} else if (westBound && southBound) {
-			mainDir = Direction.NORTH_EAST;
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.NORTH_EAST;
+			} else if (randInt == 1) {
+				mainDir = Direction.NORTH;
+			} else {
+				mainDir = Direction.EAST;
+			}
 			return;
 		} else if (eastBound) {
 			if (!rc.onTheMap(myLoc.add(Direction.EAST, boundThreshold - 1))) {
