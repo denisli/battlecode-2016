@@ -338,8 +338,20 @@ public class ScoutPlayer2 {
 					// make sure hostile range is > 5
 					int turretDist = hostile.location.distanceSquaredTo(pairedTurret);
 					if (turretDist > RobotType.TURRET.sensorRadiusSquared && turretDist <= RobotType.TURRET.attackRadiusSquared) {
-						if (bestEnemy.location.distanceSquaredTo(pairedTurret) > turretDist) {
-							bestEnemy = hostile;
+						if (bestEnemy.type == RobotType.TURRET) {
+							// Prioritize lowest health turret
+							if (hostile.type == RobotType.TURRET) {
+								if (hostile.health < bestEnemy.health) bestEnemy = hostile;
+							}
+						} else {
+							if (hostile.type == RobotType.TURRET) {
+								bestEnemy = hostile;
+							} else {
+								// Prioritize closest non-turret if can't find attackable turret.
+								if (bestEnemy.location.distanceSquaredTo(pairedTurret) > turretDist) {
+									bestEnemy = hostile;
+								}
+							}
 						}
 					}
 					// Then find the closest turret
