@@ -96,12 +96,25 @@ public class ViperPlayer {
 				else if (healing) {
 					if (rc.isCoreReady()) {
 						if (nearestArchonLocation != null) {
-							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 8) {
+							if (myLoc.distanceSquaredTo(nearestArchonLocation) > 13) {
 								bugging.enemyAvoidMove(nearbyEnemies);
+							// Get away from archons that are not too close together.
+							} else if (myLoc.distanceSquaredTo(nearestArchonLocation) <= 2) {
+								Direction radialDir = nearestArchonLocation.directionTo(myLoc);
+								Direction awayDir = Movement.getBestMoveableDirection(radialDir, rc, 2);
+								if (awayDir != Direction.NONE) {
+									rc.move(awayDir);
+								}
 							}
 						}
 					}
 				}
+				
+				// When viper infected and will die from the infection, do special micro
+				else if (isViperInfected(rc) && (rc.getHealth() < rc.getViperInfectedTurns() * 2 || rc.getRoundNum() > 2100)) {
+					viperInfectedMicro(rc);
+				}
+				
 				// if there are more than one enemy in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
@@ -116,6 +129,98 @@ public class ViperPlayer {
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+		}
+	}
+	
+	// check whether this unit is viper infected
+	private static boolean isViperInfected(RobotController rc) {
+		return rc.getViperInfectedTurns() > 0;
+	}
+	
+	// special micro if a unit is infected by a viper
+	private static void viperInfectedMicro(RobotController rc) throws GameActionException {
+		// If there are enemies, consider moving closer to them then to us.
+		RobotInfo closestEnemy = null;
+		int enemyDist = 10000;
+		RobotInfo[] enemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
+		for (RobotInfo enemy : enemies) {
+			int dist = myLoc.distanceSquaredTo(enemy.location);
+			if (dist < enemyDist) {
+				closestEnemy = enemy;
+				enemyDist = dist;
+			}
+		}
+		
+		RobotInfo closestAlly = null;
+		int allyDist = 10000;
+		for (RobotInfo ally : nearbyAllies) {
+			int dist = myLoc.distanceSquaredTo(ally.location);
+			if (dist < allyDist) {
+				closestAlly = ally;
+				allyDist = dist;
+			}
+		}
+		
+		
+		if (closestEnemy != null && closestAlly != null) {
+			if (rc.isCoreReady()) {
+				// When enemy is further than (or same dist) as ally, move closer to enemy.
+				if (enemyDist >= allyDist) {
+					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 1);
+					// Move closer to enemy obviously
+					if (dir != Direction.NONE) {
+						rc.move(dir);
+					}
+					// If you could not move, see if you can attack the enemy and attack him.
+					else {
+						if (rc.isWeaponReady()) {
+							if (rc.canAttackLocation(closestEnemy.location)) {
+								broadcastingAttack(rc, closestEnemy);
+							}
+						}
+					}
+				}
+				// If closer to the enemy, then just attack them if possible. Otherwise move closer.
+				else {
+					if (rc.isCoreReady()) {
+						if (!rc.canAttackLocation(closestEnemy.location)) {
+							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
+							if (dir != Direction.NONE) {
+								rc.move(dir);
+							}
+						}
+					}
+					if (rc.isWeaponReady()) {
+						if (rc.canAttackLocation(closestEnemy.location)) {
+							broadcastingAttack(rc, closestEnemy);
+						}
+					}
+				}
+			}
+		} else if (closestEnemy != null) {
+			// Move closer if can't hit closest. Otherwise attack closest.
+			if (rc.isCoreReady()) {
+				if (!rc.canAttackLocation(closestEnemy.location)) {
+					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
+					if (dir != Direction.NONE) {
+						rc.move(dir);
+					}
+				}
+			}
+			if (rc.isWeaponReady()) {
+				if (rc.canAttackLocation(closestEnemy.location)) {
+					broadcastingAttack(rc, closestEnemy);
+				}
+			}
+		}
+		// Get the hell away from ally!
+		else if (closestAlly != null) {
+			if (rc.isCoreReady()) {
+				Direction dir = Movement.getBestMoveableDirection(closestAlly.location.directionTo(myLoc), rc, 2);
+				if (dir != Direction.NONE) {
+					rc.move(dir);
+				}
 			}
 		}
 	}
@@ -361,8 +466,13 @@ public class ViperPlayer {
 			if (rc.isCoreReady() && bugging != null) {
 				if (nearestTurretLocation != null) {
 					bugging.turretAvoidMove(turretLocations);
-				} else {
+				} else if (nearestArchonLocation.equals(bugging.destination) && myLoc.distanceSquaredTo(nearestArchonLocation) > 13) { // if soldier is far, move towards archon
 					bugging.move();
+				} else if (nearestArchonLocation.equals(bugging.destination) && myLoc.distanceSquaredTo(nearestArchonLocation) < 13) { // if soldier is too close, move towards archon
+					// try to move away from nearest archon
+					if (rc.canMove(nearestArchonLocation.directionTo(myLoc))) {
+						rc.move(nearestArchonLocation.directionTo(myLoc));
+					}
 				}
 			}
 		} else { // if we literally have nowhere to go
