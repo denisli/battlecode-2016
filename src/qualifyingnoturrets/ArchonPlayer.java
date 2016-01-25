@@ -533,7 +533,7 @@ public class ArchonPlayer {
 		
 		MapLocation myLoc = rc.getLocation();
 		Direction bestDir = Direction.NONE;
-		int maxInclination = 0;
+		int maxInclination = Integer.MIN_VALUE;
 		for (Direction d : RobotPlayer.directions) {
 			if (rc.canMove(d)) {
 				MapLocation expectedLoc = myLoc.add(d);
