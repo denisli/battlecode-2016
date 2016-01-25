@@ -225,7 +225,7 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
-				if (destination!=null && myLoc.distanceSquaredTo(destination)<=199) {
+				if (closestTurret!=null && destination==closestTurret && myLoc.distanceSquaredTo(destination)<=99) {
 					destination = null;
 					bug = null;
 				}
@@ -361,7 +361,6 @@ public class ArchonPlayer {
 							if (roundNum > 1000) {
 								freeScouts = (freeScouts/2)+1;
 							}
-							rc.setIndicatorString(0, "freemyscouts"+freeScouts);
 							if (freeScouts < 3 && roundNum > 150) {
 								if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 									if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
@@ -457,7 +456,21 @@ public class ArchonPlayer {
 
 					//rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 
-					//if dangerous, forget about parts
+					//if dangerous, forget about parts; if dont see any parts, forget about parts
+					if (nearestParts!=null && rc.canSense(nearestParts)) {
+						if (rc.senseParts(nearestParts)==0) {
+							if (rc.senseRobotAtLocation(nearestParts)!=null) {
+								if (rc.senseRobotAtLocation(nearestParts).team != Team.NEUTRAL) {
+									nearestParts = null;
+									bug = null;
+								}
+							}
+							else {
+								nearestParts = null;
+								bug = null;	
+							}
+						}
+					}					
 					if (hostileInSight.size()>0) {
 						nearestParts = null;
 						bug = null;
@@ -470,6 +483,7 @@ public class ArchonPlayer {
 
 					if (rc.isCoreReady()) {
 						if (enemyTurtle!=null) {
+							rc.setIndicatorString(0, roundNum+"here0"+destination);
 							if (safeSpot==null) {
 								//create safespot
 								int enemyTurtleX = enemyTurtle.x;
@@ -496,6 +510,7 @@ public class ArchonPlayer {
 							}
 						}
 						else if (nearestParts != null) {
+							rc.setIndicatorString(0, roundNum+"here1"+nearestParts);
 							if (bug == null) {
 								bug = new Bugging(rc, nearestParts);
 								bug.turretAvoidMove(enemyTurrets);
@@ -505,8 +520,7 @@ public class ArchonPlayer {
 							}
 						}
 						else if (destination != null) {
-							//rc.setIndicatorString(1, roundNum+"here0"+destination);
-
+							rc.setIndicatorString(0, roundNum+"here2"+destination);
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
 								bug.turretAvoidMove(enemyTurrets);
