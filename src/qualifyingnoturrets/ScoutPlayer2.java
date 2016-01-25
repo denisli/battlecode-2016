@@ -376,7 +376,7 @@ public class ScoutPlayer2 {
 			
 			if (isAdjacentToPaired()) {
 				if (hostiles.length > 0 && rc.isCoreReady()) {
-					Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
+					Message.sendMessageGivenRange(rc, pairedArchon, Message.ARCHONINDANGER, sightRange);
 				}
 			}
 		} else {
