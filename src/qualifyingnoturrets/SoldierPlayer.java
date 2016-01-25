@@ -78,9 +78,6 @@ public class SoldierPlayer {
 				// Does NOT remove turret locations due to broadcasts. Already done in read messages.
 				removeTurretLocations(rc);
 				
-				// try to move away from nearest archon
-				moveAwayFromArchon(rc);
-				
 				if (newArchonLoc != null) {
 					nearestArchonLocation = newArchonLoc;
 				}
@@ -166,22 +163,6 @@ public class SoldierPlayer {
 				Clock.yield();
 			} catch (Exception e) {
 				e.printStackTrace();
-			}
-		}
-	}
-	
-	public static void moveAwayFromArchon(RobotController rc) throws GameActionException {
-		RobotInfo[] friendly = rc.senseNearbyRobots(sightRadius, myTeam);
-		ArrayList<RobotInfo> archons = new ArrayList<>();
-		for (RobotInfo r : friendly) {
-			if (r.type == RobotType.ARCHON) {
-				archons.add(r);
-			}
-		}
-		if (archons.size() > 0) {
-			RobotInfo archonToAvoid = archons.get(0);
-			if (rc.isCoreReady() && myLoc.distanceSquaredTo(archonToAvoid.location) < 5 && rc.canMove(archonToAvoid.location.directionTo(myLoc))) {
-				rc.move(archonToAvoid.location.directionTo(myLoc));
 			}
 		}
 	}
@@ -393,8 +374,13 @@ public class SoldierPlayer {
 			if (rc.isCoreReady() && bugging != null) {
 				if (nearestTurretLocation != null) {
 					bugging.turretAvoidMove(turretLocations);
-				} else if (nearestArchonLocation.equals(bugging.destination) && myLoc.distanceSquaredTo(nearestArchonLocation) > 5){ // don't want to get too close to archon
+				} else if (nearestArchonLocation.equals(bugging.destination) && myLoc.distanceSquaredTo(nearestArchonLocation) > 13) { // if soldier is far, move towards archon
 					bugging.move();
+				} else if (nearestArchonLocation.equals(bugging.destination) && myLoc.distanceSquaredTo(nearestArchonLocation) < 13) { // if soldier is too close, move towards archon
+					// try to move away from nearest archon
+					if (rc.canMove(nearestArchonLocation.directionTo(myLoc))) {
+						rc.move(nearestArchonLocation.directionTo(myLoc));
+					}
 				}
 			}
 		} else { // if we literally have nowhere to go
