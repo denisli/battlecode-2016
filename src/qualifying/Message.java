@@ -29,6 +29,7 @@ public class Message {
 	public static final int ZOMBIERUSH = 13;
 	public static final int MIN_CORNER = 14;
 	public static final int MAX_CORNER = 15;
+	public static final int TURTLEDETECTED=16;
 	
 	private static final int AYY = 2000;
 	
