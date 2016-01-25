@@ -1,6 +1,5 @@
 package qualifying;
 
-import java.util.Set;
 import java.util.function.Predicate;
 
 import battlecode.common.Clock;
@@ -13,12 +12,11 @@ import battlecode.common.RobotType;
 
 public class Bugging {
 	
-	private static final int FIFTY_TURN_MINE = 3049;
-
 	private final RobotController rc;
-	final MapLocation destination;
+	MapLocation destination;
 	private Hugging hugging = Hugging.NONE;
 	private Direction dirWhileHugging = Direction.NONE;
+	private int turnsSinceWallHit = 0;
 
 	public Bugging(RobotController rc, MapLocation destination) {
 		this.rc = rc;
@@ -26,6 +24,7 @@ public class Bugging {
 	}
 	
 	public void move(Predicate<Direction> safePredicate) throws GameActionException {
+		turnsSinceWallHit++;
 		MapLocation myLocation = rc.getLocation();
 		// The rest of the normal code.
 		if (myLocation.equals(destination)) return;
@@ -43,6 +42,7 @@ public class Bugging {
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
 			if (canMoveNoSlow(dir) && safePredicate.test(dir)) {
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " Safe to move " + dir);
 				rc.move(dir);
 			} else if (canMoveNoSlow(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
 				rc.move(dir.rotateLeft());
@@ -90,7 +90,7 @@ public class Bugging {
 				}
 
 				// Complete the move.
-				if (rc.canMove(dirWhileHugging)) {
+				if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
 					rc.move(dirWhileHugging);
 				}
 			}
@@ -98,15 +98,17 @@ public class Bugging {
 			// Do some containing when hit something that is off map.
 			if (hugging == Hugging.LEFT) {
 				MapLocation left = myLocation.add(dirWhileHugging.rotateLeft().rotateLeft());
-				if (!rc.onTheMap(left)) {
+				if (!rc.onTheMap(left) && turnsSinceWallHit > 10) {
 					hugging = Hugging.RIGHT;
-					dirWhileHugging = dirWhileHugging.opposite().rotateLeft();
+					dirWhileHugging = dirWhileHugging.opposite();
+					turnsSinceWallHit = 0;
 				}
 			} else {
 				MapLocation right = myLocation.add(dirWhileHugging.rotateRight().rotateRight());
-				if (!rc.onTheMap(right)) {
+				if (!rc.onTheMap(right) && turnsSinceWallHit > 10) {
 					hugging = Hugging.LEFT;
-					dirWhileHugging = dirWhileHugging.opposite().rotateRight();
+					dirWhileHugging = dirWhileHugging.opposite();
+					turnsSinceWallHit = 0;
 				}
 			}
 			
@@ -220,7 +222,7 @@ public class Bugging {
 			}
 		}
 		move(predicate);
-		rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", bytecodes used: " + (lol - Clock.getBytecodesLeft()));
+		rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", locations: " + enemyTurrets);
 	}
 	
 	public void enemyAvoidMove(RobotInfo[] hostiles) throws GameActionException {
@@ -425,7 +427,7 @@ public class Bugging {
 			MapLocation myLoc = rc.getLocation();
 			MapLocation dirLoc = myLoc.add(dir);
 			double rubble = rc.senseRubble(dirLoc);
-			return rc.canMove(dir) && rubble >= 50 && rubble < 100;
+			return rc.canMove(dir) && rubble < 50;
 		}
 	}
 	
@@ -435,7 +437,7 @@ public class Bugging {
 			MapLocation myLoc = rc.getLocation();
 			MapLocation dirLoc = myLoc.add(dir);
 			double rubble = rc.senseRubble(dirLoc);
-			return rubble >= 50 && rubble <= FIFTY_TURN_MINE;
+			return rubble >= 50;
 		}
 		return false;
 	}

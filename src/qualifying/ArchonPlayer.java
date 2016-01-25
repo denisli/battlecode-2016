@@ -1,7 +1,6 @@
 package qualifying;
 
 import battlecode.common.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -36,7 +35,17 @@ public class ArchonPlayer {
 		MapLocation closestDen = null;
 		MapLocation closestEnemy = null;
 		MapLocation closestTurret = null;
+		//add this?
 		MapLocation closestNeutralArchon = null;
+		//once enemyTurtle is set to non null, that means go find a safe spot becuase rush about to happen
+		MapLocation enemyTurtle = null;
+		//location furthest from turtle
+		MapLocation safeSpot = null;
+		//min/max x/y for map;
+		int minx = Message.DEFAULT_LOW;
+		int miny = Message.DEFAULT_LOW;
+		int maxx = Message.DEFAULT_HIGH;
+		int maxy = Message.DEFAULT_HIGH;
 
 		while (true) {
 			//things that change every turn
@@ -45,12 +54,13 @@ public class ArchonPlayer {
 				RobotInfo[] friendlyRobotsAttackRange = rc.senseNearbyRobots(attackRadius, myTeam);
 				RobotInfo[] hostileSightRangeArray = rc.senseHostileRobots(myLoc, sightRadius);
 				//hostileSightRange also adds stuff from scout pairing
-				ArrayList<MapLocation> hostileInSight = new ArrayList<>();
+				ArrayList<RobotInfo> hostileInSight = new ArrayList<>();
 				for (RobotInfo h : hostileSightRangeArray) {
 					if (h.type != RobotType.ARCHON && h.type != RobotType.ZOMBIEDEN) {
-						hostileInSight.add(h.location);
+						hostileInSight.add(h);
 					}
 				}
+				ArrayList<MapLocation> nearbyEnemyTurrets = new ArrayList<>();
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 				RobotInfo[] neutralRobotsInSight = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
 				MapLocation[] adjParts = rc.sensePartLocations(2);
@@ -89,7 +99,7 @@ public class ArchonPlayer {
 								closestDen = m.location;
 							}
 						}
-						denLocs.add(closestDen);
+						denLocs.add(m.location);
 					}
 					else if (m.type==Message.ZOMBIEDENKILLED) {
 						denLocs.remove(m.location);
@@ -122,7 +132,7 @@ public class ArchonPlayer {
 								closestTurret = m.location;
 							}
 						}
-						enemyTurrets.add(closestTurret);
+						enemyTurrets.add(m.location);
 					}
 					else if (m.type == Message.TURRETKILLED) {
 						enemyTurrets.remove(m.location);
@@ -136,9 +146,29 @@ public class ArchonPlayer {
 						}
 					}
 					else if (m.type==Message.ARCHONSIGHT) {
-						hostileInSight.add(m.location);
+						nearbyEnemyTurrets.add(m.location);
 					}
-
+					else if (m.type==Message.PREPARERUSH) {
+						enemyTurtle = m.location;
+					}
+					else if (m.type==Message.MIN_CORNER) {
+						MapLocation boundLoc = m.location;
+						if (boundLoc.x != Message.DEFAULT_LOW) {
+							minx = boundLoc.x;
+						}
+						if (boundLoc.y != Message.DEFAULT_LOW) {
+							miny = boundLoc.y;
+						}
+					}
+					else if (m.type==Message.MAX_CORNER) {
+						MapLocation boundLoc = m.location;
+						if (boundLoc.x != Message.DEFAULT_HIGH) {
+							maxx = boundLoc.x;
+						}
+						if (boundLoc.y != Message.DEFAULT_HIGH) {
+							maxy = boundLoc.y;
+						}
+					}
 				}
 
 				//check if it is close to the den, enemy, or turret; if archon doesnt see it, remove it from storage
@@ -173,9 +203,12 @@ public class ArchonPlayer {
 						closestDen = null;
 						destination = null;
 						bug = null;
+						if (denLocs.size() > 0) {
+							closestDen = denLocs.getClosest(myLoc);
+						}
 					}
 				}
-				
+
 				//set destination; only go to it if no parts nearby
 				if (closestDen != null) {
 					destination = closestDen;
@@ -192,7 +225,7 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
-				if (destination!=null && myLoc.distanceSquaredTo(destination)<=199) {
+				if (closestTurret!=null && destination==closestTurret && myLoc.distanceSquaredTo(destination)<=99) {
 					destination = null;
 					bug = null;
 				}
@@ -240,32 +273,28 @@ public class ArchonPlayer {
 					//					}
 
 					//if sees enemies nearby, run away
-					if (hostileInSight.size() > 0) {
-						Direction safestDir = moveSafestDir(rc, hostileInSight);
-						if (safestDir != null) {
+					if (hostileInSight.size()+nearbyEnemyTurrets.size() > 0) {
+						Direction safestDir = moveSafestDir(rc, hostileInSight, nearbyEnemyTurrets, enemyTurrets);
+						if (safestDir != Direction.NONE) {
 							rc.move(safestDir);
+							if (hostileInSight.size() > 0) {
+								Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, 199);
+							}
 						}
 						else {
 							if (rc.isCoreReady()) {
-								Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
+								if (adjNeutralRobots.length > 0) {
+									rc.activate(adjNeutralRobots[0].location);
+								}
+								if (consecutiveSafeTurns == 0) {
+									Message.sendMessageGivenRange(rc, myLoc, Message.ARCHONINDANGER, Message.FULL_MAP_RANGE);
+								}
+
 							}
 						}
-						//}
 					}
-					//no other place to go when getting attacked
-					//					else if (prevHealth - curHealth >= 1 && ((myLoc!=startLoc)||(destination==null))) {
-					//						rc.setIndicatorString(2, roundNum+"here1");
-					//						if (nearestParts != startLoc) {
-					//							nearestParts = startLoc;
-					//							bug = new Bugging(rc, startLoc);
-					//						}
-					//						if (bug != null) {
-					//							bug.move();							
-					//						}
-					//					}
 					//else if it went far away from its previously broadcasted location
 					else if (myLoc.distanceSquaredTo(previouslyBroadcastedLoc) > 24 || turnsWithoutMessaging > 50) {
-						rc.setIndicatorString(0, roundNum+"sending message");
 						Message.sendMessageGivenDelay(rc, myLoc, Message.ARCHONLOC, 2.8);
 						turnsWithoutMessaging = 0;
 						previouslyBroadcastedLoc = myLoc;
@@ -273,7 +302,6 @@ public class ArchonPlayer {
 					//TODO prioritize neutral archons~~~~~
 					//else if neutralrobot adjacent, activate it
 					else if (adjNeutralRobots.length > 0 && (roundNum>300 || numParts<30)) {
-						rc.setIndicatorString(0, "activate neutral");
 						RobotInfo toActivate = adjNeutralRobots[0];
 						if (toActivate.type == RobotType.SCOUT) {
 							numScoutsBuilt++;
@@ -290,10 +318,13 @@ public class ArchonPlayer {
 						else if (toActivate.type == RobotType.VIPER) {
 							numVipersBuilt++;
 						}
-						
+
 						rc.activate(toActivate.location);
+						MapLocation minCorner = new MapLocation(minx, miny);
+						MapLocation maxCorner = new MapLocation(maxx, maxy);
+						Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
+						Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
 						giveLocs(rc, denLocs);
-						giveLocs(rc, enemyTurrets);
 						bug = null;
 						nearestParts = null;
 					}
@@ -301,76 +332,86 @@ public class ArchonPlayer {
 					else if (adjParts.length > 0 && (roundNum>300 || numParts<30)) {
 						//rc.setIndicatorString(2, "moving to parts");
 						MapLocation adjPartsLoc = adjParts[0];
-						if (adjParts.length > 1) {
-							int i = 1;
-							while (!rc.canMove(myLoc.directionTo(adjPartsLoc)) && i<adjParts.length) {
-								adjPartsLoc = adjParts[i];
-								i++;
+						for (MapLocation p : adjParts) {
+							if (shouldGet(p, enemyTurrets) && rc.canMove(myLoc.directionTo(adjPartsLoc))) {
+								adjPartsLoc = p;
 							}
 						}
 						Direction dirToParts = myLoc.directionTo(adjPartsLoc);
-						if (rc.canMove(dirToParts)) {
+						if (rc.canMove(dirToParts) && shouldGet(adjPartsLoc, enemyTurrets)) {
 							rc.move(dirToParts);
 							bug = null;
 							nearestParts = null;
 						}
 					}
-					//else if turn 0 build scout
-					else if (roundNum < 14) {
-						//rc.setIndicatorString(2, "build scout");
-						if (rc.hasBuildRequirements(RobotType.SCOUT)) {
-							buildRandomDir(rc, RobotType.SCOUT, rand);
-							numScoutsBuilt++;
-						}
-					}
-					//else build mode
-					else {
-						int freeScouts = numScoutsBuilt-numTurretsBuilt;
-						if (freeScouts < 2 && roundNum > 150) {
+
+					//build order
+					if (rc.isCoreReady()) {
+						if (roundNum < 14) {
+							//rc.setIndicatorString(2, "build scout");
 							if (rc.hasBuildRequirements(RobotType.SCOUT)) {
-								buildRandomDir(rc, RobotType.SCOUT, rand);
-								giveLocs(rc, denLocs);
-								numScoutsBuilt++;
+								if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
+									numScoutsBuilt++;
+								}
 							}
 						}
-						else if (numVipersBuilt < 1 && numSoldiersBuilt > 12) {
-							if (rc.hasBuildRequirements(RobotType.VIPER)) {
-								buildRandomDir(rc, RobotType.VIPER, rand);
-								giveLocs(rc, denLocs);
-								numVipersBuilt++;
-							}
-						}
+						//else build mode
 						else {
-							if (numSoldiersBuilt <= 12) {
-								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
-									buildRandomDir(rc, RobotType.SOLDIER, rand);
-									giveLocs(rc, denLocs);
-									numSoldiersBuilt++;
+							int freeScouts = numScoutsBuilt-numTurretsBuilt;
+							if (roundNum > 1000) {
+								freeScouts = (freeScouts/2)+1;
+							}
+							if (freeScouts < 3 && roundNum > 150) {
+								if (rc.hasBuildRequirements(RobotType.SCOUT)) {
+									if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
+										giveLocs(rc, denLocs);
+										MapLocation minCorner = new MapLocation(minx, miny);
+										MapLocation maxCorner = new MapLocation(maxx, maxy);
+										Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
+										Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
+										numScoutsBuilt++;	
+									}
 								}
 							}
-							//build turrets/soldiers/vipers in 3/15, 1/15
-							else if (rc.hasBuildRequirements(RobotType.TURRET)) {
-								int buildFate = rand.nextInt(20);
-								RobotType toBuild = null;
-								if (buildFate < 5) {
-									toBuild = RobotType.TURRET;
-									numTurretsBuilt++;
-								} 
-								else if (buildFate == 5) {
-									toBuild = RobotType.VIPER;
-									numVipersBuilt++;
+							else if (numVipersBuilt < 1 && numSoldiersBuilt > 12) {
+								if (rc.hasBuildRequirements(RobotType.VIPER)) {
+									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
+										giveLocs(rc, denLocs);
+										numVipersBuilt++;	
+									}
 								}
-								else {
-									toBuild = RobotType.SOLDIER;
-									numSoldiersBuilt++;
-								}
-								buildRandomDir(rc, toBuild, rand);
-								giveLocs(rc, denLocs);
 							}
-
+							else {
+								if (numSoldiersBuilt <= 12) {
+									if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
+										if (buildRandomDir(rc, RobotType.SOLDIER, rand)) {
+											giveLocs(rc, denLocs);
+											numSoldiersBuilt++;	
+										}
+									}
+								}
+								//build turrets/soldiers/vipers in 3/15, 1/15
+								else if (rc.hasBuildRequirements(RobotType.VIPER)) {
+									int buildFate = rand.nextInt(15);
+									RobotType toBuild = null;
+									if (buildFate == 5) {
+										toBuild = RobotType.VIPER;
+									}
+									else {
+										toBuild = RobotType.SOLDIER;
+									}
+									if (buildRandomDir(rc, toBuild, rand)) {
+										if (toBuild == RobotType.VIPER) {
+											numVipersBuilt++;
+										}
+										if (toBuild == RobotType.SOLDIER) {
+											numSoldiersBuilt++;
+										}
+										giveLocs(rc, denLocs);
+									}
+								}
+							}
 						}
-
-
 					}
 
 					//if core is ready, find nearest parts within sight range
@@ -382,7 +423,7 @@ public class ArchonPlayer {
 							}
 							if (nearestParts != null) {
 								for (MapLocation p : partsInSight) {
-									if (myLoc.distanceSquaredTo(p) < myLoc.distanceSquaredTo(nearestParts)) {
+									if (myLoc.distanceSquaredTo(p) < myLoc.distanceSquaredTo(nearestParts) && shouldGet(p, enemyTurrets)) {
 										nearestParts = p;
 									}
 								}
@@ -394,8 +435,13 @@ public class ArchonPlayer {
 							}
 							if (nearestParts != null) {
 								for (RobotInfo n : neutralRobotsInSight) {
-									if (myLoc.distanceSquaredTo(n.location) < myLoc.distanceSquaredTo(nearestParts)) {
+									if (myLoc.distanceSquaredTo(n.location) < myLoc.distanceSquaredTo(nearestParts) && shouldGet(n.location, enemyTurrets)) {
 										nearestParts = n.location;
+									}
+									//prioritize neutral archons it sees
+									if (n.type == RobotType.ARCHON && shouldGet(n.location, enemyTurrets)) {
+										nearestParts = n.location;
+										break;
 									}
 								}
 							}
@@ -410,37 +456,83 @@ public class ArchonPlayer {
 
 					//rc.setIndicatorString(1, "parts"+nearestParts+"bugnull?"+bugNull);
 
-					//if dangerous, forget about parts
+					//if dangerous, forget about parts; if dont see any parts, forget about parts
+					if (nearestParts!=null && rc.canSense(nearestParts)) {
+						if (rc.senseParts(nearestParts)==0) {
+							if (rc.senseRobotAtLocation(nearestParts)!=null) {
+								if (rc.senseRobotAtLocation(nearestParts).team != Team.NEUTRAL) {
+									nearestParts = null;
+									bug = null;
+								}
+							}
+							else {
+								nearestParts = null;
+								bug = null;	
+							}
+						}
+					}					
 					if (hostileInSight.size()>0) {
 						nearestParts = null;
 						bug = null;
 					}
-					
-					
+					if (nearestParts!=null && !shouldGet(nearestParts, enemyTurrets)) {
+						nearestParts = null;
+						bug = null;
+					}
+
+
 					if (rc.isCoreReady()) {
-						if (nearestParts != null) {
-							if (bug == null) {
-								bug = new Bugging(rc, nearestParts);
-								bug.move();
+						if (enemyTurtle!=null) {
+							rc.setIndicatorString(0, roundNum+"here0"+destination);
+							if (safeSpot==null) {
+								//create safespot
+								int enemyTurtleX = enemyTurtle.x;
+								int enemyTurtleY = enemyTurtle.y;
+								int safespotX = minx;
+								int safespotY = miny;
+								if (maxx-enemyTurtleX>enemyTurtleX-minx) {
+									safespotX = maxx;
+								}
+								if (maxy-enemyTurtleY>enemyTurtleY-miny) {
+									safespotY = maxy;
+								}
+
+								if (minx==Message.DEFAULT_LOW || miny==Message.DEFAULT_LOW || maxx==Message.DEFAULT_HIGH || maxy==Message.DEFAULT_HIGH) {
+									safeSpot = rc.getInitialArchonLocations(myTeam)[0];
+								}
+								else {
+									safeSpot = new MapLocation(safespotX, safespotY);
+								}
+								bug = new Bugging(rc, safeSpot);	
 							}
 							else {
-								bug.move();
+								bug.turretAvoidMove(enemyTurrets);
+							}
+						}
+						else if (nearestParts != null) {
+							rc.setIndicatorString(0, roundNum+"here1"+nearestParts);
+							if (bug == null) {
+								bug = new Bugging(rc, nearestParts);
+								bug.turretAvoidMove(enemyTurrets);
+							}
+							else {
+								bug.turretAvoidMove(enemyTurrets);
 							}
 						}
 						else if (destination != null) {
-							rc.setIndicatorString(1, roundNum+"here0"+destination);
-
+							rc.setIndicatorString(0, roundNum+"here2"+destination);
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
-								bug.move();
+								bug.turretAvoidMove(enemyTurrets);
 							}
 							else {
-								bug.move();
+								bug.turretAvoidMove(enemyTurrets);
 							}
 						}
 					}
 
 				}
+				//rc.setIndicatorString(0, roundNum+"numEnemyTurrets"+enemyTurrets.size());
 
 				turnsWithoutMessaging++;
 				prevHealth = curHealth;
@@ -450,11 +542,69 @@ public class ArchonPlayer {
 			catch (Exception e) {
 				// Throwing an uncaught exception makes the robot die, so we need to
 				// catch exceptions.
-				// Caught exceptions will result in a bytecode penalty.
+				// Caught exceptions will result in a bytecode penalty
 				System.out.println(e.getMessage());
+				Clock.yield();
 				e.printStackTrace();
 			}
 		}
+	}
+
+	//move to safest direction
+	public static Direction moveSafestDir(RobotController rc, ArrayList<RobotInfo> hostileInSight, ArrayList<MapLocation> nearbyEnemyTurrets, LocationSet enemyTurrets) {
+		//if can get hit
+		//get hit least damage
+
+		//if possible to not get hit
+		//move in direction maxes the distance from <closest enemy after movment> 
+
+		MapLocation myLoc = rc.getLocation();
+		Direction bestDir = Direction.NONE;
+		int maxInclination = Integer.MIN_VALUE;
+		for (Direction d : RobotPlayer.directions) {
+			if (rc.canMove(d)) {
+				MapLocation expectedLoc = myLoc.add(d);
+				int enemyDist = 10000;
+				int damage = 0;
+				for (RobotInfo h : hostileInSight) {
+					int dist = expectedLoc.distanceSquaredTo(h.location);
+					if (dist <= h.type.attackRadiusSquared) damage += h.attackPower;
+					enemyDist = Math.min(dist, enemyDist);
+				}
+				for (MapLocation t : nearbyEnemyTurrets) {
+					int dist = expectedLoc.distanceSquaredTo(t);
+					if (dist<=RobotType.TURRET.attackRadiusSquared && t.distanceSquaredTo(expectedLoc)>5) {
+						damage += RobotType.TURRET.attackPower;
+					}
+					enemyDist = Math.min(dist, enemyDist);	
+				}
+				for (MapLocation t : enemyTurrets) {
+					int dist = expectedLoc.distanceSquaredTo(t);
+					if (dist<=RobotType.TURRET.attackRadiusSquared && t.distanceSquaredTo(expectedLoc)>5) {
+						damage += RobotType.TURRET.attackPower;
+					}
+					enemyDist = Math.min(dist, enemyDist);
+				}
+
+				int inclination = -100 * damage + enemyDist;
+				if (maxInclination < inclination) {
+					maxInclination = inclination; bestDir = d;
+				}
+			}
+		}
+		return bestDir;
+	}
+
+	//given a location parts and a list of turret location-- false if dangerous, true if it isnt
+	public static boolean shouldGet(MapLocation parts, LocationSet enemyTurrets) {
+		if (enemyTurrets.size() > 0) {
+			for (MapLocation t : enemyTurrets) {
+				if (parts.distanceSquaredTo(t) <= RobotType.TURRET.attackRadiusSquared) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	//move to safest direction
@@ -478,6 +628,40 @@ public class ArchonPlayer {
 		return toMoveDir;
 	}
 
+	public static double getOutbreakMultiplier(int roundNum) {
+		int level = (roundNum/300) + 1;
+		if (level == 1) {
+			return 1.1;
+		}
+		else if (level == 2) {
+			return 1.2;
+		}
+		else if (level == 3) {
+			return 1.3;
+		}
+		else if (level == 4) {
+			return 1.5;
+		}
+		else if (level == 5) {
+			return 1.7;
+		}
+		else if (level == 6) {
+			return 2;
+		}
+		else if (level == 7) {
+			return 2.3;
+		}
+		else if (level == 8) {
+			return 2.6;
+		}
+		else if (level == 9) {
+			return 3;
+		}
+		else {
+			return 4;
+		}
+	}
+
 	public static boolean buildRandomDir(RobotController rc, RobotType type, Random rand) {
 		Direction dirToBuild = RobotPlayer.directions[rand.nextInt(8)];
 		for (int i = 0; i < 8; i++) {
@@ -497,7 +681,7 @@ public class ArchonPlayer {
 		}
 		return false;
 	}
-	
+
 	public static void giveLocs(RobotController rc, LocationSet locs) {
 		for (MapLocation m : locs) {
 			try {

@@ -53,8 +53,8 @@ public class ViperPlayer {
 	private static int distressedArchonTurns = 0;
 	
 	public static void run(RobotController rc) {
-		sightRadius = RobotType.SOLDIER.sensorRadiusSquared;
-		attackRadius = RobotType.SOLDIER.attackRadiusSquared;
+		sightRadius = RobotType.VIPER.sensorRadiusSquared;
+		attackRadius = RobotType.VIPER.attackRadiusSquared;
 		myTeam = rc.getTeam();
 		enemyTeam = myTeam.opponent();
 		while (true) {
@@ -102,11 +102,7 @@ public class ViperPlayer {
 						}
 					}
 				}
-				// When viper infected, do special micro
-				else if (isViperInfected(rc)) {
-					viperInfectedMicro(rc);
-				}
-				// if there are enemies in range, we should focus on attack and micro
+				// if there are more than one enemy in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
 					// get the best enemy and do stuff based on this
 					RobotInfo bestEnemy = getBestEnemy(rc);
@@ -202,6 +198,7 @@ public class ViperPlayer {
 				MapLocation reference = m.signal.getLocation();
 				MapLocation closestDen = denLocations.getClosest(reference);
 				denLocations.remove(closestDen);
+				nearestDenLocation = denLocations.getClosest(myLoc);
 			}
 		}
 		// if we actually have a destination, set it to currentDestination
@@ -266,7 +263,8 @@ public class ViperPlayer {
 
 	// loops through the nearbyEnemies and gets the best one
 	public static RobotInfo getBestEnemy(RobotController rc) {
-		RobotInfo bestEnemy = nearbyEnemies[0];
+		RobotInfo bestEnemy = null;
+		boolean zombieNear = false;
 		List<RobotInfo> nonInfected = new ArrayList<>();
 		List<RobotInfo> infected = new ArrayList<>();
 		List<RobotInfo> zombies = new ArrayList<>();
@@ -278,17 +276,18 @@ public class ViperPlayer {
 				if (r.health > RobotType.SOLDIER.attackPower) {
 					totalEnemySoldierHealth += r.health;
 				}
+				if (r.team.equals(Team.ZOMBIE)) zombieNear = true;
 			}
 			
 			// adding to the lists
-			
-			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0) { // we want to target uninfected
+			// we want to target uninfected and healthy archons or target anything if a zombie is near
+			if (r.team.equals(enemyTeam) && r.viperInfectedTurns == 0 && (r.type != RobotType.ARCHON || r.health > 500 || zombieNear)) {
 				nonInfected.add(r);
-			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0) { // then, want to target least infected
+			} else if (r.team.equals(enemyTeam) && r.viperInfectedTurns > 0 && (r.type != RobotType.ARCHON || r.health > 500 || zombieNear)) { // then, want to target least infected
 				infected.add(r);
 			} else if (r.team.equals(Team.ZOMBIE)) { // want to then target zombies
 				zombies.add(r);
-			} else { // target whatever else
+			} else if (r.type != RobotType.ARCHON || r.health > 500 || zombieNear) { // target whatever else
 				other.add(r);
 			}
 		}
@@ -329,10 +328,6 @@ public class ViperPlayer {
 			}
 		}
 		return false;
-	}
-	
-	private static boolean isViperInfected(RobotController rc) {
-		return rc.getViperInfectedTurns() > 0;
 	}
 	
 	private static void moveSoldier(RobotController rc) throws GameActionException {
@@ -384,6 +379,7 @@ public class ViperPlayer {
 		}
 	}
 	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
+		if (bestEnemy == null) return;
 		Direction d = myLoc.directionTo(bestEnemy.location);
 		// if we're too close, move further away
 		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
@@ -391,7 +387,7 @@ public class ViperPlayer {
     		if (dir != Direction.NONE) {
     			rc.move(dir);
     		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > 13 && rc.isCoreReady()) { // if we are too far, we want to move closer
+    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
     		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
@@ -404,6 +400,7 @@ public class ViperPlayer {
 	}
 	
 	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
+		if (bestEnemy == null) return;
 		// Prioritize movement
 		Direction d = myLoc.directionTo(bestEnemy.location);
     	if (rc.isCoreReady()) {
@@ -460,14 +457,14 @@ public class ViperPlayer {
     	}
 	}
 
-	// if soldier is in range of stuff but doesn't see it, sets it to null
+	// if viper is in range of stuff but doesn't see it, sets it to null
 	public static void resetLocations(RobotController rc) throws GameActionException {
-		if (nearestTurretLocation != null && rc.canSense(nearestTurretLocation) && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
+		if (nearestTurretLocation != null && myLoc.distanceSquaredTo(nearestTurretLocation) <= 13 && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
 				|| !rc.senseRobotAtLocation(nearestTurretLocation).team.equals(enemyTeam))) {
 			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
 			nearestTurretLocation = null;
 		}
-		if (nearestEnemyLocation != null && rc.canSense(nearestEnemyLocation) && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
+		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 13 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
 			if (nearestEnemyLocation.equals(currentDestination)) currentDestination = null;
 			nearestEnemyLocation = null;
 		}
@@ -475,7 +472,7 @@ public class ViperPlayer {
 			if (nearestDenLocation.equals(currentDestination)) currentDestination = null;
 			nearestDenLocation = null;
 		}
-		if (nearestDistressedArchon != null && rc.canSense(nearestDistressedArchon) && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))
+		if (nearestDistressedArchon != null && myLoc.distanceSquaredTo(nearestDistressedArchon) <= 13 && (rc.senseRobotAtLocation(nearestDistressedArchon) == null || !rc.senseRobotAtLocation(nearestDistressedArchon).team.equals(enemyTeam))
 				|| distressedArchonTurns > 5) {
 			if (nearestDistressedArchon != null && nearestDistressedArchon.equals(currentDestination)) currentDestination = null;
 			nearestDistressedArchon = null;
@@ -489,6 +486,7 @@ public class ViperPlayer {
 		boolean canAttackBestEnemy = false;
 		int bestEnemyDist = 10000; // only care if can't hit
 		for (RobotInfo hostile : hostiles) {
+			if (hostile.type == RobotType.ARCHON) continue;
 			// Can attack this enemy.
 			int dist = myLoc.distanceSquaredTo(hostile.location);
 			if (dist <= attackRadius) {
@@ -589,7 +587,7 @@ public class ViperPlayer {
 	public static void setRetreatingStatus(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		// Retreating is when your first hit less than a third health or when you were retreating already and is not max health yet.
 		// But you should not be retreating if you are infected. That's not a good idea!
-		healing = (3 * rc.getHealth() < RobotType.SOLDIER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.SOLDIER.maxHealth)) && !isViperInfected(rc);
+		healing = (3 * rc.getHealth() < RobotType.VIPER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.VIPER.maxHealth)) && (rc.getHealth() > 2 * rc.getViperInfectedTurns());
 		if (!healing) {
 			if (wasHealing) bugging = null;
 			wasHealing = false;
@@ -611,160 +609,8 @@ public class ViperPlayer {
     	}
 	}
 	
-	private static void viperInfectedMicro(RobotController rc) throws GameActionException {
-		// If there are enemies, consider moving closer to them then to us.
-		RobotInfo closestEnemy = null;
-		int enemyDist = 10000;
-		RobotInfo[] enemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
-		for (RobotInfo enemy : enemies) {
-			int dist = myLoc.distanceSquaredTo(enemy.location);
-			if (dist < enemyDist) {
-				closestEnemy = enemy;
-				enemyDist = dist;
-			}
-		}
-		
-		RobotInfo closestAlly = null;
-		int allyDist = 10000;
-		for (RobotInfo ally : nearbyAllies) {
-			int dist = myLoc.distanceSquaredTo(ally.location);
-			if (dist < allyDist) {
-				closestAlly = ally;
-				allyDist = dist;
-			}
-		}
-		
-		
-		if (closestEnemy != null && closestAlly != null) {
-			if (rc.isCoreReady()) {
-				// When enemy is further than (or same dist) as ally, move closer to enemy.
-				if (enemyDist >= allyDist) {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 1);
-					// Move closer to enemy obviously
-					if (dir != Direction.NONE) {
-						rc.move(dir);
-					}
-					// If you could not move, see if you can attack the enemy and attack him.
-					else {
-						if (rc.isWeaponReady()) {
-							if (rc.canAttackLocation(closestEnemy.location)) {
-								broadcastingAttack(rc, closestEnemy);
-							}
-						}
-					}
-				}
-				// If closer to the enemy, then just attack them if possible. Otherwise move closer.
-				else {
-					if (rc.isCoreReady()) {
-						if (!rc.canAttackLocation(closestEnemy.location)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
-							if (dir != Direction.NONE) {
-								rc.move(dir);
-							}
-						}
-					}
-					if (rc.isWeaponReady()) {
-						if (rc.canAttackLocation(closestEnemy.location)) {
-							broadcastingAttack(rc, closestEnemy);
-						}
-					}
-				}
-			}
-		} else if (closestEnemy != null) {
-			// Move closer if can't hit closest. Otherwise attack closest.
-			if (rc.isCoreReady()) {
-				if (!rc.canAttackLocation(closestEnemy.location)) {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
-					if (dir != Direction.NONE) {
-						rc.move(dir);
-					}
-				}
-			}
-			if (rc.isWeaponReady()) {
-				if (rc.canAttackLocation(closestEnemy.location)) {
-					broadcastingAttack(rc, closestEnemy);
-				}
-			}
-		}
-		// Get the hell away from ally!
-		else if (closestAlly != null) {
-			if (rc.isCoreReady()) {
-				Direction dir = Movement.getBestMoveableDirection(closestAlly.location.directionTo(myLoc), rc, 2);
-				if (dir != Direction.NONE) {
-					rc.move(dir);
-				}
-			}
-		}
-	}
-	
 	private static boolean countsAsTurret(RobotType type) {
 		return (type == RobotType.TURRET || type == RobotType.TTM);
-	}
-	
-	private static class TargetPrioritizer implements Prioritizer<RobotInfo> {
-
-		private boolean insideAttackRange(RobotInfo r) {
-			return myLoc.distanceSquaredTo(r.location) <= attackRadius;
-		}
-		
-		// Returns whether or not r1 is higher priority than r0.
-		@Override
-		public boolean isHigherPriority(RobotInfo r0, RobotInfo r1) {
-			if (r0 == null) return true;
-			if (r1 == null) return false;
-			// Highest priority are those within attack range.
-			// 		Highest priority is lowest health viper infected.
-			// 		Then lowest health zombie infected
-			// 		Then lowest health
-			
-			// Outside attack range, prioritize closest.
-			if (insideAttackRange(r0)) {
-				if (insideAttackRange(r1)) {
-					if (isViperInfected(r0)) {
-						if (isViperInfected(r1)) {
-							return r1.health < r0.health;
-						} else {
-							return false;
-						}
-					} else {
-						if (isViperInfected(r1)) {
-							return true;
-						} else { // both not viper infected
-							if (isInfected(r0)) {
-								if (isInfected(r1)) {
-									return r1.health < r0.health;
-								} else {
-									return false;
-								}
-							} else {
-								if (isInfected(r1)) {
-									return true;
-								} else {
-									return r1.health < r0.health;
-								}
-							}
-						}
-					}
-				} else {
-					return false;
-				}
-			} else {
-				if (insideAttackRange(r1)) {
-					return true;
-				} else { // both outside of attack range
-					return myLoc.distanceSquaredTo(r1.location) < myLoc.distanceSquaredTo(r0.location); 
-				}
-			}
-		}
-		
-		private boolean isInfected(RobotInfo r) {
-			return r.zombieInfectedTurns > 0;
-		}
-		
-		private boolean isViperInfected(RobotInfo r) {
-			return r.viperInfectedTurns > 0;
-		}
-		
 	}
 	
 	private static void broadcastingAttack(RobotController rc, RobotInfo enemy) throws GameActionException {
@@ -773,6 +619,7 @@ public class ViperPlayer {
 				rc.attackLocation(enemy.location);
 				Message.sendBasicGivenRange(rc, Message.FULL_MAP_RANGE);
 				denLocations.remove(enemy.location);
+				nearestDenLocation = denLocations.getClosest(myLoc);
 			} else {
 				rc.attackLocation(enemy.location);
 			}
