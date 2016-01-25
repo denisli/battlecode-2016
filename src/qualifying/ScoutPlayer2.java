@@ -510,7 +510,7 @@ public class ScoutPlayer2 {
 				boolean forceRush = rc.getRoundNum() > 2850;
 				if (forceRush || denLocations.size() == 0) {
 					turnsSinceRushSignal++;
-					if (forceRush || turnsSinceRushSignal > 250) {
+					if ((forceRush && turnsSinceRushSignal > 10) || turnsSinceRushSignal > 250) {
 						MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
 						//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
 						if (closestTurret != null) {
