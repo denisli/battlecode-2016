@@ -367,8 +367,10 @@ public class ScoutPlayer2 {
 			for (RobotInfo hostile : hostiles) {
 				if (!isDangerous(hostile.type)) continue;
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
-				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
-					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
+				if (hostile.type == RobotType.TURRET) {
+					if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
+						Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
+					}
 				}
 			}
 			
