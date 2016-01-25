@@ -200,7 +200,19 @@ public class SoldierPlayer {
 			}
 		}
 					
-		if (rc.getHealth() < 2 * rc.getViperInfectedTurns()) {
+		if (rc.getRoundNum() > 2100) {
+			if (closestEnemy != null) {
+				// Move closer if can't hit closest. Otherwise attack closest.
+				if (rc.isCoreReady()) {
+					if (!rc.canAttackLocation(closestEnemy.location)) {
+						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
+						if (dir != Direction.NONE) {
+							rc.move(dir);
+						}
+					}
+				}
+			}
+		} else if (rc.getHealth() < 2 * rc.getViperInfectedTurns()) {
 			if (closestEnemy != null && closestAlly != null) {
 				if (rc.isCoreReady()) {
 					// When enemy is further than (or same dist) as ally, move closer to enemy.
@@ -258,18 +270,6 @@ public class SoldierPlayer {
 					Direction dir = Movement.getBestMoveableDirection(closestAlly.location.directionTo(myLoc), rc, 2);
 					if (dir != Direction.NONE) {
 						rc.move(dir);
-					}
-				}
-			}
-		} else if (rc.getRoundNum() > 2100) {
-			if (closestEnemy != null) {
-				// Move closer if can't hit closest. Otherwise attack closest.
-				if (rc.isCoreReady()) {
-					if (!rc.canAttackLocation(closestEnemy.location)) {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(closestEnemy.location), rc, 2);
-						if (dir != Direction.NONE) {
-							rc.move(dir);
-						}
 					}
 				}
 			}
