@@ -54,13 +54,13 @@ public class ArchonPlayer {
 				RobotInfo[] friendlyRobotsAttackRange = rc.senseNearbyRobots(attackRadius, myTeam);
 				RobotInfo[] hostileSightRangeArray = rc.senseHostileRobots(myLoc, sightRadius);
 				//hostileSightRange also adds stuff from scout pairing
-				ArrayList<MapLocation> hostileInSight = new ArrayList<>();
+				ArrayList<RobotInfo> hostileInSight = new ArrayList<>();
 				for (RobotInfo h : hostileSightRangeArray) {
 					if (h.type != RobotType.ARCHON && h.type != RobotType.ZOMBIEDEN) {
-						hostileInSight.add(h.location);
+						hostileInSight.add(h);
 					}
 				}
-				//ArrayList<MapLocation> nearbyEnemyTurrets = new ArrayList<>();
+				ArrayList<MapLocation> nearbyEnemyTurrets = new ArrayList<>();
 				RobotInfo[] adjNeutralRobots = rc.senseNearbyRobots(2, Team.NEUTRAL);
 				RobotInfo[] neutralRobotsInSight = rc.senseNearbyRobots(sightRadius, Team.NEUTRAL);
 				MapLocation[] adjParts = rc.sensePartLocations(2);
@@ -146,7 +146,7 @@ public class ArchonPlayer {
 						}
 					}
 					else if (m.type==Message.ARCHONSIGHT) {
-						hostileInSight.add(m.location);
+						nearbyEnemyTurrets.add(m.location);
 					}
 					else if (m.type==Message.PREPARERUSH) {
 						enemyTurtle = m.location;
@@ -274,8 +274,8 @@ public class ArchonPlayer {
 
 					//if sees enemies nearby, run away
 					if (hostileInSight.size() > 0) {
-						Direction safestDir = moveSafestDir(rc, hostileInSight);
-						if (safestDir != null) {
+						Direction safestDir = moveSafestDir(rc, hostileInSight, nearbyEnemyTurrets);
+						if (safestDir != Direction.NONE) {
 							rc.move(safestDir);
 						}
 						else {
@@ -515,87 +515,51 @@ public class ArchonPlayer {
 			catch (Exception e) {
 				// Throwing an uncaught exception makes the robot die, so we need to
 				// catch exceptions.
-				// Caught exceptions will result in a bytecode penalty.
+				// Caught exceptions will result in a bytecode penalty
 				System.out.println(e.getMessage());
+				Clock.yield();
 				e.printStackTrace();
 			}
 		}
 	}
 
 	//move to safest direction
-//	public static Direction moveSafestDir(RobotController rc, ArrayList<RobotInfo> hostileInSight, ArrayList<MapLocation> nearbyEnemyTurrets) {
-//		//if can get hit
-//		//get hit least damage
-//		
-//		//if possible to not get hit
-//		//move in direction maxes the distance from <closest enemy after movment> 
-//		
-//		MapLocation myLoc = rc.getLocation();
-//		Direction toMoveDir = Direction.NONE;
-//		int maxDist = 0;
-//		double minDamage = 999;
-//		for (Direction d : RobotPlayer.directions) {
-//			if (rc.canMove(d)) {
-//				MapLocation expectedLoc = myLoc.add(d);
-//				int distFromClosestEnemy = 99;
-//				double expectedDamage = 0;
-//				for (RobotInfo h : hostileInSight) {
-//					if (h.type==RobotType.GUARD && h.location.distanceSquaredTo(expectedLoc)<=RobotType.GUARD.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+h.attackPower;
-//					}
-//					else if (h.type==RobotType.SOLDIER && h.location.distanceSquaredTo(expectedLoc)<=RobotType.SOLDIER.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+h.attackPower;					
-//					}
-//					else if (h.type==RobotType.VIPER && h.location.distanceSquaredTo(expectedLoc)<=RobotType.VIPER.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+((20-rc.getViperInfectedTurns())*h.attackPower);
-//					}
-//					else if (h.type==RobotType.TURRET && h.location.distanceSquaredTo(expectedLoc)<=RobotType.TURRET.attackRadiusSquared && h.location.distanceSquaredTo(expectedLoc)>5) {
-//						expectedDamage = expectedDamage+h.attackPower;
-//					}
-//					else if (h.type==RobotType.BIGZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.BIGZOMBIE.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+h.attackPower;
-//					}
-//					else if (h.type==RobotType.FASTZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.FASTZOMBIE.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+h.attackPower;
-//					}
-//					else if (h.type==RobotType.STANDARDZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.STANDARDZOMBIE.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+h.attackPower;
-//					}
-//					else if (h.type==RobotType.RANGEDZOMBIE && h.location.distanceSquaredTo(expectedLoc)<=RobotType.RANGEDZOMBIE.attackRadiusSquared) {
-//						expectedDamage = expectedDamage+h.attackPower;
-//					}
-//					
-//					if (expectedLoc.distanceSquaredTo(h.location) < distFromClosestEnemy) {
-//						distFromClosestEnemy = expectedLoc.distanceSquaredTo(h.location);
-//					}
-//				}
-//				for (MapLocation t : nearbyEnemyTurrets) {
-//					if (t.distanceSquaredTo(expectedLoc)<=40 && t.distanceSquaredTo(expectedLoc)>5) {
-//						expectedDamage = expectedDamage+13;
-//					}
-//					
-//					if (expectedLoc.distanceSquaredTo(t) < distFromClosestEnemy) {
-//						distFromClosestEnemy = expectedLoc.distanceSquaredTo(t);
-//					}					
-//				}
-//				
-//				if (expectedDamage == 0) {
-//					if ((distFromClosestEnemy > maxDist)) {
-//						maxDist = distFromClosestEnemy;
-//						toMoveDir = d;
-//					}
-//					minDamage = 0;
-//				}
-//				else {
-//					if (expectedDamage < minDamage) {
-//						minDamage = expectedDamage;
-//						toMoveDir = d;
-//					}
-//				}
-//			}
-//		}
-//		return toMoveDir;
-//	}
+	public static Direction moveSafestDir(RobotController rc, ArrayList<RobotInfo> hostileInSight, ArrayList<MapLocation> nearbyEnemyTurrets) {
+		//if can get hit
+		//get hit least damage
+		
+		//if possible to not get hit
+		//move in direction maxes the distance from <closest enemy after movment> 
+		
+		MapLocation myLoc = rc.getLocation();
+		Direction bestDir = Direction.NONE;
+		int maxInclination = 0;
+		for (Direction d : RobotPlayer.directions) {
+			if (rc.canMove(d)) {
+				MapLocation expectedLoc = myLoc.add(d);
+				int enemyDist = 10000;
+				int damage = 0;
+				for (RobotInfo h : hostileInSight) {
+					int dist = expectedLoc.distanceSquaredTo(h.location);
+					if (dist <= h.type.attackRadiusSquared) damage += h.attackPower;
+					enemyDist = Math.min(dist, enemyDist);
+				}
+				for (MapLocation t : nearbyEnemyTurrets) {
+					int dist = expectedLoc.distanceSquaredTo(t);
+					if (dist<=RobotType.TURRET.attackRadiusSquared && t.distanceSquaredTo(expectedLoc)>5) {
+						damage += RobotType.TURRET.attackPower;
+					}
+					enemyDist = Math.min(dist, enemyDist);	
+				}
+				
+				int inclination = -100 * damage + enemyDist;
+				if (maxInclination < inclination) {
+					maxInclination = inclination; bestDir = d;
+				}
+			}
+		}
+		return bestDir;
+	}
 	
 	//move to safest direction
 	public static Direction moveSafestDir(RobotController rc, ArrayList<MapLocation> hostileInSight) {
