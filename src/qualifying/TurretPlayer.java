@@ -241,7 +241,15 @@ public class TurretPlayer {
 			Team otherTeam = myTeam.opponent();
 			RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
 			boolean existEnemiesNotTooClose = false;
-
+			RobotInfo[] friendlyWithinRange = rc.senseNearbyRobots(24, myTeam);
+			boolean existScoutNearby = false;
+			
+			for (RobotInfo f : friendlyWithinRange) {
+				if (f.type == RobotType.SCOUT) {
+					existScoutNearby = true;
+					break;
+				}
+			}
 			
 			//process messages
 			List<Message> messages = Message.readMessageSignals(rc);
@@ -336,26 +344,18 @@ public class TurretPlayer {
 				}
 				
 				boolean canUnpack = true;
-				//		if (numFriendlySoldiers < 3) {
-				//			canUnpack = false;
-				//		}
-				//		if (nearestTurretLocation != null) {
-				//			if (myLoc.distanceSquaredTo(nearestTurretLocation) < 48) {
-				//				canUnpack = true;
-				//			}
-				//		}
-				//		if (nearestDenLocation != null) {
-				//			if (myLoc.distanceSquaredTo(nearestDenLocation) < 48) {
-				//				canUnpack = true;
-				//			}
-				//		}
+				if (existScoutNearby && enemiesWithinRange.length > 0) {
+					canUnpack = false;
+				}
 				//do not unpack if there are enemies in range but nothing to attack
 				if (enemiesWithinRange.length > 0 && !existEnemiesNotTooClose) {
 					canUnpack = false;
 				}
 				
 				if (pairedAttackLoc!=null && (myLoc.distanceSquaredTo(pairedAttackLoc) <= 40)) {
-					rc.unpack();
+					if (canUnpack) {
+						rc.unpack();
+					}
 				}
 				//if exist enemy in sight range but outside range >5, unpack
 				else if (enemiesWithinRange.length > 0 && existEnemiesNotTooClose) {
