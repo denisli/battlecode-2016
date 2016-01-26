@@ -47,6 +47,9 @@ public class ArchonPlayer {
 		int maxx = Message.DEFAULT_HIGH;
 		int maxy = Message.DEFAULT_HIGH;
 		boolean detectedTurtle = false;
+		boolean prevBuildVipers = false;
+		boolean buildVipers = false;
+		int numVipersToBuild = 0;
 
 		while (true) {
 			//things that change every turn
@@ -181,11 +184,19 @@ public class ArchonPlayer {
 							maxy = boundLoc.y;
 						}
 					}
+					else if (m.type==Message.BUILDVIPERS) {
+						buildVipers = true;
+					}
 					else if (m.type==Message.TURTLEDETECTED) {
 						detectedTurtle = true;
 					}
 				}
 
+				if (!prevBuildVipers && buildVipers) {
+					prevBuildVipers = true;
+					numVipersToBuild = numVipersToBuild+2;
+				}
+				
 				//check if it is close to the den, enemy, or turret; if archon doesnt see it, remove it from storage
 				if (closestEnemy !=null && myLoc.distanceSquaredTo(closestEnemy) <= sightRadius) {
 					RobotInfo r = rc.senseRobotAtLocation(closestEnemy);
@@ -357,7 +368,16 @@ public class ArchonPlayer {
 								freeScouts = (freeScouts/2)+1;
 							}
 							
-							if (enemyScoutNearby) {
+							if (numVipersToBuild > 0) {
+								if (rc.hasBuildRequirements(RobotType.VIPER)) {
+									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
+										giveLocs(rc, denLocs);
+										numVipersBuilt++;	
+									}
+								}
+								numVipersToBuild = numVipersToBuild-1;
+							}
+							else if (enemyScoutNearby) {
 								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
 									if (buildRandomDir(rc, RobotType.SOLDIER, rand)) {
 										giveLocs(rc, denLocs);
@@ -373,6 +393,9 @@ public class ArchonPlayer {
 										MapLocation maxCorner = new MapLocation(maxx, maxy);
 										Message.sendMessageGivenRange(rc, minCorner, Message.MIN_CORNER, 2);
 										Message.sendMessageGivenRange(rc, maxCorner, Message.MAX_CORNER, 2);
+										if (buildVipers) {
+											Message.sendMessageGivenRange(rc, myLoc, Message.BUILDVIPERS, 2);
+										}
 										numScoutsBuilt++;	
 									}
 								}
@@ -395,7 +418,7 @@ public class ArchonPlayer {
 									}
 								}
 								//build turrets/soldiers/vipers in 3/15, 1/15
-								else if (rc.hasBuildRequirements(RobotType.VIPER)) {
+								else if (rc.hasBuildRequirements(RobotType.TURRET)) {
 									int buildFate = rand.nextInt(15);
 									RobotType toBuild = null;
 									if (buildFate < 4) {
