@@ -642,25 +642,6 @@ public class ScoutPlayer2 {
 							luring.lure(zombies, closestTurret);
 							couldLure = true;
 						}
-					} else {
-						// If there is not one, then pick the closest initial archon location
-						MapLocation closestInitialArchon = null;
-						int closestDist = Message.FULL_MAP_RANGE;
-						for (MapLocation location : initialEnemyLocations) {
-							int dist = myLoc.distanceSquaredTo(location);
-							if (dist <= 35) {
-								visitedNoobs.add(location);
-							}
-							if (!visitedNoobs.contains(location)) {
-								if (closestDist > dist) {
-									closestDist = dist; closestInitialArchon = location;
-								}
-							}
-						}
-						if (closestInitialArchon != null) {
-							luring.lure(zombies, closestInitialArchon);
-							couldLure = true;
-						}
 					}
 				}
 				if (!couldLure) {
