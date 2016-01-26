@@ -709,6 +709,7 @@ public class ArchonPlayer {
 	//detect turtle
 	public static boolean detectTurtle(MapLocation[] initialEnemyLocations, LocationSet turretLocations) {
 		// Check the enemy initial archon locations and add up number of turrets nearby. If >= 7, then it's turtle.
+		if (turretLocations.size() < 6) return false;
 		int numNearbyTurrets = 0;
 		for (MapLocation enemyLoc : initialEnemyLocations) {
 			for (MapLocation enemyTurret : turretLocations) {

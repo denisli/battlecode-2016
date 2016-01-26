@@ -164,8 +164,7 @@ public class SoldierPlayer {
 				
 				// if there are enemies in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) luringMicro(rc);
-					else micro(rc);
+					micro(rc);
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
 				}
