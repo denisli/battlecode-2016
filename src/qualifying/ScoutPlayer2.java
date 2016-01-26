@@ -754,7 +754,7 @@ public class ScoutPlayer2 {
 		
 		for (RobotInfo ally : allies) {
 			if (ally.type == RobotType.SCOUT) {
-				int randInt = rand.nextInt(5);
+				int randInt = rand.nextInt(3);
 				if (randInt == 0) {
 					mainDir = ally.location.directionTo(myLoc);
 				} else if (randInt == 1) {
