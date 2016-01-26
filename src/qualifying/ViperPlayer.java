@@ -18,6 +18,11 @@ public class ViperPlayer {
 	private static MapLocation nearestArchonLocation = null;
 	private static MapLocation nearestDistressedArchon = null;
 	
+	// Early viper
+	private static MapLocation earlyArchonLocation = null;
+	private static boolean isEarlyViper = false;
+	private static boolean stillAnnoyingEnemy = false;
+	
 	// Destinations
 	private static MapLocation currentDestination = null;
 	private static MapLocation storedDestination = null;
@@ -33,6 +38,8 @@ public class ViperPlayer {
 	// Nearby robots
 	private static RobotInfo[] nearbyAllies;
 	private static RobotInfo[] nearbyEnemies;
+	private static RobotInfo[] nearbyNonZombieEnemies;
+	private static RobotInfo[] nearbyZombieEnemies;
 	
 	// Archon location
 	private static MapLocation newArchonLoc = null;
@@ -68,6 +75,9 @@ public class ViperPlayer {
 				myLoc = rc.getLocation();
 				nearbyAllies = rc.senseNearbyRobots(sightRadius, myTeam);
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
+				nearbyNonZombieEnemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
+				nearbyZombieEnemies = rc.senseNearbyRobots(sightRadius, Team.ZOMBIE);
+				
 				newArchonLoc = null;
 				
 				// clear bad locations
@@ -122,7 +132,8 @@ public class ViperPlayer {
 				}
 				
 				// if there are more than one enemy in range, we should focus on attack and micro
-				else if (nearbyEnemies.length > 0) {
+				else if ((!stillAnnoyingEnemy && nearbyEnemies.length > 0) || 
+						(stillAnnoyingEnemy && nearbyNonZombieEnemies.length > 0)) {
 					luring = false;
 					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) {
 						luringMicro(rc);
@@ -132,7 +143,8 @@ public class ViperPlayer {
 						// if it's not a soldier and we aren't going to move in range of enemy, kite it
 						micro(rc, nearbyEnemies, bestEnemy);
 					}
-				} else { // otherwise, we should always be moving somewhere
+				} 
+				else { // otherwise, we should always be moving somewhere
 					luring = false;
 					moveSoldier(rc);
 				}
@@ -411,6 +423,10 @@ public class ViperPlayer {
 				MapLocation closestDen = denLocations.getClosest(reference);
 				denLocations.remove(closestDen);
 				nearestDenLocation = denLocations.getClosest(myLoc);
+			} else if (m.type == Message.EARLYVIPER) {
+				earlyArchonLocation = m.location;
+				isEarlyViper = true;
+				stillAnnoyingEnemy = true;
 			}
 		}
 		// if we actually have a destination, set it to currentDestination
@@ -418,6 +434,10 @@ public class ViperPlayer {
 	}
 	
 	private static void setCurrentDestination(RobotController rc) {
+		// Early viper harrass
+		if (earlyArchonLocation != null) {
+			currentDestination = earlyArchonLocation;
+		}
 		// Distressed archons
 		if (nearestDistressedArchon != null) {
 			currentDestination = nearestDistressedArchon;
@@ -557,8 +577,10 @@ public class ViperPlayer {
 				if (currentDestination.equals(nearestTurretLocation)) {
 					bugging.turretAvoidMove(turretLocations);
 				} else
-					// if core is ready, then try to move towards destination
-					if (nearestTurretLocation != null) {
+					if (earlyArchonLocation != null) {
+						bugging.enemyAvoidMove(nearbyZombieEnemies);
+					}
+					else if (nearestTurretLocation != null) {
 						bugging.turretAvoidMove(turretLocations);
 					} else {
 						bugging.move();
@@ -677,6 +699,10 @@ public class ViperPlayer {
 
 	// if viper is in range of stuff but doesn't see it, sets it to null
 	public static void resetLocations(RobotController rc) throws GameActionException {
+		if (earlyArchonLocation != null && myLoc.distanceSquaredTo(earlyArchonLocation) <= 24) {
+			earlyArchonLocation = null;
+			stillAnnoyingEnemy = false;
+		}
 		if (nearestTurretLocation != null && myLoc.distanceSquaredTo(nearestTurretLocation) <= 13 && (rc.senseRobotAtLocation(nearestTurretLocation) == null || rc.senseRobotAtLocation(nearestTurretLocation).type != RobotType.TURRET
 				|| !rc.senseRobotAtLocation(nearestTurretLocation).team.equals(enemyTeam))) {
 			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
@@ -860,6 +886,11 @@ public class ViperPlayer {
 		// Retreating is when your first hit less than a third health or when you were retreating already and is not max health yet.
 		// But you should not be retreating if you are infected. That's not a good idea!
 		healing = (3 * rc.getHealth() < RobotType.VIPER.maxHealth  || (wasHealing && rc.getHealth() < RobotType.VIPER.maxHealth)) && (rc.getHealth() > 2 * rc.getViperInfectedTurns());
+		// For early vipers, cancel harrass
+		if (healing) {
+			earlyArchonLocation = null;
+			stillAnnoyingEnemy = false;
+		}
 		if (!healing) {
 			if (wasHealing) bugging = null;
 			wasHealing = false;

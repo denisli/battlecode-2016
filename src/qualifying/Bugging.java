@@ -9,6 +9,7 @@ import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
+import battlecode.common.Team;
 
 public class Bugging {
 	
@@ -230,11 +231,16 @@ public class Bugging {
 		boolean[] directionIsGood = new boolean[10];
 		dirChecking: for (Direction dir : Direction.values()) {
 			for (RobotInfo hostile : hostiles) {
-				if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= hostile.type.attackRadiusSquared) {
+				if (hostile.team == Team.ZOMBIE) {
+					if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= 13) {
+						directionIsGood[dir.ordinal()] = false;
+					}
+				}
+				else if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= hostile.type.attackRadiusSquared) {
 					directionIsGood[dir.ordinal()] = false;
 					continue dirChecking;
 				}
-			}///////////////////////////////////////////////////''''''////////////////////////
+			}
 			directionIsGood[dir.ordinal()] = true;
 		}
 		Predicate<Direction> predicate = new Predicate<Direction>() {
