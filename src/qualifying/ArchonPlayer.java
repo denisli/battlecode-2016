@@ -368,14 +368,15 @@ public class ArchonPlayer {
 								freeScouts = (freeScouts/2)+1;
 							}
 							
+							rc.setIndicatorString(0, "v"+numVipersToBuild);
 							if (numVipersToBuild > 0) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
 										numVipersBuilt++;	
+										numVipersToBuild = numVipersToBuild-1;
 									}
 								}
-								numVipersToBuild = numVipersToBuild-1;
 							}
 							else if (enemyScoutNearby) {
 								if (rc.hasBuildRequirements(RobotType.SOLDIER)) {
