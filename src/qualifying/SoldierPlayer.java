@@ -687,7 +687,9 @@ public class SoldierPlayer {
 		
 		Direction d = myLoc.directionTo(closestEnemy.location);
 		// if we're too close, move further away
-		if (myLoc.distanceSquaredTo(closestEnemy.location) < 5 && rc.isCoreReady()) {
+		// Must check that it is not zombieden to avoid the back and forth.
+		if (myLoc.distanceSquaredTo(closestEnemy.location) < 5 && rc.isCoreReady() && 
+				!(nearbyEnemies.length == 1 && closestEnemy.type == RobotType.ZOMBIEDEN)) {
 			Direction desired = d.opposite();
 			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
     		if (dir != Direction.NONE) {
@@ -702,7 +704,7 @@ public class SoldierPlayer {
     	}
 		if (!thereIsNonKitableZombie) {
 			// Only move in closer if there is no non-kitable zombie
-			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+			if (closestEnemy.type == RobotType.ZOMBIEDEN && nearbyEnemies.length == 1) {
 				if (myLoc.distanceSquaredTo(closestEnemy.location) > 8 && rc.isCoreReady()) {
 					// Desired direction is d.
 		    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
