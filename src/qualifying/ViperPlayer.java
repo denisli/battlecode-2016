@@ -135,7 +135,7 @@ public class ViperPlayer {
 					}
 				} 
 				else { // otherwise, we should always be moving somewhere
-					if (stillAnnoyingEnemy) {
+					if (stillAnnoyingEnemy && rc.isWeaponReady()) {
 						RobotInfo bestEnemy = getBestEnemy(rc);
 						if (bestEnemy != null) {
 							if (rc.canAttackLocation(bestEnemy.location)) {
