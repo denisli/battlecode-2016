@@ -22,9 +22,6 @@ public class ScoutPlayer2 {
 	private static int turnsSinceRushSignal = 0; // only increments when no dens
 	
 	private static boolean inDanger = false;
-	private static boolean shouldLure = false;
-	private static Luring luring = null;
-	private static LocationSet visitedNoobs = new LocationSet();
 	
 	private static LocationSet denLocations = new LocationSet();
 	private static LocationSet enemyTurretLocations = new LocationSet();
@@ -53,7 +50,6 @@ public class ScoutPlayer2 {
 	public static void run(RobotController rc) {
 		team = rc.getTeam();
 		initialEnemyLocations = rc.getInitialArchonLocations(team.opponent());
-		luring = new Luring(rc);
 		while (true) {
 			try {
 				turnsSinceCollectibleBroadcast++;
@@ -233,7 +229,6 @@ public class ScoutPlayer2 {
 	
 	private static void computeInDanger(RobotController rc, RobotInfo[] hostiles) {
 		inDanger = false;
-		shouldLure = false;
 		if (pairing == Pairing.TURRET) {
 			if (hostiles.length > 0) {
 				int closestDist = 10000;
@@ -288,12 +283,6 @@ public class ScoutPlayer2 {
 						}
 					}
 				}
-			}
-			if (rc.getRoundNum() > 1000 && numDangerousZombies > 0 && numEnemies == 0) {
-				shouldLure = true;
-				inDanger = false;
-			} else {
-				shouldLure = false;
 			}
 		}
 	}
@@ -636,75 +625,57 @@ public class ScoutPlayer2 {
 			}
 		} else {
 			if (rc.isCoreReady()) {
-				boolean couldLure = false;
-				if (shouldLure) {
-					RobotInfo[] zombies = rc.senseNearbyRobots(sightRange, Team.ZOMBIE);
-					// Find the closest turret location.
-					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
-					if (closestTurret != null) {
-						int dist = myLoc.distanceSquaredTo(closestTurret);
-						if (dist <= 35) {
-							visitedNoobs.add(closestTurret);
-						}
-						if (!visitedNoobs.contains(closestTurret)) {
-							luring.lure(zombies, closestTurret);
-							couldLure = true;
+				if (inDanger) {
+					resetEnemyTurretCircling();
+					mainDir = moveSafestDir(rc, hostiles);
+					if (mainDir != Direction.NONE) {
+						rc.move(mainDir);
+					}
+				} else {
+					RobotInfo closestTurret = null;
+					int closestDist = 10000;
+					for (RobotInfo hostile : hostiles) {
+						int dist = myLoc.distanceSquaredTo(hostile.location);
+						if (hostile.type == RobotType.TURRET) {
+							if (dist < closestDist) {
+								closestTurret = hostile; closestDist = dist;
+							}
 						}
 					}
-				}
-				if (!couldLure) {
-					visitedNoobs.clear();
-					if (inDanger) {
+					// If sees a closest turret, then bug around that turret.
+					if ((turnsCirclingEnemyTurret > 0 || closestTurret != null) && turnsCirclingEnemyTurret < maxTurnsCirclingEnemyTurret) {
+						if (turnsCirclingEnemyTurret == 0) {
+							circledEnemyTurret = closestTurret.location;
+							enemyTurretLocations.add(circledEnemyTurret);
+							bugging = new Bugging(rc, circledEnemyTurret);
+							bugging.turretAvoidMove(enemyTurretLocations);
+						} else {
+							if (!circledEnemyTurret.equals(closestTurret)) {
+								maxTurnsCirclingEnemyTurret = Math.min(100, maxTurnsCirclingEnemyTurret + 30);
+//								circledEnemyTurret = closestTurret.location;
+//								bugging.destination = circledEnemyTurret;
+							}
+							bugging.turretAvoidMove(enemyTurretLocations);
+						}
+						turnsCirclingEnemyTurret++;
+					} else {
 						resetEnemyTurretCircling();
-						mainDir = moveSafestDir(rc, hostiles);
-						if (mainDir != Direction.NONE) {
+					
+						if (!rc.canMove(mainDir) || inEnemyAttackRange(myLoc.add(mainDir), hostiles)) {
+							int[] disps = { 1, -1, 3, -3 };
+							for (int disp : disps) {
+								Direction dir = RobotPlayer.directions[((mainDir.ordinal() + disp) % 8 + 8) % 8];
+								if (rc.canMove(dir) && !inEnemyAttackRange(myLoc.add(dir), hostiles)) {
+									mainDir = dir; break;
+								}
+							}
+						}
+						if (rc.canMove(mainDir)) { 
 							rc.move(mainDir);
 						}
-					} else {
-						RobotInfo closestTurret = null;
-						int closestDist = 10000;
-						for (RobotInfo hostile : hostiles) {
-							int dist = myLoc.distanceSquaredTo(hostile.location);
-							if (hostile.type == RobotType.TURRET) {
-								if (dist < closestDist) {
-									closestTurret = hostile; closestDist = dist;
-								}
-							}
-						}
-						// If sees a closest turret, then bug around that turret.
-						if ((turnsCirclingEnemyTurret > 0 || closestTurret != null) && turnsCirclingEnemyTurret < maxTurnsCirclingEnemyTurret) {
-							if (turnsCirclingEnemyTurret == 0) {
-								circledEnemyTurret = closestTurret.location;
-								enemyTurretLocations.add(circledEnemyTurret);
-								bugging = new Bugging(rc, circledEnemyTurret);
-								bugging.turretAvoidMove(enemyTurretLocations);
-							} else {
-								if (!circledEnemyTurret.equals(closestTurret)) {
-									maxTurnsCirclingEnemyTurret = Math.min(100, maxTurnsCirclingEnemyTurret + 30);
-	//								circledEnemyTurret = closestTurret.location;
-	//								bugging.destination = circledEnemyTurret;
-								}
-								bugging.turretAvoidMove(enemyTurretLocations);
-							}
-							turnsCirclingEnemyTurret++;
-						} else {
-							resetEnemyTurretCircling();
-						
-							if (!rc.canMove(mainDir) || inEnemyAttackRange(myLoc.add(mainDir), hostiles)) {
-								int[] disps = { 1, -1, 3, -3 };
-								for (int disp : disps) {
-									Direction dir = RobotPlayer.directions[((mainDir.ordinal() + disp) % 8 + 8) % 8];
-									if (rc.canMove(dir) && !inEnemyAttackRange(myLoc.add(dir), hostiles)) {
-										mainDir = dir; break;
-									}
-								}
-							}
-							if (rc.canMove(mainDir)) { 
-								rc.move(mainDir);
-							}
-						}
 					}
 				}
+				
 			}
 		}
 	}
