@@ -139,6 +139,9 @@ public class TurretPlayer {
 						nearestDenLocation = denLocs.getClosest(myLoc);
 					}
 				}
+				else if (m.type == Message.ENEMYARCHON) {
+					
+				}
 				else if (m.type == Message.ARCHONINDANGER) {
 					if (nearestArchonDangerLocation == null) {
 						nearestArchonDangerLocation = m.location;
