@@ -400,10 +400,20 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							else if (numVipersBuilt < 1 && numSoldiersBuilt > 6) {
+							else if (numVipersBuilt < 1 && numSoldiersBuilt > 0) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
+										MapLocation[] initialEnemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
+										MapLocation closestEnemyArchon = initialEnemyArchonLocs[0];
+										int closestDist = myLoc.distanceSquaredTo(closestEnemyArchon);
+										for (MapLocation i : initialEnemyArchonLocs) {
+											if (myLoc.distanceSquaredTo(i) < closestDist) {
+												closestDist = myLoc.distanceSquaredTo(i);
+												closestEnemyArchon = i;
+											}
+										}
+										Message.sendMessageGivenRange(rc, closestEnemyArchon, Message.EARLYVIPER, 2);
 										numVipersBuilt++;	
 									}
 								}
