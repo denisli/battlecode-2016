@@ -626,7 +626,9 @@ public class ViperPlayer {
 		}
 		else {
 			RobotInfo bestEnemy = getBestEnemy(rc);
-			enemyMicro(rc, bestEnemy);
+			if (bestEnemy != null) {
+				enemyMicro(rc, bestEnemy);
+			}
 		}
 	}
 	
