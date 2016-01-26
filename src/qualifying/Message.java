@@ -211,19 +211,20 @@ public class Message {
 			}
 		}
 		
-		// Check the corners and see if there are 3 enemy turrets total.
+		// Check the corners and see if there are 4 enemy turrets total.
 		int numCornerTurrets = 0;
 		for (MapLocation corner : knownCorners) {
 			for (MapLocation enemyTurret : turretLocations) {
 				int dist = enemyTurret.distanceSquaredTo(corner);
 				if (dist <= 53) numCornerTurrets++;
-				if (numCornerTurrets >= 3) {
+				if (numCornerTurrets >= 4) {
 					return true;
 				}
 			}
 		}
 		
 		// Check the first 6 turrets. If they are all close to each other, then 
+		if (turretLocations.size() < 6) return false;
 		int centerX = 0;
 		int centerY = 0;
 		int i = 0;
@@ -237,6 +238,7 @@ public class Message {
 			int dist = center.distanceSquaredTo(enemyTurret);
 			if (dist > 53) return false;
 		}
+		
 		return true; // all 6 turrets are nearby
 	}
 	
