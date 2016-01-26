@@ -44,6 +44,8 @@ public class ViperPlayer {
 	
 	// Properties for how to fight against turrets
 	private static boolean rush = false;
+	private static int turnsSinceRush = 0;
+	private static MapLocation rushLocation = null;
 	
 	// Whether or not the soldier is retreating
 	private static boolean healing = false;
@@ -84,9 +86,12 @@ public class ViperPlayer {
 				}
 
 				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", rushing: " + rush);
-				// Reset rushing if there is a den.
-				if (denLocations.size() > 0) {
-					rush = false;
+				// Reset rushing if turns since rush is > 20 and see no more enemies.
+				if (rush && myLoc.distanceSquaredTo(rushLocation) <= 100) turnsSinceRush++;
+				if (turnsSinceRush > 20) {
+					if (rc.senseNearbyRobots(sightRadius, enemyTeam).length == 0) {
+						turnsSinceRush = 0; rush = false;
+					}
 				}
 				
 				// When rushing, be mad aggressive.
@@ -383,10 +388,12 @@ public class ViperPlayer {
 			} else 
 			// if we get a rush signal, we want to rush towards the nearest turret
 			if (m.type == Message.RUSH) {
-				rush = true;
-				// if the location contains an actual location, update the nearest turret with that location
-				if (m.type == Message.RUSH) {
-					nearestTurretLocation = m.location;
+				MapLocation closestTurret = turretLocations.getClosest(myLoc);
+				if (closestTurret != null) {
+					if (myLoc.distanceSquaredTo(closestTurret) <= 400) {
+						rush = true;
+						rushLocation = closestTurret;
+					}
 				}
 			} else
 			// if we get an archon in distressed signal, needs to take priority
@@ -697,29 +704,47 @@ public class ViperPlayer {
 		boolean canAttackBestEnemy = false;
 		int bestEnemyDist = 10000; // only care if can't hit
 		for (RobotInfo hostile : hostiles) {
-			if (hostile.type == RobotType.ARCHON) continue;
 			// Can attack this enemy.
 			int dist = myLoc.distanceSquaredTo(hostile.location);
+			// Summary:
+			// Prioritizes enemies over zombies.
+			// Prioritizes turret enemies over other enemies.
+			// Prioritizes lowest health enemy last
 			if (dist <= attackRadius) {
 				if (bestEnemy != null) {
-					if (countsAsTurret(bestEnemy.type)) {
-						if (countsAsTurret(hostile.type)) {
-							if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+					if (bestEnemy.team == enemyTeam) { // best is already enemy
+						if (hostile.team == enemyTeam) { // found an enemy
+							if (countsAsTurret(bestEnemy.type)) {
+								if (countsAsTurret(hostile.type)) {
+									// Take lowest health
+									if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+								}
+							} else {
+								if (countsAsTurret(hostile.type)) {
+									bestEnemy = hostile;
+								} else {
+									// Take lowest health
+									if (bestEnemy.health > hostile.health) bestEnemy = hostile;
+								}
+							}
 						}
-					} else {
-						if (countsAsTurret(hostile.type)) {
+					} else { // best is not an enemy!
+						if (hostile.team == enemyTeam) { // found an enemy
 							bestEnemy = hostile;
 						} else {
+							// Take lowest health
 							if (bestEnemy.health > hostile.health) bestEnemy = hostile;
 						}
 					}
 				} else {
 					bestEnemy = hostile;
 				}
+				canAttackBestEnemy = true;
 			} else {
 				// Only update best enemy if you can't attack best enemy
 				if (!canAttackBestEnemy) {
 					if (bestEnemy != null) {
+						// Pick the closest one
 						if (bestEnemyDist > dist) {
 							bestEnemyDist = dist; bestEnemy = hostile;
 						}
@@ -729,57 +754,92 @@ public class ViperPlayer {
 				}
 			}
 		}
-		
+		rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Best enemy: " + bestEnemy);
 		if (rc.isCoreReady()) {
-			// If have destination get closer.
-			if (currentDestination != null) {
-				RobotInfo info = null;
-				if (rc.canSenseLocation(currentDestination)) {
-					info = rc.senseRobotAtLocation(currentDestination);
-				}
-				if (info != null) {
-					// If can attack it, just only move closer if blocking someone behind.
-					if (rc.canAttackLocation(info.location)) {
-						if (isBlockingSomeone(rc, currentDestination)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
-							if (dir != Direction.NONE) {
-								rc.move(dir);
-							}
-						}
-					}
-					// If can't attack it, move closer!
-					else {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+			// If there is a best enemy, attack him.
+			if (bestEnemy != null) {
+				// Move closer only if blocking someone.
+				if (rc.canAttackLocation(bestEnemy.location)) {
+					if (isBlockingSomeone(rc, bestEnemy.location)) {
+						Direction desired = myLoc.directionTo(bestEnemy.location);
+						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
+						} else if (shouldMine(rc, desired)) {
+							rc.clearRubble(desired);
+						} else if (shouldMine(rc, desired.rotateLeft())) {
+							rc.clearRubble(desired.rotateLeft());
+						} else if (shouldMine(rc, desired.rotateRight())) {
+							rc.clearRubble(desired.rotateRight());
 						}
 					}
 				}
-				// If not there, just move closer.
+				// If can't attack it, move closer!
 				else {
-					Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(currentDestination), rc, 2);
+					Direction desired = myLoc.directionTo(bestEnemy.location);
+					Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 					if (dir != Direction.NONE) {
 						rc.move(dir);
+					} else if (shouldMine(rc, desired)) {
+						rc.clearRubble(desired);
+					} else if (shouldMine(rc, desired.rotateLeft())) {
+						rc.clearRubble(dir.rotateLeft());
+					} else if (shouldMine(rc, desired.rotateRight())) {
+						rc.clearRubble(desired.rotateRight());
 					}
 				}
 			}
-			// Otherwise move closer to best enemy.
+			// Otherwise move closer to destination
 			else {
-				if (bestEnemy != null) {
-					// Move closer only if blocking someone.
-					if (rc.canAttackLocation(bestEnemy.location)) {
-						if (isBlockingSomeone(rc, bestEnemy.location)) {
-							Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
+				if (currentDestination != null) {
+					RobotInfo info = null;
+					if (rc.canSenseLocation(currentDestination)) {
+						info = rc.senseRobotAtLocation(currentDestination);
+					}
+					if (info != null) {
+						// If can attack it, just only move closer if blocking someone behind.
+						if (rc.canAttackLocation(info.location)) {
+							if (isBlockingSomeone(rc, currentDestination)) {
+								Direction desired = myLoc.directionTo(currentDestination);
+								Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
+								if (dir != Direction.NONE) {
+									rc.move(dir);
+								} else if (shouldMine(rc, desired)) {
+									rc.clearRubble(desired);
+								} else if (shouldMine(rc, desired.rotateLeft())) {
+									rc.clearRubble(desired.rotateLeft());
+								} else if (shouldMine(rc, desired.rotateRight())) {
+									rc.clearRubble(desired.rotateRight());
+								}
+							}
+						}
+						// If can't attack it, move closer!
+						else {
+							Direction desired = myLoc.directionTo(currentDestination);
+							Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 							if (dir != Direction.NONE) {
 								rc.move(dir);
+							} else if (shouldMine(rc, desired)) {
+								rc.clearRubble(desired);
+							} else if (shouldMine(rc, desired.rotateLeft())) {
+								rc.clearRubble(desired.rotateLeft());
+							} else if (shouldMine(rc, desired.rotateRight())) {
+								rc.clearRubble(desired.rotateRight());
 							}
 						}
 					}
-					// If can't attack it, move closer!
+					// If not there, just move closer.
 					else {
-						Direction dir = Movement.getBestMoveableDirection(myLoc.directionTo(bestEnemy.location), rc, 2);
+						Direction desired = myLoc.directionTo(currentDestination);
+						Direction dir = Movement.getBestMoveableDirection(desired, rc, 2);
 						if (dir != Direction.NONE) {
 							rc.move(dir);
+						} else if (shouldMine(rc, desired)) {
+							rc.clearRubble(desired);
+						} else if (shouldMine(rc, desired.rotateLeft())) {
+							rc.clearRubble(desired.rotateLeft());
+						} else if (shouldMine(rc, desired.rotateRight())) {
+							rc.clearRubble(desired.rotateRight());
 						}
 					}
 				}
@@ -795,6 +855,7 @@ public class ViperPlayer {
 			}
 		}
 	}
+	
 	public static void setRetreatingStatus(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
 		// Retreating is when your first hit less than a third health or when you were retreating already and is not max health yet.
 		// But you should not be retreating if you are infected. That's not a good idea!
