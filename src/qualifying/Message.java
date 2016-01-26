@@ -32,6 +32,7 @@ public class Message {
 	public static final int TURTLEDETECTED = 16;
 	public static final int NEUTRALARCHON = 17;
 	public static final int BUILDVIPERS = 18;
+	public static final int EARLYVIPER = 19;
 	
 	private static final int AYY = 2000;
 	

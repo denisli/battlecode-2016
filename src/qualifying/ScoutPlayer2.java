@@ -389,11 +389,9 @@ public class ScoutPlayer2 {
 							Message.sendMessageGivenDelay(rc, closestTurretLoc, Message.TURRET, 1);
 							turnsSinceTurretBroadcast = 0;
 						}
-						else if (bestEnemy != null && turnsSinceEnemyBroadcast > 10 && rc.isCoreReady()) {
-							if (bestEnemy.type != RobotType.SCOUT && bestEnemy.type != RobotType.ZOMBIEDEN) {
-								Message.sendMessageGivenDelay(rc, bestEnemy.location, Message.ENEMY, 1);
-								turnsSinceEnemyBroadcast = 0;
-							}
+						else if (bestEnemy != null && turnsSinceEnemyBroadcast > 20 && rc.isCoreReady()) {
+							Message.sendMessageGivenDelay(rc, bestEnemy.location, Message.ENEMY, 1);
+							turnsSinceEnemyBroadcast = 0;
 						}
 					}
 				}
@@ -444,7 +442,7 @@ public class ScoutPlayer2 {
 				
 				
 				if (rc.isCoreReady()) {
-					if (!inDanger && turnsSinceEnemyBroadcast > 10) {
+					if (!inDanger && turnsSinceEnemyBroadcast > 20) {
 						if (closestEnemy != null) {
 							// Send a message of the closest enemy, should broadcast further if not in danger
 							broadcastRecordedEnemy(rc, closestEnemy);

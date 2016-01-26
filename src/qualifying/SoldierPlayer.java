@@ -164,7 +164,8 @@ public class SoldierPlayer {
 				
 				// if there are enemies in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					micro(rc);
+					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) luringMicro(rc);
+					else micro(rc);
 				} else { // otherwise, we should always be moving somewhere
 					moveSoldier(rc);
 				}
@@ -819,7 +820,7 @@ public class SoldierPlayer {
 			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
 			nearestTurretLocation = null;
 		}
-		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 5 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
+		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 13 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
 			if (nearestEnemyLocation.equals(currentDestination)) currentDestination = null;
 			nearestEnemyLocation = null;
 		}

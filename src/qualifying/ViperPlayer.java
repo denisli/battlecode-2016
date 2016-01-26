@@ -123,10 +123,15 @@ public class ViperPlayer {
 				
 				// if there are more than one enemy in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					// get the best enemy and do stuff based on this
-					RobotInfo bestEnemy = getBestEnemy(rc);
-					// if it's not a soldier and we aren't going to move in range of enemy, kite it
-					micro(rc, nearbyEnemies, bestEnemy);
+					luring = false;
+					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) {
+						luringMicro(rc);
+					} else {
+						// get the best enemy and do stuff based on this
+						RobotInfo bestEnemy = getBestEnemy(rc);
+						// if it's not a soldier and we aren't going to move in range of enemy, kite it
+						micro(rc, nearbyEnemies, bestEnemy);
+					}
 				} else { // otherwise, we should always be moving somewhere
 					luring = false;
 					moveSoldier(rc);
@@ -500,11 +505,11 @@ public class ViperPlayer {
 		}
 		
 		// picking what to target
-		if (nonInfected.size() > 0) { // if there are non infected, pick the furthest one
+		if (nonInfected.size() > 0) { // if there are non infected, pick the lowest health one
 			bestEnemy = nonInfected.get(0);
 			for (RobotInfo r : nonInfected) {
 				if (r.type == RobotType.VIPER) bestEnemy = r;
-				else if (r.type != RobotType.VIPER && myLoc.distanceSquaredTo(r.location) > myLoc.distanceSquaredTo(bestEnemy.location)) bestEnemy = r;
+				else if (r.type != RobotType.VIPER && r.health < bestEnemy.health) bestEnemy = r;
 			}
 		} else if (infected.size() > 0) { // if there are only infected, pick the least infected
 			bestEnemy = infected.get(0);
@@ -677,7 +682,7 @@ public class ViperPlayer {
 			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
 			nearestTurretLocation = null;
 		}
-		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 5 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
+		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 13 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
 			if (nearestEnemyLocation.equals(currentDestination)) currentDestination = null;
 			nearestEnemyLocation = null;
 		}
