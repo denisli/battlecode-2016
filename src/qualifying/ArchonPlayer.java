@@ -381,7 +381,7 @@ public class ArchonPlayer {
 							}
 
 							rc.setIndicatorString(0, "v"+numVipersToBuild);
-							if (numVipersToBuild > 0) {
+							if (numVipersToBuild > 0 && numSoldiersBuilt > 8) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
