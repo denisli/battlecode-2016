@@ -223,6 +223,22 @@ public class Message {
 			}
 		}
 		
+		// Check the first 6 turrets. If they are all close to each other, then 
+		if (turretLocations.size() < 6) return false;
+		int centerX = 0;
+		int centerY = 0;
+		int i = 0;
+		for (MapLocation enemyTurret : turretLocations) {
+			centerX += enemyTurret.x; centerY += enemyTurret.y; 
+			if (++i >= 6) break;
+		}
+		centerX = centerX / 6; centerY = centerY / 6;
+		MapLocation center = new MapLocation(centerX, centerY);
+		for (MapLocation enemyTurret : turretLocations) {
+			int dist = center.distanceSquaredTo(enemyTurret);
+			if (dist > 53) return false;
+		}
+		
 		return true; // all 6 turrets are nearby
 	}
 	
