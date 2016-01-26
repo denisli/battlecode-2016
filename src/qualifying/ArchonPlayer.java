@@ -50,7 +50,10 @@ public class ArchonPlayer {
 		boolean prevBuildVipers = false;
 		boolean buildVipers = false;
 		int numVipersToBuild = 0;
-
+		MapLocation[] initialEnemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
+		MapLocation closestEnemyArchon = initialEnemyArchonLocs[0];
+		
+		
 		while (true) {
 			//things that change every turn
 			try {
@@ -76,6 +79,15 @@ public class ArchonPlayer {
 				int roundNum = rc.getRoundNum();
 				double numParts = rc.getTeamParts();
 				double curHealth = rc.getHealth();
+				if (roundNum==1) {
+					int closestDist = myLoc.distanceSquaredTo(closestEnemyArchon);
+					for (MapLocation i : initialEnemyArchonLocs) {
+						if (myLoc.distanceSquaredTo(i) < closestDist) {
+							closestDist = myLoc.distanceSquaredTo(i);
+							closestEnemyArchon = i;
+						}
+					}
+				}
 
 				/*ZombieSpawnSchedule z = rc.getZombieSpawnSchedule();
 				ZombieCount[] z0 = z.getScheduleForRound(z.getRounds()[0]);
@@ -194,7 +206,7 @@ public class ArchonPlayer {
 
 				if (!prevBuildVipers && buildVipers) {
 					prevBuildVipers = true;
-					numVipersToBuild = numVipersToBuild+2;
+					numVipersToBuild = numVipersToBuild+1;
 				}
 
 				//check if it is close to the den, enemy, or turret; if archon doesnt see it, remove it from storage
@@ -400,19 +412,10 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							else if (numVipersBuilt < 1 && numSoldiersBuilt > 0) {
+							else if (numVipersBuilt < 1 && numSoldiersBuilt > 1) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
-										MapLocation[] initialEnemyArchonLocs = rc.getInitialArchonLocations(enemyTeam);
-										MapLocation closestEnemyArchon = initialEnemyArchonLocs[0];
-										int closestDist = myLoc.distanceSquaredTo(closestEnemyArchon);
-										for (MapLocation i : initialEnemyArchonLocs) {
-											if (myLoc.distanceSquaredTo(i) < closestDist) {
-												closestDist = myLoc.distanceSquaredTo(i);
-												closestEnemyArchon = i;
-											}
-										}
 										Message.sendMessageGivenRange(rc, closestEnemyArchon, Message.EARLYVIPER, 2);
 										numVipersBuilt++;	
 									}
