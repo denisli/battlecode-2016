@@ -691,9 +691,21 @@ public class SoldierPlayer {
 		if (myLoc.distanceSquaredTo(closestEnemy.location) < 5 && rc.isCoreReady() && 
 				!(nearbyEnemies.length == 1 && closestEnemy.type == RobotType.ZOMBIEDEN)) {
 			Direction desired = d.opposite();
-			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
-    		if (dir != Direction.NONE) {
-    			rc.move(dir);
+			
+			Direction bestDir = Direction.NONE;
+			int oppDistFromEnemy = distFromRobots(myLoc.add(desired), nearbyEnemies);
+			int leftDistFromEnemy = distFromRobots(myLoc.add(desired.rotateLeft()), nearbyEnemies);
+			int rightDistFromEnemy = distFromRobots(myLoc.add(desired.rotateRight()), nearbyEnemies);
+			if (oppDistFromEnemy >= leftDistFromEnemy && oppDistFromEnemy >= rightDistFromEnemy) {
+				if (rc.canMove(desired)) bestDir = desired;
+			} else if (leftDistFromEnemy > oppDistFromEnemy && leftDistFromEnemy >= rightDistFromEnemy) {
+				if (rc.canMove(desired.rotateLeft())) bestDir = desired.rotateLeft();
+			} else if (rightDistFromEnemy > oppDistFromEnemy && rightDistFromEnemy > leftDistFromEnemy) {
+				if (rc.canMove(desired.rotateRight())) bestDir = desired.rotateRight();
+			}
+			
+    		if (bestDir != Direction.NONE) {
+    			rc.move(bestDir);
     		} else if (shouldMine(rc, desired)) {
     			rc.clearRubble(desired);
     		} else if (shouldMine(rc, desired.rotateLeft())) {
@@ -1122,6 +1134,15 @@ public class SoldierPlayer {
 		MapLocation dirLoc = myLoc.add(dir);
 		double rubble = rc.senseRubble(dirLoc);
 		return rubble >= 50;
+	}
+	
+	private static int distFromRobots(MapLocation location, RobotInfo[] robots) {
+		int robotDist = Integer.MAX_VALUE;
+		for (RobotInfo r : robots) {
+			int dist = location.distanceSquaredTo(r.location);
+			robotDist = Math.min(dist, robotDist);
+		}
+		return robotDist;
 	}
 	
 }
