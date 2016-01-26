@@ -399,11 +399,15 @@ public class ScoutPlayer2 {
 		} else if (pairing == Pairing.ARCHON) {
 			// Only broadcast enemies when adjacent to archon.
 			for (RobotInfo hostile : hostiles) {
-				if (!isDangerous(hostile.type)) continue;
+				if (hostile.type != RobotType.SCOUT && hostile.type != RobotType.ZOMBIEDEN) continue;
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
 				if (hostile.type == RobotType.TURRET) {
 					if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
 						Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
+					}
+				} else if (hostile.type == RobotType.ARCHON) {
+					if (rc.isCoreReady()) {
+						Message.sendMessageGivenDelay(rc, hostile.location, Message.ENEMY, 1);
 					}
 				}
 			}
