@@ -373,7 +373,6 @@ public class ArchonPlayer {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
-										numVipersBuilt++;	
 										numVipersToBuild = numVipersToBuild-1;
 									}
 								}
@@ -401,7 +400,23 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							else if (numVipersBuilt < 1 && numSoldiersBuilt > 12) {
+							else if (numVipersBuilt < 1 && numSoldiersBuilt > 4) {
+								if (rc.hasBuildRequirements(RobotType.VIPER)) {
+									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
+										giveLocs(rc, denLocs);
+										numVipersBuilt++;	
+									}
+								}
+							}
+							else if (numVipersBuilt < 2 && numSoldiersBuilt > 8) {
+								if (rc.hasBuildRequirements(RobotType.VIPER)) {
+									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
+										giveLocs(rc, denLocs);
+										numVipersBuilt++;	
+									}
+								}
+							}
+							else if (numVipersBuilt < 3 && numSoldiersBuilt > 12) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
