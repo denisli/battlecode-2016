@@ -67,7 +67,6 @@ public class ViperPlayer {
 			try {
 				numEnemySoldiers = 0;
 				totalEnemySoldierHealth = 0;
-				useSoldierMicro = false;
 				myLoc = rc.getLocation();
 				nearbyAllies = rc.senseNearbyRobots(sightRadius, myTeam);
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
@@ -424,7 +423,6 @@ public class ViperPlayer {
 				nearestDenLocation = denLocations.getClosest(myLoc);
 			} else if (m.type == Message.EARLYVIPER) {
 				earlyArchonLocation = m.location;
-				isEarlyViper = true;
 				stillAnnoyingEnemy = true;
 			}
 		}
@@ -503,7 +501,6 @@ public class ViperPlayer {
 		List<RobotInfo> other = new ArrayList<>();
 		for (RobotInfo r : nearbyEnemies) {
 			if (r.type == RobotType.SOLDIER) {
-				useSoldierMicro = true;
 				numEnemySoldiers++;
 				if (r.health > RobotType.SOLDIER.attackPower) {
 					totalEnemySoldierHealth += r.health;
