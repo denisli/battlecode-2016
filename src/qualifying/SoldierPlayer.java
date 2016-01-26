@@ -702,35 +702,51 @@ public class SoldierPlayer {
     	}
 		if (!thereIsNonKitableZombie) {
 			// Only move in closer if there is no non-kitable zombie
-			if (myLoc.distanceSquaredTo(closestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
-	    		// Desired direction is d.
-	    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
-	    		if (dir != Direction.NONE) {
-	    			rc.move(dir);
-	    		} else if (shouldMine(rc, d)) {
-	    			rc.clearRubble(d);
-	    		} else if (shouldMine(rc, d.rotateLeft())) {
-	    			rc.clearRubble(d.rotateLeft());
-	    		} else if (shouldMine(rc, d.rotateRight())) {
-	    			rc.clearRubble(d.rotateRight());
-	    		} else { // probably meaning you are blocked by allies
-	    			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
-	    				// It is likely that we wanted to go to that den, but possibly coincidence
-	    				// If not a coincidence, bug there.
-	    				if (bugging != null) {
-		    				if (bugging.destination.equals(closestEnemy.location)) {
-		    					bugging.turretAvoidMove(turretLocations);
-		    				// If coincidence, set new bugging.
+			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+				if (myLoc.distanceSquaredTo(closestEnemy.location) > 8 && rc.isCoreReady()) {
+					// Desired direction is d.
+		    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
+		    		if (dir != Direction.NONE) {
+		    			rc.move(dir);
+		    		} else if (shouldMine(rc, d)) {
+		    			rc.clearRubble(d);
+		    		} else if (shouldMine(rc, d.rotateLeft())) {
+		    			rc.clearRubble(d.rotateLeft());
+		    		} else if (shouldMine(rc, d.rotateRight())) {
+		    			rc.clearRubble(d.rotateRight());
+		    		} else { // probably meaning you are blocked by allies
+		    			if (closestEnemy.type == RobotType.ZOMBIEDEN) {
+		    				// We wanted to go to that den, but possibly coincidence
+		    				// If not a coincidence, bug there.
+		    				if (bugging != null) {
+			    				if (bugging.destination.equals(closestEnemy.location)) {
+			    					bugging.turretAvoidMove(turretLocations);
+			    				// If coincidence, set new bugging.
+			    				} else {
+			    					bugging = new Bugging(rc, closestEnemy.location);
+			    					bugging.turretAvoidMove(turretLocations);
+			    				}
 		    				} else {
 		    					bugging = new Bugging(rc, closestEnemy.location);
 		    					bugging.turretAvoidMove(turretLocations);
 		    				}
-	    				} else {
-	    					bugging = new Bugging(rc, closestEnemy.location);
-	    					bugging.turretAvoidMove(turretLocations);
-	    				}
-	    			}
-	    		}
+		    			}
+		    		}
+				}
+			} else {
+				if (myLoc.distanceSquaredTo(closestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
+		    		// Desired direction is d.
+		    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
+		    		if (dir != Direction.NONE) {
+		    			rc.move(dir);
+		    		} else if (shouldMine(rc, d)) {
+		    			rc.clearRubble(d);
+		    		} else if (shouldMine(rc, d.rotateLeft())) {
+		    			rc.clearRubble(d.rotateLeft());
+		    		} else if (shouldMine(rc, d.rotateRight())) {
+		    			rc.clearRubble(d.rotateRight());
+		    		}
+				}
 			}
 		}
 		if (rc.isWeaponReady() && rc.canAttackLocation(closestEnemy.location)) {
