@@ -519,7 +519,7 @@ public class SoldierPlayer {
 					nearestFriend = r;
 				}
 			}
-			if (nearestFriend != null && !nearestFriend.location.equals(storedDestination) || bugging == null) {
+			if (nearestFriend != null && (!nearestFriend.location.equals(storedDestination) || bugging == null)) {
 				bugging = new Bugging(rc, nearestFriend.location);
 				storedDestination = nearestFriend.location;
 			}
