@@ -344,9 +344,7 @@ public class TurretPlayer {
 				}
 				
 				boolean canUnpack = true;
-				if (existScoutNearby && enemiesWithinRange.length > 0) {
-					canUnpack = false;
-				}
+
 				//do not unpack if there are enemies in range but nothing to attack
 				if (enemiesWithinRange.length > 0 && !existEnemiesNotTooClose) {
 					canUnpack = false;
