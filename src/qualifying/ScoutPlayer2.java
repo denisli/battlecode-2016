@@ -752,6 +752,20 @@ public class ScoutPlayer2 {
 			}
 		}
 		
+		for (RobotInfo ally : allies) {
+			if (ally.type == RobotType.SCOUT) {
+				int randInt = rand.nextInt(5);
+				if (randInt == 0) {
+					mainDir = ally.location.directionTo(myLoc);
+				} else if (randInt == 1) {
+					mainDir = ally.location.directionTo(myLoc).rotateLeft();
+				} else {
+					mainDir = ally.location.directionTo(myLoc).rotateRight();
+				}
+				return;
+			}
+		}
+		
 		int boundThreshold = 5;
 		boolean eastBound = !rc.onTheMap(myLoc.add(Direction.EAST, boundThreshold));
 		boolean westBound = !rc.onTheMap(myLoc.add(Direction.WEST, boundThreshold));
@@ -850,20 +864,6 @@ public class ScoutPlayer2 {
 				mainDir = Direction.SOUTH;
 			}
 			return;
-		}
-		
-		for (RobotInfo ally : allies) {
-			if (ally.type == RobotType.SCOUT) {
-				int randInt = rand.nextInt(5);
-				if (randInt == 0) {
-					mainDir = ally.location.directionTo(myLoc);
-				} else if (randInt == 1) {
-					mainDir = ally.location.directionTo(myLoc).rotateLeft();
-				} else {
-					mainDir = ally.location.directionTo(myLoc).rotateRight();
-				}
-				return;
-			}
 		}
 	}
 	
