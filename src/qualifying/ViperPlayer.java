@@ -138,10 +138,8 @@ public class ViperPlayer {
 					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) {
 						luringMicro(rc);
 					} else {
-						// get the best enemy and do stuff based on this
-						RobotInfo bestEnemy = getBestEnemy(rc);
 						// if it's not a soldier and we aren't going to move in range of enemy, kite it
-						micro(rc, nearbyEnemies, bestEnemy);
+						micro(rc, nearbyEnemies);
 					}
 				} 
 				else { // otherwise, we should always be moving somewhere
@@ -612,36 +610,81 @@ public class ViperPlayer {
 		}
 	}
 	
-	public static void micro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
-		if (useSoldierMicro) {
-			soldierMicro(rc, hostiles, bestEnemy);
-		} else {
-			nonSoldierMicro(rc, bestEnemy);
+	public static void micro(RobotController rc, RobotInfo[] hostiles) throws GameActionException {
+		RobotInfo closestZombie = null;
+		int closestDist = 10000;
+		for (RobotInfo hostile : nearbyEnemies) {
+			if (hostile.team == Team.ZOMBIE) {
+				int dist = myLoc.distanceSquaredTo(hostile.location);
+				if (dist < closestDist) {
+					closestDist = dist; closestZombie = hostile;
+				}
+			}
+		}
+		if (closestZombie != null) {
+			zombieMicro(rc);
+		}
+		else {
+			RobotInfo bestEnemy = getBestEnemy(rc);
+			enemyMicro(rc, bestEnemy);
 		}
 	}
-	public static void nonSoldierMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
-		if (bestEnemy == null) return;
-		Direction d = myLoc.directionTo(bestEnemy.location);
+	
+	public static void zombieMicro(RobotController rc) throws GameActionException {
+		boolean thereIsNonKitableZombie = false;
+		RobotInfo closestEnemy = null;
+		int closestDist = 10000;
+		for (RobotInfo hostile : nearbyEnemies) {
+			if (hostile.type == RobotType.FASTZOMBIE || hostile.type == RobotType.RANGEDZOMBIE) {
+				thereIsNonKitableZombie = true;
+			}
+			int dist = myLoc.distanceSquaredTo(hostile.location);
+			if (dist < closestDist) {
+				closestDist = dist; closestEnemy = hostile;
+			}
+		}
+		
+		Direction d = myLoc.directionTo(closestEnemy.location);
 		// if we're too close, move further away
-		if (myLoc.distanceSquaredTo(bestEnemy.location) < 5 && rc.isCoreReady()) {
-			Direction dir = Movement.getBestMoveableDirection(d.opposite(), rc, 2);
+		if (myLoc.distanceSquaredTo(closestEnemy.location) < 8 && rc.isCoreReady()) {
+			Direction desired = d.opposite();
+			Direction dir = Movement.getBestMoveableDirection(desired, rc, 1);
     		if (dir != Direction.NONE) {
     			rc.move(dir);
-    		}
-    	} else if (myLoc.distanceSquaredTo(bestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
-    		Direction dir = Movement.getBestMoveableDirection(d, rc, 2);
-    		if (dir != Direction.NONE) {
-    			rc.move(dir);
-    		}
-    	} else { // otherwise we want to try to attack
-    		if (rc.isWeaponReady() && rc.canAttackLocation(bestEnemy.location)) {
-    			broadcastingAttack(rc, bestEnemy);
+    		} else if (shouldMine(rc, desired)) {
+    			rc.clearRubble(desired);
+    		} else if (shouldMine(rc, desired.rotateLeft())) {
+    			rc.clearRubble(desired.rotateLeft());
+    		} else if (shouldMine(rc, desired.rotateRight())) {
+    			rc.clearRubble(desired.rotateRight());
     		}
     	}
+		if (!thereIsNonKitableZombie) {
+			if (myLoc.distanceSquaredTo(closestEnemy.location) > attackRadius && rc.isCoreReady()) { // if we are too far, we want to move closer
+	    		// Desired direction is d.
+	    		Direction dir = Movement.getBestMoveableDirection(d, rc, 1);
+	    		if (dir != Direction.NONE) {
+	    			rc.move(dir);
+	    		} else if (shouldMine(rc, d)) {
+	    			rc.clearRubble(d);
+	    		} else if (shouldMine(rc, d.rotateLeft())) {
+	    			rc.clearRubble(d.rotateLeft());
+	    		} else if (shouldMine(rc, d.rotateRight())) {
+	    			rc.clearRubble(d.rotateRight());
+	    		}
+			}
+		}
+		if (rc.isWeaponReady()) {
+			RobotInfo bestEnemy = getBestEnemy(rc);
+			if (rc.canAttackLocation(bestEnemy.location)) {
+				broadcastingAttack(rc, bestEnemy);
+			} else if (rc.canAttackLocation(closestEnemy.location)) {
+				broadcastingAttack(rc, closestEnemy);
+			}
+		}
 	}
 	
-	public static void soldierMicro(RobotController rc, RobotInfo[] hostiles, RobotInfo bestEnemy) throws GameActionException {
-		if (bestEnemy == null) return;
+	public static void enemyMicro(RobotController rc, RobotInfo bestEnemy) throws GameActionException {
 		// Prioritize movement
 		Direction d = myLoc.directionTo(bestEnemy.location);
     	if (rc.isCoreReady()) {
