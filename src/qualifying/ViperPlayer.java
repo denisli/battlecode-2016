@@ -118,15 +118,10 @@ public class ViperPlayer {
 				
 				// if there are more than one enemy in range, we should focus on attack and micro
 				else if (nearbyEnemies.length > 0) {
-					luring = false;
-					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) {
-						luringMicro(rc);
-					} else {
-						// get the best enemy and do stuff based on this
-						RobotInfo bestEnemy = getBestEnemy(rc);
-						// if it's not a soldier and we aren't going to move in range of enemy, kite it
-						micro(rc, nearbyEnemies, bestEnemy);
-					}
+					// get the best enemy and do stuff based on this
+					RobotInfo bestEnemy = getBestEnemy(rc);
+					// if it's not a soldier and we aren't going to move in range of enemy, kite it
+					micro(rc, nearbyEnemies, bestEnemy);
 				} else { // otherwise, we should always be moving somewhere
 					luring = false;
 					moveSoldier(rc);
