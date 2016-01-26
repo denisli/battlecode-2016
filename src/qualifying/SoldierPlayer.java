@@ -820,7 +820,7 @@ public class SoldierPlayer {
 			if (nearestTurretLocation.equals(currentDestination)) currentDestination = null;
 			nearestTurretLocation = null;
 		}
-		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 13 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
+		if (nearestEnemyLocation != null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 5 && (rc.senseRobotAtLocation(nearestEnemyLocation) == null || !rc.senseRobotAtLocation(nearestEnemyLocation).team.equals(enemyTeam))) {
 			if (nearestEnemyLocation.equals(currentDestination)) currentDestination = null;
 			nearestEnemyLocation = null;
 		}
