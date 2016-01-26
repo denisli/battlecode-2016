@@ -20,7 +20,6 @@ public class ViperPlayer {
 	
 	// Early viper
 	private static MapLocation earlyArchonLocation = null;
-	private static boolean isEarlyViper = false;
 	private static boolean stillAnnoyingEnemy = false;
 	
 	// Destinations
@@ -38,8 +37,6 @@ public class ViperPlayer {
 	// Nearby robots
 	private static RobotInfo[] nearbyAllies;
 	private static RobotInfo[] nearbyEnemies;
-	private static RobotInfo[] nearbyNonZombieEnemies;
-	private static RobotInfo[] nearbyZombieEnemies;
 	
 	// Archon location
 	private static MapLocation newArchonLoc = null;
@@ -47,7 +44,6 @@ public class ViperPlayer {
 	// Statistics for determining how to micro
 	private static int numEnemySoldiers = 0;
 	private static double totalEnemySoldierHealth = 0;
-	private static boolean useSoldierMicro = false;
 	
 	// Properties for how to fight against turrets
 	private static boolean rush = false;
@@ -75,8 +71,6 @@ public class ViperPlayer {
 				myLoc = rc.getLocation();
 				nearbyAllies = rc.senseNearbyRobots(sightRadius, myTeam);
 				nearbyEnemies = rc.senseHostileRobots(myLoc, sightRadius);
-				nearbyNonZombieEnemies = rc.senseNearbyRobots(sightRadius, enemyTeam);
-				nearbyZombieEnemies = rc.senseNearbyRobots(sightRadius, Team.ZOMBIE);
 				
 				newArchonLoc = null;
 				
@@ -132,8 +126,7 @@ public class ViperPlayer {
 				}
 				
 				// if there are more than one enemy in range, we should focus on attack and micro
-				else if ((!stillAnnoyingEnemy && nearbyEnemies.length > 0) || 
-						(stillAnnoyingEnemy && nearbyNonZombieEnemies.length > 0)) {
+				else if (!stillAnnoyingEnemy && nearbyEnemies.length > 0) {
 					luring = false;
 					if (shouldLure(rc, nearbyEnemies, nearbyAllies)) {
 						luringMicro(rc);
@@ -143,6 +136,14 @@ public class ViperPlayer {
 					}
 				} 
 				else { // otherwise, we should always be moving somewhere
+					if (stillAnnoyingEnemy) {
+						RobotInfo bestEnemy = getBestEnemy(rc);
+						if (bestEnemy != null) {
+							if (rc.canAttackLocation(bestEnemy.location)) {
+								rc.attackLocation(bestEnemy.location);
+							}
+						}
+					}
 					luring = false;
 					moveSoldier(rc);
 				}
@@ -577,7 +578,7 @@ public class ViperPlayer {
 					bugging.turretAvoidMove(turretLocations);
 				} else
 					if (earlyArchonLocation != null) {
-						bugging.zombieAvoidMove(nearbyZombieEnemies);
+						bugging.earlyViperAvoidMove(nearbyEnemies);
 					}
 					else if (nearestTurretLocation != null) {
 						bugging.turretAvoidMove(turretLocations);
@@ -745,7 +746,7 @@ public class ViperPlayer {
 
 	// if viper is in range of stuff but doesn't see it, sets it to null
 	public static void resetLocations(RobotController rc) throws GameActionException {
-		if (earlyArchonLocation != null && myLoc.distanceSquaredTo(earlyArchonLocation) <= 24) {
+		if (earlyArchonLocation != null && myLoc.distanceSquaredTo(earlyArchonLocation) <= 5) {
 			earlyArchonLocation = null;
 			stillAnnoyingEnemy = false;
 		}

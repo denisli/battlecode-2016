@@ -409,7 +409,7 @@ public class Bugging {
 		move(predicate);
 	}
 	
-	public void zombieAvoidMove(RobotInfo[] zombies) throws GameActionException {
+	public void earlyViperAvoidMove(RobotInfo[] hostiles) throws GameActionException {
 		MapLocation myLocation = rc.getLocation();
 		boolean[] directionIsGood = new boolean[10];
 		boolean[] computed = new boolean[10];
@@ -419,13 +419,12 @@ public class Bugging {
 			public boolean test(Direction t) {
 				if (computed[t.ordinal()]) return directionIsGood[t.ordinal()];
 				computed[t.ordinal()] = true;
-				for (RobotInfo zombie : zombies) {
-					if (zombie.type == RobotType.ZOMBIEDEN) {
-						if (myLocation.add(t).distanceSquaredTo(zombie.location) <= 5) {
+				for (RobotInfo hostile : hostiles) {
+					if (hostile.type == RobotType.ZOMBIEDEN) {
+						if (myLocation.add(t).distanceSquaredTo(hostile.location) <= 5) {
 							return false;
 						}
-					}
-					if (myLocation.add(t).distanceSquaredTo(zombie.location) <= 13) {
+					} else if (myLocation.add(t).distanceSquaredTo(hostile.location) <= 13) {
 						return false;
 					}
 				}
@@ -442,7 +441,7 @@ public class Bugging {
 				if (rc.canMove(dir)) {
 					MapLocation dirLoc = myLocation.add(dir);
 					int minDist = 1000;
-					for (RobotInfo zombie :zombies) {
+					for (RobotInfo zombie :hostiles) {
 						int dist = dirLoc.distanceSquaredTo(zombie.location);
 						minDist = Math.min(dist, minDist);
 					}
