@@ -751,8 +751,13 @@ public class SoldierPlayer {
 				}
 			}
 		}
-		if (rc.isWeaponReady() && rc.canAttackLocation(closestEnemy.location)) {
-			broadcastingAttack(rc, closestEnemy);
+		if (rc.isWeaponReady()) {
+			RobotInfo bestEnemy = getBestEnemy(rc);
+			if (rc.canAttackLocation(bestEnemy.location)) {
+				broadcastingAttack(rc, bestEnemy);
+			} else if (rc.canAttackLocation(closestEnemy.location)) {
+				broadcastingAttack(rc, closestEnemy);
+			}
 		}
 	}
 	
