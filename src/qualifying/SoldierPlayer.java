@@ -1139,8 +1139,10 @@ public class SoldierPlayer {
 	private static int distFromRobots(MapLocation location, RobotInfo[] robots) {
 		int robotDist = Integer.MAX_VALUE;
 		for (RobotInfo r : robots) {
-			int dist = location.distanceSquaredTo(r.location);
-			robotDist = Math.min(dist, robotDist);
+			if (r.type != RobotType.SCOUT && r.type != RobotType.ARCHON) {
+				int dist = location.distanceSquaredTo(r.location);
+				robotDist = Math.min(dist, robotDist);
+			}
 		}
 		return robotDist;
 	}
