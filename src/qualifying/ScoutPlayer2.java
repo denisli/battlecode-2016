@@ -38,6 +38,7 @@ public class ScoutPlayer2 {
 	private static int turnsSinceCollectibleBroadcast = 0;
 	
 	private static boolean turtleDetected = false;
+	private static boolean soldierDetected = false;
 	
 	private static MapLocation circledEnemyTurret;
 	private static int turnsCirclingEnemyTurret;
@@ -144,6 +145,8 @@ public class ScoutPlayer2 {
 				if (m.location.y != Message.DEFAULT_HIGH) {
 					Message.setUpperY(m.location.y);
 				}
+			} else if (m.type == Message.BUILDVIPERS) {
+				soldierDetected = true;
 			}
 		}
 	}
@@ -468,6 +471,9 @@ public class ScoutPlayer2 {
 			} else if (enemy.type != RobotType.SCOUT) {
 				Message.sendMessageGivenRange(rc, enemy.location, Message.ENEMY, Message.FULL_MAP_RANGE);
 				turnsSinceEnemyBroadcast = 0;
+			} else if (enemy.type != RobotType.SOLDIER && !soldierDetected) {
+				Message.sendMessageGivenRange(rc, enemy.location, Message.BUILDVIPERS, Message.FULL_MAP_RANGE);
+				soldierDetected = true;
 			}
 		}
 	}
