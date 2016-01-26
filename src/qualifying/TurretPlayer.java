@@ -139,9 +139,6 @@ public class TurretPlayer {
 						nearestDenLocation = denLocs.getClosest(myLoc);
 					}
 				}
-				else if (m.type == Message.ENEMYARCHON) {
-					
-				}
 				else if (m.type == Message.ARCHONINDANGER) {
 					if (nearestArchonDangerLocation == null) {
 						nearestArchonDangerLocation = m.location;
@@ -228,7 +225,7 @@ public class TurretPlayer {
 			}
 
 			
-			rc.setIndicatorString(1, pairedAttackLoc+" ");
+			//rc.setIndicatorString(1, pairedAttackLoc+" ");
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			e.printStackTrace();
@@ -239,7 +236,7 @@ public class TurretPlayer {
 		try {
 			MapLocation myLoc = rc.getLocation();
 			MapLocation pairedAttackLoc = null;
-			rc.setIndicatorString(2, "destination"+destination);
+			//rc.setIndicatorString(2, "destination"+destination);
 			Team myTeam = rc.getTeam();
 			Team otherTeam = myTeam.opponent();
 			RobotInfo[] enemiesWithinRange = rc.senseHostileRobots(myLoc, 24);
@@ -336,7 +333,7 @@ public class TurretPlayer {
 				}
 			}
 
-			rc.setIndicatorString(1, pairedAttackLoc+" ");
+			//rc.setIndicatorString(1, pairedAttackLoc+" ");
 			//movement
 			if (rc.isCoreReady()) {
 				for (RobotInfo e : enemiesWithinRange) {

@@ -267,7 +267,7 @@ public class ArchonPlayer {
 					destination = null;
 					bug = null;
 				}
-				rc.setIndicatorString(2, roundNum+"d"+destination);
+				//rc.setIndicatorString(2, roundNum+"d"+destination);
 				//destination = null;
 
 
@@ -380,7 +380,7 @@ public class ArchonPlayer {
 								freeScouts = (freeScouts/2)+1;
 							}
 
-							rc.setIndicatorString(0, "v"+numVipersToBuild);
+							//rc.setIndicatorString(0, "v"+numVipersToBuild);
 							if (numVipersToBuild > 0 && numSoldiersBuilt > 5) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
@@ -540,7 +540,7 @@ public class ArchonPlayer {
 
 					if (rc.isCoreReady()) {
 						if (enemyTurtle!=null) {
-							rc.setIndicatorString(0, roundNum+"here0"+destination);
+							//rc.setIndicatorString(0, roundNum+"here0"+destination);
 							if (safeSpot==null) {
 								//create safespot
 								int enemyTurtleX = enemyTurtle.x;
@@ -571,15 +571,15 @@ public class ArchonPlayer {
 							if (bug == null) {
 								bug = new Bugging(rc, nearestParts);
 								bug.turretAvoidMove(enemyTurrets);
-								rc.setIndicatorString(0, roundNum+"here11"+nearestParts);
+								//rc.setIndicatorString(0, roundNum+"here11"+nearestParts);
 							}
 							else {
 								bug.turretAvoidMove(enemyTurrets);
-								rc.setIndicatorString(0, roundNum+"here12"+nearestParts+" "+bug.destination);
+								//rc.setIndicatorString(0, roundNum+"here12"+nearestParts+" "+bug.destination);
 							}
 						}
 						else if (destination != null) {
-							rc.setIndicatorString(0, roundNum+"here2"+destination);
+							//rc.setIndicatorString(0, roundNum+"here2"+destination);
 							if (bug == null) {
 								bug = new Bugging(rc, destination);
 								bug.turretAvoidMove(enemyTurrets);
