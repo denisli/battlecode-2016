@@ -381,7 +381,7 @@ public class ArchonPlayer {
 							}
 
 							rc.setIndicatorString(0, "v"+numVipersToBuild);
-							if (numVipersToBuild > 0 && numSoldiersBuilt > 8) {
+							if (numVipersToBuild > 0 && numSoldiersBuilt > 4) {
 								if (rc.hasBuildRequirements(RobotType.VIPER)) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
@@ -397,7 +397,7 @@ public class ArchonPlayer {
 									}
 								}
 							}
-							else if (freeScouts < 3 && roundNum > 150) {
+							else if ((freeScouts < 2 && roundNum > 150) || (freeScouts < 3 && roundNum > 250)) {
 								if (rc.hasBuildRequirements(RobotType.SCOUT)) {
 									if (buildRandomDir(rc, RobotType.SCOUT, rand)) {
 										giveLocs(rc, denLocs);
@@ -413,7 +413,7 @@ public class ArchonPlayer {
 								}
 							}
 							else if (numVipersBuilt < 1 && numSoldiersBuilt > 1) {
-								if (rc.hasBuildRequirements(RobotType.VIPER)) {
+								if (rc.hasBuildRequirements(RobotType.VIPER) && roundNum < 200) {
 									if (buildRandomDir(rc, RobotType.VIPER, rand)) {
 										giveLocs(rc, denLocs);
 										Message.sendMessageGivenRange(rc, closestEnemyArchon, Message.EARLYVIPER, 2);
