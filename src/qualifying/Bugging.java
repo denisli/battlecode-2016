@@ -43,7 +43,7 @@ public class Bugging {
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
 			if (canMoveNoSlow(dir) && safePredicate.test(dir)) {
-				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " Safe to move " + dir);
+				//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " Safe to move " + dir);
 				rc.move(dir);
 			} else if (canMoveNoSlow(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
 				rc.move(dir.rotateLeft());
@@ -190,7 +190,7 @@ public class Bugging {
 		if (hugging == Hugging.NONE) {
 			Direction dir = myLocation.directionTo(destination);
 			if (canMoveNoSlow(dir) && safePredicate.test(dir)) {
-				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " Safe to move " + dir);
+				//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " Safe to move " + dir);
 				rc.move(dir);
 			} else if (rc.canMove(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
 				rc.move(dir.rotateLeft());
@@ -360,7 +360,7 @@ public class Bugging {
 			}
 		}
 		move(predicate);
-		rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", locations: " + enemyTurrets);
+		//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", locations: " + enemyTurrets);
 	}
 	
 	public void enemyAvoidMove(RobotInfo[] hostiles) throws GameActionException {
@@ -580,7 +580,7 @@ public class Bugging {
 			}
 		}
 		
-		rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", bytecodes used: " + (lol - Clock.getBytecodesLeft()));
+		//rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + ", bytecodes used: " + (lol - Clock.getBytecodesLeft()));
 	}
 	
 	public static void findDanger(RobotController rc, LocationSet enemyTurrets, MapLocation myLocation, Direction moveDir) throws GameActionException {

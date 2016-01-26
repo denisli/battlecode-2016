@@ -65,10 +65,10 @@ public class ScoutPlayer2 {
 				
 				// Figure out the map dimensions
 				figureOutMapDimensions(rc);
-				rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + 
-						", min = (" + Message.getLowerX() + "," + Message.getLowerY() + 
-						") and max = (" + Message.getUpperX() + "," + Message.getUpperY() + ")");
-				rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
+				//rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + 
+						//", min = (" + Message.getLowerX() + "," + Message.getLowerY() + 
+						//") and max = (" + Message.getUpperX() + "," + Message.getUpperY() + ")");
+				//rc.setIndicatorString(1, "Round: " + rc.getRoundNum() + " there are " + denLocations.size() + " dens");
 				//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", FULL_MAP_RANGE: " + Message.FULL_MAP_RANGE);
 				
 				// Compute pairing.
@@ -143,7 +143,7 @@ public class ScoutPlayer2 {
 				}
 			} else if (m.type == Message.BUILDVIPERS) {
 				soldierDetected = true;
-				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Soldier I have found.");
+				//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Soldier I have found.");
 			}
 		}
 	}
@@ -463,7 +463,7 @@ public class ScoutPlayer2 {
 				Message.sendMessageGivenDelay(rc, enemy.location, Message.TURRET, 1);
 				turnsSinceEnemyBroadcast = 0;
 			} else if (enemy.type == RobotType.SOLDIER && !soldierDetected) {
-				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Soldier I have found.");
+				//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + ", Soldier I have found.");
 				Message.sendMessageGivenRange(rc, enemy.location, Message.BUILDVIPERS, Message.FULL_MAP_RANGE);
 				soldierDetected = true;
 			} else if (enemy.type != RobotType.SCOUT) {
@@ -536,7 +536,7 @@ public class ScoutPlayer2 {
 						MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
 						//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
 						if (closestTurret != null) {
-							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
+							//rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
 							Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
 							turnsSinceRushSignal = 0;
 						}
