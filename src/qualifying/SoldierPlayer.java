@@ -210,7 +210,7 @@ public class SoldierPlayer {
 		if (closestOpponent == null) closestOpponent = nearestEnemyLocation;
 		Direction d = null;
 		if (closestOpponent != null) d = myLoc.directionTo(closestOpponent);
-		else d = myLoc.directionTo(rc.getInitialArchonLocations(enemyTeam)[0]);
+		else d = myLoc.directionTo(closestEnemy.location).opposite();
 		
 		// if we are moving directly into the zombie, try to move to the side
 		Direction temp = myLoc.directionTo(closestEnemy.location);
