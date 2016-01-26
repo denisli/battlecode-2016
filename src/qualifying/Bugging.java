@@ -172,6 +172,143 @@ public class Bugging {
 			}
 		}
 	}
+	
+	public void moveNoMine(Predicate<Direction> safePredicate) throws GameActionException {
+		turnsSinceWallHit++;
+		MapLocation myLocation = rc.getLocation();
+		// The rest of the normal code.
+		if (myLocation.equals(destination)) return;
+		// Special case for when the destination is right in front of us. If we can't move there, but should mine, then mine it.
+		if (myLocation.distanceSquaredTo(destination) <= 2) {
+			Direction dir = myLocation.directionTo(destination);
+			if (rc.canMove(dir)) {
+				rc.move(dir);
+			}
+			return;
+		}
+		
+		if (hugging == Hugging.NONE) {
+			Direction dir = myLocation.directionTo(destination);
+			if (canMoveNoSlow(dir) && safePredicate.test(dir)) {
+				rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " Safe to move " + dir);
+				rc.move(dir);
+			} else if (rc.canMove(dir.rotateLeft()) && safePredicate.test(dir.rotateLeft())) {
+				rc.move(dir.rotateLeft());
+			} else if (rc.canMove(dir.rotateRight()) && safePredicate.test(dir.rotateRight())) {
+				rc.move(dir.rotateRight());
+			} else {
+				// Since we can't move closer to the destination, we should
+				// commence hugging.
+				// First we find out which direction of hugging is faster.
+
+				// Compute the distance assuming hugging right
+				int numRotates = 0;
+				Direction rightHugDir = dir.rotateLeft();
+				while (!(rc.canMove(rightHugDir) && safePredicate.test(rightHugDir)) && numRotates < 8) {
+					rightHugDir = rightHugDir.rotateLeft();
+					numRotates++;
+				}
+				MapLocation rightHugLoc = myLocation.add(rightHugDir);
+				int rightHugDist = rightHugLoc.distanceSquaredTo(destination);
+
+				// Compute the distance assuming hugging left
+				numRotates = 0;
+				Direction leftHugDir = dir.rotateRight();
+				while (!(rc.canMove(leftHugDir) && safePredicate.test(leftHugDir)) && numRotates < 8) {
+					leftHugDir = leftHugDir.rotateRight();
+					numRotates++;
+				}
+				MapLocation leftHugLoc = myLocation.add(leftHugDir);
+				int leftHugDist = leftHugLoc.distanceSquaredTo(destination);
+
+				// Pick the hugging which gives the least distance towards the
+				// destination
+				if (rightHugDist < leftHugDist) {
+					hugging = Hugging.RIGHT;
+					dirWhileHugging = rightHugDir;
+				} else {
+					hugging = Hugging.LEFT;
+					dirWhileHugging = leftHugDir;
+				}
+
+				// Complete the move.
+				if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
+					rc.move(dirWhileHugging);
+				}
+			}
+		} else {
+			// Do some containing when hit something that is off map.
+			if (hugging == Hugging.LEFT) {
+				MapLocation left = myLocation.add(dirWhileHugging.rotateLeft().rotateLeft());
+				if (!rc.onTheMap(left) && turnsSinceWallHit > 10) {
+					hugging = Hugging.RIGHT;
+					dirWhileHugging = dirWhileHugging.opposite();
+					turnsSinceWallHit = 0;
+				}
+			} else {
+				MapLocation right = myLocation.add(dirWhileHugging.rotateRight().rotateRight());
+				if (!rc.onTheMap(right) && turnsSinceWallHit > 10) {
+					hugging = Hugging.LEFT;
+					dirWhileHugging = dirWhileHugging.opposite();
+					turnsSinceWallHit = 0;
+				}
+			}
+			
+			if (hugging == Hugging.LEFT) {
+				// Check to see if the robot can move towards the destination.
+				// If the direction is fan = 1 away from the direction it came
+				// from,
+				// then do NOT break out of hugging. Else get out of hugging.
+				Direction dirToDest = myLocation.directionTo(destination);
+				Direction cameFromDir = dirWhileHugging.opposite();
+
+				// In this case, break out of bugging
+				if (getFanDist(dirToDest, cameFromDir) > 1 && ((rc.canMove(dirToDest) && safePredicate.test(dirToDest)))) {
+					hugging = Hugging.NONE;
+					if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
+						rc.move(dirToDest);
+					}
+				// Continue to bug...
+				} else {
+					dirWhileHugging = dirWhileHugging.rotateLeft();
+					int numRotates = 0;
+					while (!(rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) && numRotates < 8) {
+						dirWhileHugging = dirWhileHugging.rotateRight();
+						numRotates++;
+					}
+					if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
+						rc.move(dirWhileHugging);
+					}
+				}
+			} else { // hugging = Hugging.RIGHT MOSTLY COPY PASTA FROM ABOVE
+				// Check to see if the robot can move towards the destination.
+				// If the direction is fan = 1 away from the direction it came
+				// from,
+				// then do NOT break out of hugging. Else get out of hugging.
+				Direction dirToDest = myLocation.directionTo(destination);
+				Direction cameFromDir = dirWhileHugging.opposite();
+
+				// In this case, break out of bugging
+				if (getFanDist(dirToDest, cameFromDir) > 1 && ((rc.canMove(dirToDest) && safePredicate.test(dirToDest)))) {
+					hugging = Hugging.NONE;
+					if (rc.canMove(dirToDest) && safePredicate.test(dirToDest)) {
+						rc.move(dirToDest);
+					}
+				// Continue to bug...
+				} else {
+					dirWhileHugging = dirWhileHugging.rotateRight();
+					int numRotates = 0;
+					while (!(rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) && numRotates < 8) {
+						dirWhileHugging = dirWhileHugging.rotateLeft();
+						numRotates++;
+					}
+					if (rc.canMove(dirWhileHugging) && safePredicate.test(dirWhileHugging)) {
+						rc.move(dirWhileHugging);
+					}
+				}
+			}
+		}
+	}
 
 	// Moves the robot according to bugging.
 	// Assume that the robot's core is ready.
@@ -231,12 +368,7 @@ public class Bugging {
 		boolean[] directionIsGood = new boolean[10];
 		dirChecking: for (Direction dir : Direction.values()) {
 			for (RobotInfo hostile : hostiles) {
-				if (hostile.team == Team.ZOMBIE) {
-					if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= 13) {
-						directionIsGood[dir.ordinal()] = false;
-					}
-				}
-				else if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= hostile.type.attackRadiusSquared) {
+				if (myLocation.add(dir).distanceSquaredTo(hostile.location) <= hostile.type.attackRadiusSquared) {
 					directionIsGood[dir.ordinal()] = false;
 					continue dirChecking;
 				}
@@ -275,6 +407,58 @@ public class Bugging {
 		}
 		
 		move(predicate);
+	}
+	
+	public void zombieAvoidMove(RobotInfo[] zombies) throws GameActionException {
+		MapLocation myLocation = rc.getLocation();
+		boolean[] directionIsGood = new boolean[10];
+		boolean[] computed = new boolean[10];
+	
+		Predicate<Direction> predicate = new Predicate<Direction>() {
+			@Override
+			public boolean test(Direction t) {
+				if (computed[t.ordinal()]) return directionIsGood[t.ordinal()];
+				computed[t.ordinal()] = true;
+				for (RobotInfo zombie : zombies) {
+					if (zombie.type == RobotType.ZOMBIEDEN) {
+						if (myLocation.add(t).distanceSquaredTo(zombie.location) <= 5) {
+							return false;
+						}
+					}
+					if (myLocation.add(t).distanceSquaredTo(zombie.location) <= 13) {
+						return false;
+					}
+				}
+				directionIsGood[t.ordinal()] = true;
+				return true;
+			}
+		};
+		
+		// Move away when already in the range
+		if (!predicate.test(Direction.NONE)) {
+			int maxMinDist = 0;
+			Direction bestDir = Direction.NONE;
+			for (Direction dir : RobotPlayer.directions) {
+				if (rc.canMove(dir)) {
+					MapLocation dirLoc = myLocation.add(dir);
+					int minDist = 1000;
+					for (RobotInfo zombie :zombies) {
+						int dist = dirLoc.distanceSquaredTo(zombie.location);
+						minDist = Math.min(dist, minDist);
+					}
+					if (maxMinDist < minDist) {
+						maxMinDist = minDist;
+						bestDir = dir;
+					}
+				}
+			}
+			if (bestDir != Direction.NONE) {
+				rc.move(bestDir);
+				return;
+			}
+		}
+		
+		moveNoMine(predicate);
 	}
 	
 	//avoids list 

@@ -579,7 +579,7 @@ public class ViperPlayer {
 					bugging.turretAvoidMove(turretLocations);
 				} else
 					if (earlyArchonLocation != null) {
-						bugging.enemyAvoidMove(nearbyZombieEnemies);
+						bugging.zombieAvoidMove(nearbyZombieEnemies);
 					}
 					else if (nearestTurretLocation != null) {
 						bugging.turretAvoidMove(turretLocations);
