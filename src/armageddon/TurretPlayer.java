@@ -25,6 +25,7 @@ public class TurretPlayer {
 	public static LocationSet denLocs = new LocationSet();
 	public static LocationSet enemyTurrets = new LocationSet();
 	public static MapLocation pairedAttackLoc = null;
+	public static MapLocation lastPairedAttackLoc = null;
 	public static boolean rush = false;
 	public static int lastTurnBroadcastPairedAttack = 0;
 
@@ -86,32 +87,7 @@ public class TurretPlayer {
 					if (myLoc.distanceSquaredTo(m.location) <= 40 && myLoc.distanceSquaredTo(m.location) > 5) {
 						lastTurnBroadcastPairedAttack = roundNum;
 						pairedAttackLoc = m.location;
-					}
-				}
-				//useless as of now
-				else if (m.type == Message.RUSH) {
-					rushing = true;
-				}
-				else if (m.type == Message.TURRET) {
-					if (nearestTurretLocation == null) {
-						nearestTurretLocation = m.location;
-					}
-					else {
-						if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
-							nearestTurretLocation = m.location;
-						}
-					}
-					enemyTurrets.add(nearestTurretLocation);
-				}
-				else if (m.type == Message.TURRETKILLED) {
-					enemyTurrets.remove(m.location);
-					if (nearestTurretLocation == m.location) {
-						if (enemyTurrets.size() > 0) {
-							nearestTurretLocation = enemyTurrets.getClosest(myLoc);
-						}
-						else {
-							nearestTurretLocation = null;
-						}
+						lastPairedAttackLoc = m.location;
 					}
 				}
 				else if (m.type==Message.ZOMBIEDEN) {
@@ -143,9 +119,6 @@ public class TurretPlayer {
 					} else if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestArchonDangerLocation)) {
 						nearestArchonDangerLocation = m.location;
 					}
-				}
-				else if (m.type==Message.RUSH) {
-					rush = true;
 				}
 			}
 
@@ -207,7 +180,6 @@ public class TurretPlayer {
 				}
 			}
 
-
 			if (enemiesWithinRange.length==0 && !attacked) {
 				turnsNoEnemy++;
 			}
@@ -219,7 +191,11 @@ public class TurretPlayer {
 			if (rc.isCoreReady() && enemiesWithinRange.length > 0 && enemiesTooClose && pairedAttackLoc == null) {
 				rc.pack();
 			}
+			if (rc.isWeaponReady() && lastPairedAttackLoc!=null && enemyTurrets.contains(lastPairedAttackLoc)) {
+				rc.attackLocation(lastPairedAttackLoc);
+			}
 
+			
 			rc.setIndicatorString(1, pairedAttackLoc+" ");
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
@@ -259,32 +235,6 @@ public class TurretPlayer {
 				else if (m.type == Message.PAIREDATTACK) {
 					pairedAttackLoc = m.location;
 				}
-				//rushing is useless for now
-				else if (m.type == Message.RUSH) {
-					rushing = true;
-				}
-				else if (m.type == Message.TURRET) {
-					if (nearestTurretLocation == null) {
-						nearestTurretLocation = m.location;
-					}
-					else {
-						if (myLoc.distanceSquaredTo(m.location) < myLoc.distanceSquaredTo(nearestTurretLocation)) {
-							nearestTurretLocation = m.location;
-						}
-					}
-					enemyTurrets.add(nearestTurretLocation);
-				}
-				else if (m.type == Message.TURRETKILLED) {
-					enemyTurrets.remove(m.location);
-					if (nearestTurretLocation == m.location) {
-						if (enemyTurrets.size() > 0) {
-							nearestTurretLocation = enemyTurrets.getClosest(myLoc);
-						}
-						else {
-							nearestTurretLocation = null;
-						}
-					}
-				}
 				else if (m.type == Message.ZOMBIEDEN) {
 					if (nearestDenLocation == null) {
 						nearestDenLocation = m.location;
@@ -315,9 +265,6 @@ public class TurretPlayer {
 						nearestArchonDangerLocation = m.location;
 					}
 				}
-				else if (m.type==Message.RUSH) {
-					rush = true;
-				}
 			}
 
 			rc.setIndicatorString(1, pairedAttackLoc+" ");
@@ -331,19 +278,6 @@ public class TurretPlayer {
 				}
 				
 				boolean canUnpack = true;
-				//		if (numFriendlySoldiers < 3) {
-				//			canUnpack = false;
-				//		}
-				//		if (nearestTurretLocation != null) {
-				//			if (myLoc.distanceSquaredTo(nearestTurretLocation) < 48) {
-				//				canUnpack = true;
-				//			}
-				//		}
-				//		if (nearestDenLocation != null) {
-				//			if (myLoc.distanceSquaredTo(nearestDenLocation) < 48) {
-				//				canUnpack = true;
-				//			}
-				//		}
 				//do not unpack if there are enemies in range but nothing to attack
 				if (enemiesWithinRange.length > 0 && !existEnemiesNotTooClose) {
 					canUnpack = false;
@@ -365,13 +299,6 @@ public class TurretPlayer {
 						//check for whatever it was supposed to go to and set it to null if it isnt there
 						if (nearestEnemyLocation!=null && myLoc.distanceSquaredTo(nearestEnemyLocation) <= 24) {
 							nearestEnemyLocation = null;
-						}
-						if (nearestTurretLocation!=null && myLoc.distanceSquaredTo(nearestTurretLocation) <= 24) {
-							RobotInfo r = rc.senseRobotAtLocation(nearestTurretLocation);
-							if (r==null || !((r.team == otherTeam) && (r.type == RobotType.TURRET))) {
-								enemyTurrets.remove(nearestTurretLocation);
-								nearestTurretLocation = null;
-							}
 						}
 						if (nearestDenLocation!=null && myLoc.distanceSquaredTo(nearestDenLocation) <= 24) {
 							RobotInfo r = rc.senseRobotAtLocation(nearestDenLocation);
@@ -404,24 +331,17 @@ public class TurretPlayer {
 //						}
 					}
 					else {
-						if (nearestDenLocation != null && myLoc.distanceSquaredTo(nearestDenLocation)>5) {
+						if (nearestDenLocation != null && myLoc.distanceSquaredTo(nearestDenLocation)>13) {
 							destination = nearestDenLocation;
 						}
 						else if (denLocs.size() > 0) {
 							nearestDenLocation = denLocs.getClosest(myLoc);
-							if (myLoc.distanceSquaredTo(nearestDenLocation)>5) {
+							if (myLoc.distanceSquaredTo(nearestDenLocation)>13) {
 								destination = nearestDenLocation;
 							}
 						}
 						else if (nearestEnemyLocation != null) {
 							destination = nearestEnemyLocation;
-						}
-						else if (nearestTurretLocation != null) {
-							destination = nearestTurretLocation;
-						}
-						else if (enemyTurrets.size() > 0) {
-							nearestTurretLocation = enemyTurrets.getClosest(myLoc);
-							destination = nearestTurretLocation;
 						}
 						else if (nearestArchonLocation != null) {
 							destination = nearestArchonLocation;

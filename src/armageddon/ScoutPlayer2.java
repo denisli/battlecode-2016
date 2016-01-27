@@ -13,6 +13,7 @@ import battlecode.common.RobotType;
 import battlecode.common.Team;
 
 public class ScoutPlayer2 {
+	private static MapLocation[] initialEnemyLocations = null;
 	private static int sightRange = RobotType.SCOUT.sensorRadiusSquared;
 	private static Team team;
 	private static MapLocation myLoc;
@@ -32,6 +33,13 @@ public class ScoutPlayer2 {
 	private static MapLocation previouslyBroadcastedPartLoc;
 	private static int turnsSinceCollectibleBroadcast = 0;
 	
+	private static boolean turtleDetected = false;
+	
+	private static MapLocation circledEnemyTurret;
+	private static int turnsCirclingEnemyTurret;
+	private static int maxTurnsCirclingEnemyTurret = 50;
+	private static Bugging bugging;
+	
 	private static MapLocation pairedTurret;
 	private static MapLocation pairedArchon;
 	private static Pairing pairing;
@@ -39,6 +47,7 @@ public class ScoutPlayer2 {
 	
 	public static void run(RobotController rc) {
 		team = rc.getTeam();
+		initialEnemyLocations = rc.getInitialArchonLocations(team.opponent());
 		while (true) {
 			try {
 				turnsSinceCollectibleBroadcast++;
@@ -333,8 +342,20 @@ public class ScoutPlayer2 {
 					// make sure hostile range is > 5
 					int turretDist = hostile.location.distanceSquaredTo(pairedTurret);
 					if (turretDist > RobotType.TURRET.sensorRadiusSquared && turretDist <= RobotType.TURRET.attackRadiusSquared) {
-						if (bestEnemy.location.distanceSquaredTo(pairedTurret) > turretDist) {
-							bestEnemy = hostile;
+						if (bestEnemy.type == RobotType.TURRET) {
+							// Prioritize lowest health turret
+							if (hostile.type == RobotType.TURRET) {
+								if (hostile.health < bestEnemy.health) bestEnemy = hostile;
+							}
+						} else {
+							if (hostile.type == RobotType.TURRET) {
+								bestEnemy = hostile;
+							} else {
+								// Prioritize closest non-turret if can't find attackable turret.
+								if (bestEnemy.location.distanceSquaredTo(pairedTurret) > turretDist) {
+									bestEnemy = hostile;
+								}
+							}
 						}
 					}
 					// Then find the closest turret
@@ -353,7 +374,6 @@ public class ScoutPlayer2 {
 						if (closestTurretLoc != null && turnsSinceTurretBroadcast > 20 && rc.isCoreReady()) {
 							Message.sendMessageGivenDelay(rc, closestTurretLoc, Message.TURRET, 1);
 							turnsSinceTurretBroadcast = 0;
-							enemyTurretLocations.add(closestTurretLoc);
 						}
 						else if (bestEnemy != null && turnsSinceEnemyBroadcast > 20 && rc.isCoreReady()) {
 							Message.sendMessageGivenDelay(rc, bestEnemy.location, Message.ENEMY, 1);
@@ -367,14 +387,16 @@ public class ScoutPlayer2 {
 			for (RobotInfo hostile : hostiles) {
 				if (!isDangerous(hostile.type)) continue;
 				int archonDist = hostile.location.distanceSquaredTo(pairedArchon);
-				if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
-					Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
+				if (hostile.type == RobotType.TURRET) {
+					if (archonDist > RobotType.ARCHON.sensorRadiusSquared) {
+						Message.sendMessageGivenRange(rc, hostile.location, Message.ARCHONSIGHT, 2 * myLoc.distanceSquaredTo(pairedArchon));
+					}
 				}
 			}
 			
 			if (isAdjacentToPaired()) {
 				if (hostiles.length > 0 && rc.isCoreReady()) {
-					Message.sendMessageGivenDelay(rc, pairedArchon, Message.ARCHONINDANGER, 2.3);
+					Message.sendMessageGivenRange(rc, hostiles[0].location, Message.ARCHONINDANGER, sightRange);
 				}
 			}
 		} else {
@@ -455,7 +477,7 @@ public class ScoutPlayer2 {
 			}
 		}
 		if (closestCollectible != null && rc.isCoreReady()) {
-			//if (turnsSinceCollectibleBroadcast > 20) {
+			if (turnsSinceCollectibleBroadcast > 20) {
 				if (pairing != Pairing.ARCHON) {
 					if (thereAreEnemies) {
 						Message.sendMessageGivenDelay(rc, closestCollectible, Message.COLLECTIBLES, 0.3);
@@ -467,36 +489,51 @@ public class ScoutPlayer2 {
 				}
 				turnsSinceCollectibleBroadcast = 0;
 				previouslyBroadcastedPartLoc = closestCollectible;
-			//}
+			}
 		}
 	}
 	
 	private static void broadcastRushSignals(RobotController rc) throws GameActionException {
 		if (rc.getRoundNum() > 300) {
-			if (denLocations.size() == 0) {
-				turnsSinceRushSignal++;
-				if (turnsSinceRushSignal > 200) {
-					MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
-					//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
-					if (closestTurret != null) {
-						rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
-						Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
-						turnsSinceRushSignal = 0;
-					}
-				}
+			
+			// Detect whether or not there is a turtle.
+			boolean enemyIsTurtling = false;
+			if (turtleDetected) {
+				enemyIsTurtling = true;
 			} else {
-				turnsSinceRushSignal = 0;
+				turtleDetected = Message.detectTurtle(initialEnemyLocations, enemyTurretLocations);
+				enemyIsTurtling = turtleDetected;
+			}
+			
+			// Decide whether or not to broadcast rush.
+			if (enemyIsTurtling) {
+				boolean forceRush = rc.getRoundNum() > 2850;
+				if (forceRush || denLocations.size() == 0) {
+					turnsSinceRushSignal++;
+					if ((forceRush && turnsSinceRushSignal > 10) || turnsSinceRushSignal > 250) {
+						MapLocation closestTurret = enemyTurretLocations.getClosest(myLoc);
+						//rc.setIndicatorString(2, "Round: " + rc.getRoundNum() + " closest turret: " + closestTurret);
+						if (closestTurret != null) {
+							rc.setIndicatorString(0, "Round: " + rc.getRoundNum() + ", Broadcasting a rush signal");
+							Message.sendMessageGivenRange(rc, closestTurret, Message.RUSH, 16 * sightRange);
+							turnsSinceRushSignal = 0;
+						}
+					}
+				} else {
+					turnsSinceRushSignal = 0;
+				}
 			}
 		}
 	}
 	
 	private static void moveScout(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) throws GameActionException {
 		// Correct main direction according to ally scouts.
-		correctMainDirection(allies);
+		correctMainDirection(rc, allies, hostiles);
 		
 		// When paired, move along with the turret
 		// Otherwise move in your main direction, and change it accordingly if you cannot move.
 		if (pairing == Pairing.TURRET) {
+			resetEnemyTurretCircling();
 			if (rc.isCoreReady()) {
 				// Check if there are dangerous enemies within 24 range of the paired turret. If there are, get the hell out.
 				boolean getTheHellOut = false;
@@ -556,6 +593,7 @@ public class ScoutPlayer2 {
 				}
 			}
 		} else if (pairing == Pairing.ARCHON) {
+			resetEnemyTurretCircling();
 			if (rc.isCoreReady()) {
 				// When not in enemy attack range, cling to paired turret (and make sure not to get hit!)
 				Direction dirToArchon = myLoc.directionTo(pairedArchon);
@@ -585,6 +623,7 @@ public class ScoutPlayer2 {
 		} else {
 			if (rc.isCoreReady()) {
 				if (inDanger) {
+					resetEnemyTurretCircling();
 					// Go in direction maximizing the minimum distance
 					int maxMinDist = 0;
 					for (Direction dir : RobotPlayer.directions) {
@@ -606,27 +645,178 @@ public class ScoutPlayer2 {
 						rc.move(mainDir);
 					}
 				} else {
-					if (!rc.canMove(mainDir) || inEnemyAttackRange(myLoc.add(mainDir), hostiles)) {
-						int[] disps = { 1, -1, 3, -3 };
-						for (int disp : disps) {
-							Direction dir = RobotPlayer.directions[((mainDir.ordinal() + disp) % 8 + 8) % 8];
-							if (rc.canMove(dir) && !inEnemyAttackRange(myLoc.add(dir), hostiles)) {
-								mainDir = dir; break;
+					RobotInfo closestTurret = null;
+					int closestDist = 10000;
+					for (RobotInfo hostile : hostiles) {
+						int dist = myLoc.distanceSquaredTo(hostile.location);
+						if (hostile.type == RobotType.TURRET) {
+							if (dist < closestDist) {
+								closestTurret = hostile; closestDist = dist;
 							}
 						}
 					}
-					if (rc.canMove(mainDir)) { 
-						rc.move(mainDir);
+					// If sees a closest turret, then bug around that turret.
+					if ((turnsCirclingEnemyTurret > 0 || closestTurret != null) && turnsCirclingEnemyTurret < maxTurnsCirclingEnemyTurret) {
+						if (turnsCirclingEnemyTurret == 0) {
+							circledEnemyTurret = closestTurret.location;
+							enemyTurretLocations.add(circledEnemyTurret);
+							bugging = new Bugging(rc, circledEnemyTurret);
+							bugging.turretAvoidMove(enemyTurretLocations);
+						} else {
+							if (!circledEnemyTurret.equals(closestTurret)) {
+								maxTurnsCirclingEnemyTurret = Math.min(100, maxTurnsCirclingEnemyTurret + 30);
+//								circledEnemyTurret = closestTurret.location;
+//								bugging.destination = circledEnemyTurret;
+							}
+							bugging.turretAvoidMove(enemyTurretLocations);
+						}
+						turnsCirclingEnemyTurret++;
+					} else {
+						resetEnemyTurretCircling();
+					
+						if (!rc.canMove(mainDir) || inEnemyAttackRange(myLoc.add(mainDir), hostiles)) {
+							int[] disps = { 1, -1, 3, -3 };
+							for (int disp : disps) {
+								Direction dir = RobotPlayer.directions[((mainDir.ordinal() + disp) % 8 + 8) % 8];
+								if (rc.canMove(dir) && !inEnemyAttackRange(myLoc.add(dir), hostiles)) {
+									mainDir = dir; break;
+								}
+							}
+						}
+						if (rc.canMove(mainDir)) { 
+							rc.move(mainDir);
+						}
 					}
 				}
 			}
 		}
 	}
 	
-	private static void correctMainDirection(RobotInfo[] allies) {
+	private static void resetEnemyTurretCircling() {
+		turnsCirclingEnemyTurret = 0;
+		maxTurnsCirclingEnemyTurret = 50;
+		circledEnemyTurret = null;
+		bugging = null;
+	}
+	
+	private static void correctMainDirection(RobotController rc, RobotInfo[] allies, RobotInfo[] hostiles) throws GameActionException {
+		for (RobotInfo hostile : hostiles) {
+			if (hostile.type == RobotType.ZOMBIEDEN) {
+				int randInt = rand.nextInt(3);
+				if (randInt == 0) {
+					mainDir = hostile.location.directionTo(myLoc);
+				} else if (randInt == 1) {
+					mainDir = hostile.location.directionTo(myLoc).rotateLeft();
+				} else {
+					mainDir = hostile.location.directionTo(myLoc).rotateRight();
+				}
+				return;
+			}
+		}
+		
+		int boundThreshold = 5;
+		boolean eastBound = !rc.onTheMap(myLoc.add(Direction.EAST, boundThreshold));
+		boolean westBound = !rc.onTheMap(myLoc.add(Direction.WEST, boundThreshold));
+		boolean northBound = !rc.onTheMap(myLoc.add(Direction.NORTH, boundThreshold));
+		boolean southBound = !rc.onTheMap(myLoc.add(Direction.SOUTH, boundThreshold));
+		
+		if (eastBound && northBound) {
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.SOUTH_WEST;
+			} else if (randInt == 1) {
+				mainDir = Direction.SOUTH;
+			} else {
+				mainDir = Direction.WEST;
+			}
+			return;
+		} else if (eastBound && southBound) {
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.NORTH_WEST;
+			} else if (randInt == 1) {
+				mainDir = Direction.NORTH;
+			} else {
+				mainDir = Direction.WEST;
+			}
+			return;
+		} else if (westBound && northBound) {
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.SOUTH_EAST;
+			} else if (randInt == 1) {
+				mainDir = Direction.SOUTH;
+			} else {
+				mainDir = Direction.EAST;
+			}
+			return;
+		} else if (westBound && southBound) {
+			int randInt = rand.nextInt(3);
+			if (randInt == 0) {
+				mainDir = Direction.NORTH_EAST;
+			} else if (randInt == 1) {
+				mainDir = Direction.NORTH;
+			} else {
+				mainDir = Direction.EAST;
+			}
+			return;
+		} else if (eastBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.EAST, boundThreshold - 1))) {
+				mainDir = Direction.WEST;
+				return;
+			}
+			
+			Direction verticalDirection = getVerticalDirection(mainDir);
+			if (verticalDirection != Direction.NONE) {
+				mainDir = verticalDirection;
+			} else {
+				mainDir = Direction.WEST;
+			}
+			return;
+		} else if (westBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.WEST, boundThreshold - 1))) {
+				mainDir = Direction.EAST;
+				return;
+			}
+			
+			Direction verticalDirection = getVerticalDirection(mainDir);
+			if (verticalDirection != Direction.NONE) {
+				mainDir = verticalDirection;
+			} else {
+				mainDir = Direction.EAST;
+			}
+			return;
+		} else if (southBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.SOUTH, boundThreshold - 1))) {
+				mainDir = Direction.NORTH;
+				return;
+			}
+			
+			Direction horizontalDirection = getHorizontalDirection(mainDir);
+			if (horizontalDirection != Direction.NONE) {
+				mainDir = horizontalDirection;
+			} else {
+				mainDir = Direction.NORTH;
+			}
+			return;
+		} else if (northBound) {
+			if (!rc.onTheMap(myLoc.add(Direction.NORTH, boundThreshold - 1))) {
+				mainDir = Direction.SOUTH;
+				return;
+			}
+			
+			Direction horizontalDirection = getHorizontalDirection(mainDir);
+			if (horizontalDirection != Direction.NONE) {
+				mainDir = horizontalDirection;
+			} else {
+				mainDir = Direction.SOUTH;
+			}
+			return;
+		}
+		
 		for (RobotInfo ally : allies) {
 			if (ally.type == RobotType.SCOUT) {
-				int randInt = rand.nextInt(3);
+				int randInt = rand.nextInt(5);
 				if (randInt == 0) {
 					mainDir = ally.location.directionTo(myLoc);
 				} else if (randInt == 1) {
@@ -634,8 +824,31 @@ public class ScoutPlayer2 {
 				} else {
 					mainDir = ally.location.directionTo(myLoc).rotateRight();
 				}
+				return;
 			}
-		}		
+		}
+	}
+	
+	private static Direction getVerticalDirection(Direction dir) {
+		int northFanDist = Movement.getFanDist(dir, Direction.NORTH);
+		if (northFanDist <= 1) {
+			return Direction.NORTH;
+		} else if (northFanDist == 0) {
+			return Direction.NONE;
+		} else {
+			return Direction.SOUTH;
+		}
+	}
+	
+	private static Direction getHorizontalDirection(Direction dir) {
+		int eastFanDist = Movement.getFanDist(dir, Direction.EAST);
+		if (eastFanDist <= 1) {
+			return Direction.EAST;
+		} else if (eastFanDist == 0) {
+			return Direction.NONE;
+		} else {
+			return Direction.WEST;
+		}
 	}
 	
 	private static boolean inEnemyAttackRange(MapLocation location, RobotInfo[] hostiles) {

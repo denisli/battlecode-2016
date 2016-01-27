@@ -81,7 +81,7 @@ public class LocationSet implements Iterable<MapLocation> {
 	public int size() {
 		return size;
 	}
-
+	
 	@Override
 	public Iterator<MapLocation> iterator() {
 		index = 0;
